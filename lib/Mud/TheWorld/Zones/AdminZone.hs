@@ -119,58 +119,51 @@ fillPoolHookFun i Hook { .. } _ a@(as, (ms, _, _, _), _) =
          & _2._3 .~ bs
          & _2._4 .~ logMsgs
 
-helperFillWaterRmEitherInv :: Id
-                           -> Desig
-                           -> [Either Text Inv]
-                           -> GenericIntermediateRes
-                           -> GenericIntermediateRes
+helperFillWaterRmEitherInv :: Id -> Desig -> [Either Text Inv] -> GenericIntermediateRes -> GenericIntermediateRes
 helperFillWaterRmEitherInv _ _        []         a = a
-helperFillWaterRmEitherInv i srcDesig (eis:eiss) a = next $ case eis of
-    Left msg -> sorry msg
+helperFillWaterRmEitherInv i srcDesig (eis:eiss) a = helperFillWaterRmEitherInv i srcDesig eiss $ case eis of
+    Left msg -> a & _2 <>~ pure msg
     Right is -> helper is a
   where
-    next      = helperFillWaterRmEitherInv i srcDesig eiss
-    sorry msg = a & _2 <>~ pure msg
     helper []       a'                = a'
     helper (vi:vis) a'@(ms', _, _, _)
-      | getType vi ms' /= VesselType = helper vis . sorry' . sorryFillType $ vs
-      | otherwise                    = helper vis . (_3 <>~ bcastHelper)   $ case getVesselCont vi ms' of
-          Nothing       | cans <- calcCanCarryMouthfuls vmm
-                        -> if | cans < 1   -> a' & _2 <>~ sorryEnc
-                              | vmm > cans -> partialMsgHelper (a' & _1.vesselTbl.ind vi.vesselCont ?~ (waterLiq, cans))
-                              | otherwise  -> fillUp
-          Just (vl, vm) | vl 🍧 waterLiq -> sorry' . sorryFillWaterLiqTypes . getSing vi $ ms'
-                        | vm >= vmm -> sorry' . sorryFillAlready $ vs
-                        | vAvail <- vmm - vm
-                        , cans   <- calcCanCarryMouthfuls vAvail
-                        -> if | cans < 1      -> a' & _2 <>~ sorryEnc
-                              | vAvail > cans -> partialMsgHelper (a' & _1.vesselTbl.ind vi.vesselCont ?~ (waterLiq, vm + cans))
+      | getType vi ms' /= VesselType = helper vis . sorry . sorryFillType $ vs
+      | otherwise                    = helper vis $ case getVesselCont vi ms' of
+          Nothing -> let cans = calcCanCarryMouthfuls vmm in if | cans < 1   -> sorry sorryEnc
+                                                                | vmm > cans -> partialMsgHelper cans
+                                                                | otherwise  -> fillUp
+          Just (vl, vm) | vl 🍧 waterLiq -> sorry . sorryFillWaterLiqTypes . getSing vi $ ms'
+                        | vm >= vmm -> sorry . sorryFillAlready $ vs
+                        | vAvail <- vmm - vm, cans <- calcCanCarryMouthfuls vAvail
+                        -> if | cans < 1      -> sorry sorryEnc
+                              | vAvail > cans -> partialMsgHelper $ vm + cans
                               | otherwise     -> fillUp
       where
         (🍧) = (/=) `on` view liqId
-        sorry' msg = a' & _2 <>~ pure msg
-        sorryEnc   = pure $ sorryGetEnc <> "any more water."
-        vs         = getSing         vi ms'
-        vmm        = getMaxMouthfuls vi ms'
-        calcCanCarryMouthfuls amt = let myWeight = calcWeight i ms'
-                                        myMaxEnc = calcMaxEnc i ms'
-                                        g        | myWeight + (amt * mouthfulWeight) > myMaxEnc
-                                                 , margin <- myMaxEnc - myWeight
-                                                 = floor (margin `divide` mouthfulWeight :: Double)
-                                                 | otherwise = amt
-                                    in g
-        fillUp             = a' & _1.vesselTbl.ind vi.vesselCont ?~ (waterLiq, vmm)
-                                & _2 <>~ mkFillUpMsg
-                                & _4 <>~ mkFillUpMsg
-        partialMsgHelper   = (_4 <>~ mkPartialFillUpMsg) . (_2 <>~ mkPartialFillUpMsg)
-        mkFillUpMsg        = pure $ "You fill up the " <> vs <> " with water from the pool."
-        mkPartialFillUpMsg = pure . T.concat $ [ "You partially fill the ", vs, " with water from the pool. ", head sorryEnc ]
-        bcastHelper        = pure ( T.concat [ serialize srcDesig, " fills ", aOrAn vs, " with water from the pool." ]
-                                  , desigOtherIds srcDesig )
+        sorry msg = a' & _2 <>~ pure msg
+        sorryEnc  = sorryGetEnc <> "any more water."
+        (vs, vmm) = (getSing `fanUncurry` getMaxMouthfuls) (vi, ms')
+        calcCanCarryMouthfuls amt = let (myWeight, myMaxEnc) = (calcWeight `fanUncurry` calcMaxEnc) (i, ms')
+                                    in if | myWeight + (amt * mouthfulWeight) > myMaxEnc
+                                          , margin <- myMaxEnc - myWeight
+                                          -> floor (margin `divide` mouthfulWeight :: Double)
+                                          | otherwise -> amt
+        fillUp                    = a' & _1.vesselTbl.ind vi.vesselCont ?~ (waterLiq, vmm)
+                                       & _2 <>~ mkFillUpMsg
+                                       & _3 <>~ bcastHelper
+                                       & _4 <>~ mkFillUpMsg
+        mkFillUpMsg               = pure $ "You fill up the " <> vs <> " with water from the pool."
+        partialMsgHelper mouths   = a' & _1.vesselTbl.ind vi.vesselCont ?~ (waterLiq, mouths)
+                                       & _2 <>~ mkPartialFillUpMsg
+                                       & _3 <>~ bcastHelper
+                                       & _4 <>~ mkPartialFillUpMsg
+        mkPartialFillUpMsg = pure . T.concat $ [ "You partially fill the ", vs, " with water from the pool. ", sorryEnc ]
+        bcastHelper        = pure (T.concat [ serialize srcDesig, " fills ", mkSerVerbObj . aOrAn $ vs, " with " -- TODO: Test.
+                                            , mkSerVerbObj "water from the pool", "." ], desigOtherIds srcDesig)
 
 -----
 
-getFlowerHook :: Hook
+getFlowerHook :: Hook -- TODO: Here.
 getFlowerHook = Hook getFlowerHookName [ "flower", "flowers" ]
 
 getFlowerHookName :: HookName
@@ -673,7 +666,7 @@ createAdminZone = do
             zeroBits
             [ StdLink West iHallwayEast 1 ]
             (3, 0, 0)
-            InsideLitEnv
+            InsideUnlitEnv -- TODO: InsideLitEnv
             (Just "Atrium")
             (M.fromList [ ("drink", [ drinkPoolHook      ])
                         , ("fill",  [ fillPoolHook       ])
