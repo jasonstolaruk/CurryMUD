@@ -28,17 +28,13 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (hGetLine)
 import           System.IO (Handle, hIsEOF)
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.Receive"
-
 
 logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Threads.Receive"
 
-
 -- ==================================================
-
 
 threadReceive :: HasCallStack => Handle -> Id -> MsgQueue -> MudStack ()
 threadReceive h i mq = handle (plaThreadExHandler i "receive") $ setThreadType (Receive i) >> loop
@@ -56,7 +52,6 @@ threadReceive h i mq = handle (plaThreadExHandler i "receive") $ setThreadType (
                       | otherwise                             = acc
         delimiters    = T.pack [ corpseDesigDelimiter, nonStdDesigDelimiter, sectionDelimiter, stdDesigDelimiter
                                , verbObjDelimiter ]
-
 
 interpTelnet :: HasCallStack => Id -> [TelnetData] -> MudStack ()
 interpTelnet _ []  = unit

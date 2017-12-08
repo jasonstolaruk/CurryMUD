@@ -16,13 +16,10 @@ import           Control.Lens.Operators ((&), (%~))
 import           Data.Text (Text)
 import qualified Data.Text as T
 
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Misc.LocPref"
 
-
 -- ==================================================
-
 
 pattern InvPref      :: Text
 pattern EqPref       :: Text
@@ -38,9 +35,7 @@ pattern Rest         <- (SelectorChar:AtLst1)
 pattern SelectorChar <- ((selectorChar `compare`) -> EQ)
 pattern AtLst1       <- (_:_)
 
-
 -----
-
 
 hasLocPref :: Text -> Bool
 hasLocPref = \case InvPref -> True
@@ -48,9 +43,7 @@ hasLocPref = \case InvPref -> True
                    RmPref  -> True
                    _       -> False
 
-
 -----
-
 
 singleArgInvEqRm :: InInvEqRm -> Text -> (InInvEqRm, Text)
 singleArgInvEqRm dflt arg = case sortArgsInvEqRm dflt . pure $ arg of
@@ -59,9 +52,7 @@ singleArgInvEqRm dflt arg = case sortArgsInvEqRm dflt . pure $ arg of
   ([],  [],  [a]) -> (InRm,  a)
   x               -> pmf "singleArgInvEqRm" x
 
-
 -----
-
 
 sortArgsInvEqRm :: InInvEqRm -> Args -> (Args, Args, Args)
 sortArgsInvEqRm dflt = foldr f mempty
@@ -77,9 +68,7 @@ sortArgsInvEqRm dflt = foldr f mempty
         lens 🍮 rest = acc & lens %~ (rest :)
         dropPref = T.tail . T.tail
 
-
 -----
-
 
 stripLocPref :: Text -> Text
 stripLocPref arg = hasLocPref arg ? T.drop 2 arg :? arg

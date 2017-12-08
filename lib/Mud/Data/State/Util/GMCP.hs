@@ -21,27 +21,20 @@ import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
 
-
 default (Int)
 
-
 -----
-
 
 blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Data.State.Util.GMCP"
 
-
 -- ==================================================
-
 
 colon, comma :: Text
 colon = ": "
 comma = ", "
 
-
 -----
-
 
 gmcpRmInfo :: Maybe Int -> Id -> MudState -> Text
 gmcpRmInfo maybeZoom i ms = "Room.Info " <> curlyQuote (spaced rest)
@@ -108,7 +101,6 @@ gmcpRmInfo maybeZoom i ms = "Room.Info " <> curlyQuote (spaced rest)
                                                            , dblQuote "special_dir", colon, dblQuote "-1" ]
     zoom = fromMaybe (-1) maybeZoom
 
-
 -- Numbers correspond to Mudlet's user-adjustable mapper colors.
 envToColorInt :: RmEnv -> Int
 envToColorInt InsideUnlitEnv = 262 -- Cyan.
@@ -118,9 +110,7 @@ envToColorInt ShopEnv        = 265 -- Light red.
 envToColorInt SpecialEnv     = 269 -- Light magenta.
 envToColorInt NoEnv          = 264 -- Light black.
 
-
 -----
-
 
 gmcpVitals :: Id -> MudState -> Text
 gmcpVitals i ms = "Char.Vitals " <> curlyQuote (spaced rest)

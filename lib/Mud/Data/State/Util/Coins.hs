@@ -22,13 +22,10 @@ import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
 
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Data.State.Util.Coins"
 
-
 -- ============================================================
-
 
 aCoinSomeCoins :: Coins -> Text
 aCoinSomeCoins = \case (Coins (1, 0, 0)) -> "a copper piece"
@@ -36,22 +33,18 @@ aCoinSomeCoins = \case (Coins (1, 0, 0)) -> "a copper piece"
                        (Coins (0, 0, 1)) -> "a gold piece"
                        _                 -> "some coins"
 
-
 coinsFromList :: [Int] -> Coins
 coinsFromList [ cop, sil, gol ] = Coins (cop, sil, gol)
 coinsFromList xs                = pmf "coinsFromList" xs
 
-
 coinsToList :: Coins -> [Int]
 coinsToList (Coins c) = c^..each
-
 
 distillEcs :: [Either [Text] Coins] -> (Coins, [Text])
 distillEcs = foldl' helper mempty
   where
     helper acc (Right c   ) = acc & _1 <>~ c
     helper acc (Left  msgs) = acc & _2 <>~ msgs
-
 
 mkCoinTxt :: Coins -> Text
 mkCoinTxt coins = case mkCoinTxtList of
@@ -66,13 +59,11 @@ mkCoinTxt coins = case mkCoinTxtList of
                                         | amt == 1  = showTxt amt |<>| coinName : acc
                                         | otherwise = acc
 
-
 mkCoinPieceTxt :: Coins -> (Text, Bool)
 mkCoinPieceTxt = \case (Coins (1, 0, 0)) -> ("copper piece", False)
                        (Coins (0, 1, 0)) -> ("silver piece", False)
                        (Coins (0, 0, 1)) -> ("gold piece",   False)
                        _                 -> ("coins",        True )
-
 
 negateCoins :: Coins -> Coins
 negateCoins (Coins (each %~ negate -> c)) = Coins c

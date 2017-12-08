@@ -15,13 +15,10 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.Text (Text)
 import           GHC.Stack (HasCallStack)
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.WorldPersister"
 
-
 -- ==================================================
-
 
 threadWorldPersister :: HasCallStack => MudStack ()
 threadWorldPersister = handle (threadExHandler Nothing "world persister") $ do

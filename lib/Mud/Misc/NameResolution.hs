@@ -44,39 +44,30 @@ import           Prelude hiding ((>>))
 import qualified Data.Text as T
 import qualified Prelude ((>>))
 
-
 (>>) :: Format (Text -> r) a -> Format r' r -> Format r' a
 a >> b = a % stext % b
 
-
 -----
-
 
 blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Misc.NameResolution"
 
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Misc.NameResolution"
-
 
 -- ==================================================
 -- Resolving entity and coin names:
 
-
 type ReconciledCoins = Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)
-
 
 resolveEntCoinNames :: Id -> MudState -> Args -> Inv -> Coins -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
 resolveEntCoinNames i ms (map T.toLower -> as) is c = expandGecrs c [ mkGecr i ms is c a | a <- as ]
-
 
 expandGecrs :: Coins -> [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
 expandGecrs c (extractEnscsFromGecrs -> (gecrs, enscs)) | mess <- map extractMesFromGecr gecrs
                                                         , miss <- pruneDupIds $ view entId `fmap3` mess
                                                         , rcs  <- reconcileCoins c . distillEnscs $ enscs
                                                         = (gecrs, miss, rcs)
-
 
 extractEnscsFromGecrs :: [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [EmptyNoneSome Coins])
 extractEnscsFromGecrs = first reverse . foldl' helper mempties
@@ -89,19 +80,16 @@ extractEnscsFromGecrs = first reverse . foldl' helper mempties
     helper (gecrs, enscs) gecr@Indexed {}                                       = (gecr : gecrs,        enscs)
     helper _              x                                                     = pmf "extractEnscsFromGecrs helper" x
 
-
 isSorryGecr :: GetEntsCoinsRes -> Bool
 isSorryGecr Sorry {}          = True
 isSorryGecr SorryIndexedCoins = True
 isSorryGecr _                 = False
-
 
 extractMesFromGecr :: GetEntsCoinsRes -> Maybe [Ent]
 extractMesFromGecr gecr = guard (not . isSorryGecr $ gecr) Prelude.>> case gecr of
   Mult    { entsRes = Just es } -> Just es
   Indexed { entRes  = Right e } -> Just . pure $ e
   _                             -> Nothing
-
 
 pruneDupIds :: [Maybe Inv] -> [Maybe Inv]
 pruneDupIds = dropJustNulls . pruneThem []
@@ -114,7 +102,6 @@ pruneDupIds = dropJustNulls . pruneThem []
         helper Nothing   acc = Nothing : acc
         helper (Just []) acc = acc
         helper x         acc = x : acc
-
 
 reconcileCoins :: Coins -> [EmptyNoneSome Coins] -> [Either (EmptyNoneSome Coins) (EmptyNoneSome Coins)]
 reconcileCoins (Coins (cop, sil, gol)) enscs = guard (()!# enscs) Prelude.>> concatMap helper enscs
@@ -132,7 +119,6 @@ reconcileCoins (Coins (cop, sil, gol)) enscs = guard (()!# enscs) Prelude.>> con
         mkEitherGol | someGol <= gol = Right . SomeOf . Coins $ (0,       0,       someGol)
                     | otherwise      = Left  . SomeOf . Coins $ (0,       0,       someGol)
 
-
 distillEnscs :: [EmptyNoneSome Coins] -> [EmptyNoneSome Coins]
 distillEnscs enscs | Empty `elem` enscs               = pure Empty
                    | someOfs <- filter isSomeOf enscs
@@ -146,7 +132,6 @@ distillEnscs enscs | Empty `elem` enscs               = pure Empty
     fromEnsCoins (SomeOf c) = c
     fromEnsCoins (NoneOf c) = c
     fromEnsCoins ensc       = pmf "distillEnscs fromEnsCoins" ensc
-
 
 mkGecr :: Id -> MudState -> Inv -> Coins -> Text -> GetEntsCoinsRes
 mkGecr i ms searchIs searchCoins searchName@(headTail -> (h, t))
@@ -169,11 +154,9 @@ mkGecr i ms searchIs searchCoins searchName@(headTail -> (h, t))
                              | delim == indexChar  -> mkGecrIndexed i ms numInt rest' searchIs
                              | otherwise           -> Sorry searchName
 
-
 mkGecrMult :: Id -> MudState -> Amount -> Text -> Inv -> Coins -> GetEntsCoinsRes
 mkGecrMult i ms a n is c | n `elem` allCoinNames = mkGecrMultForCoins     a n c
                          | otherwise             = mkGecrMultForEnts i ms a n is
-
 
 mkGecrMultForCoins :: Amount -> Text -> Coins -> GetEntsCoinsRes
 mkGecrMultForCoins a n c@(Coins (cop, sil, gol)) = Mult { amount          = a
@@ -197,12 +180,10 @@ mkGecrMultForCoins a n c@(Coins (cop, sil, gol)) = Mult { amount          = a
                   | otherwise     -> SomeOf . Coins $ (0,   0,   a  )
              _                    -> pmf "mkGecrMultForCoins helper" n
 
-
 distributeAmt :: Int -> [Int] -> [Int]
 distributeAmt _   []     = []
 distributeAmt amt (c:cs) | diff <- amt - c, diff >= 0 = c   : distributeAmt diff cs
                          | otherwise                  = amt : distributeAmt 0    cs
-
 
 mkGecrMultForEnts :: Id -> MudState -> Amount -> Text -> Inv -> GetEntsCoinsRes
 mkGecrMultForEnts i ms a n is = let effNames = [ getEffName i ms targetId | targetId <- is ] in
@@ -212,7 +193,6 @@ mkGecrMultForEnts i ms a n is = let effNames = [ getEffName i ms targetId | targ
     found (zip is -> zipped) fullName = (Just . takeMatchingEnts zipped $ fullName, Nothing)
     takeMatchingEnts zipped  fullName = take a [ getEnt targetId ms | (targetId, effName) <- zipped
                                                                     , effName == fullName ]
-
 
 mkGecrIndexed :: Id -> MudState -> Index -> Text -> Inv -> GetEntsCoinsRes
 mkGecrIndexed i ms x n is
@@ -225,10 +205,8 @@ mkGecrIndexed i ms x n is
       then Left . mkPlurFromBoth . getEffBothGramNos i ms . fst . head $ matches
       else Right . (`getEnt` ms) . fst $ matches !! pred x
 
-
 -- ============================================================
 -- Resolving entity and coin names with right/left indicators:
-
 
 resolveEntCoinNamesWithRols :: Id
                             -> MudState
@@ -241,7 +219,6 @@ resolveEntCoinNamesWithRols i ms (map T.toLower -> as) is c =
         (gecrs', miss, rcs)       = expandGecrs c gecrs
     in (gecrs', mrols, miss, rcs)
 
-
 mkGecrWithRol :: Id -> MudState -> Inv -> Coins -> Text -> (GetEntsCoinsRes, Maybe RightOrLeft)
 mkGecrWithRol i ms is c n@(T.breakOn (T.singleton slotChar) -> (a, b))
   | ()# b           = (mkGecr i ms is c n, Nothing)
@@ -251,10 +228,8 @@ mkGecrWithRol i ms is c n@(T.breakOn (T.singleton slotChar) -> (a, b))
   where
     sorry = (Sorry n, Nothing)
 
-
 -- ==================================================
 -- Processing "GetEntsCoinsRes":
-
 
 pattern DupIdsEmpty  ::                              (a,               Maybe [b])
 pattern SorryOne     ::             Text          -> (GetEntsCoinsRes, Maybe a  )
@@ -277,7 +252,6 @@ pattern FoundIndexed res <- (Indexed {                                          
 pattern SorryCoins       <- (SorryIndexedCoins,                                                         Nothing)
 pattern GenericSorry n   <- (Sorry   {            nameSearchedFor = (aOrAn -> n)                     }, Nothing)
 
-
 procGecrMisMobInv :: (GetEntsCoinsRes, Maybe Inv) -> Either Text Inv
 procGecrMisMobInv DupIdsEmpty        | res <- dupIdsRes               = res
 procGecrMisMobInv (SorryOne     (don'tHaveInv    -> res))             = res
@@ -290,32 +264,25 @@ procGecrMisMobInv SorryCoins         | res <- sorryIndexedCoins       = res
 procGecrMisMobInv (GenericSorry (don'tHaveInv    -> res))             = res
 procGecrMisMobInv gecrMis                                             = pmf "procGecrMisMobInv" gecrMis
 
-
 dupIdsRes :: Either Text Inv
 dupIdsRes = Left ""
-
 
 don'tHaveInv :: Text -> Either Text Inv
 don'tHaveInv = Left . sformat ("You don't have " >> ".")
 
-
 don'tHaveAnyInv :: Text -> Either Text Inv
 don'tHaveAnyInv = Left . sformat ("You don't have any " >> "s.")
 
-
 don'tHaveIndexedInv :: Int -> Text -> Either Text Inv
 don'tHaveIndexedInv x = Left . sformat (do { "You don't have " % int % " "; "." }) x
-
 
 sorryIndexedCoins :: Either Text Inv
 sorryIndexedCoins =
     Left . sformat ("Sorry, but " >> " cannot be used with coins.") . dblQuote . T.singleton $ indexChar
 
-
 procGecrMisReady :: (GetEntsCoinsRes, Maybe Inv) -> Either Text Inv
 procGecrMisReady (Sorry (sorryBadSlot -> txt), Nothing) = Left txt
 procGecrMisReady gecrMis                                = procGecrMisMobInv gecrMis
-
 
 sorryBadSlot :: Text -> Text
 sorryBadSlot n
@@ -324,10 +291,8 @@ sorryBadSlot n
   where
     m = "Please specify " >> " or " >> "." >> ""
 
-
 mkSlotTxt :: Text -> Text
 mkSlotTxt = colorWith quoteColor . dblQuote . T.cons slotChar
-
 
 ringHelp :: Text
 ringHelp = T.concat [ "For rings, specify ", mkSlotTxt "r", " or ", mkSlotTxt "l", nl " immediately followed by:"
@@ -335,7 +300,6 @@ ringHelp = T.concat [ "For rings, specify ", mkSlotTxt "r", " or ", mkSlotTxt "l
                     , colorWith quoteColor (dblQuote "m") <> nl " for middle finger,"
                     , colorWith quoteColor (dblQuote "r") <> nl " for ring finger, or"
                     , colorWith quoteColor (dblQuote "p") <> nl " for pinky finger." ]
-
 
 procGecrMisMobEq :: (GetEntsCoinsRes, Maybe Inv) -> Either Text Inv
 procGecrMisMobEq DupIdsEmpty        | res <- dupIdsRes              = res
@@ -349,18 +313,14 @@ procGecrMisMobEq SorryCoins         | res <- sorryIndexedCoins      = res
 procGecrMisMobEq (GenericSorry (don'tHaveEq    -> res))             = res
 procGecrMisMobEq gecrMis                                            = pmf "procGecrMisMobEq" gecrMis
 
-
 don'tHaveEq :: Text -> Either Text Inv
 don'tHaveEq = Left . sformat ("You don't have " >> " among your readied equipment.")
-
 
 don'tHaveAnyEq :: Text -> Either Text Inv
 don'tHaveAnyEq = Left . sformat ("You don't have any " >> "s among your readied equipment.")
 
-
 don'tHaveIndexedEq :: Int -> Text -> Either Text Inv
 don'tHaveIndexedEq x = Left . sformat (do { "You don't have " % int % " "; " among your readied equipment." }) x
-
 
 procGecrMisRm :: (GetEntsCoinsRes, Maybe Inv) -> Either Text Inv
 procGecrMisRm DupIdsEmpty        | res <- dupIdsRes           = res
@@ -374,18 +334,14 @@ procGecrMisRm SorryCoins         | res <- sorryIndexedCoins   = res
 procGecrMisRm (GenericSorry (don'tSee    -> res))             = res
 procGecrMisRm gecrMis                                         = pmf "procGecrMisRm" gecrMis
 
-
 don'tSee :: Text -> Either Text Inv
 don'tSee = Left . sformat ("You don't see " >> " here.")
-
 
 don'tSeeAny :: Text -> Either Text Inv
 don'tSeeAny = Left . sformat ("You don't see any " >> "s here.")
 
-
 don'tSeeIndexed :: Int -> Text -> Either Text Inv
 don'tSeeIndexed x = Left . sformat (do { "You don't see " % int % " "; " here." }) x
-
 
 procGecrMisCon :: ConName -> (GetEntsCoinsRes, Maybe Inv) -> Either Text Inv
 procGecrMisCon _  DupIdsEmpty        | res <- dupIdsRes                    = res
@@ -399,28 +355,23 @@ procGecrMisCon _  SorryCoins         | res <- sorryIndexedCoins            = res
 procGecrMisCon cn (GenericSorry (doesn'tContain    cn -> res))             = res
 procGecrMisCon _  gecrMis                                                  = pmf "procGecrMisCon" gecrMis
 
-
 doesn'tContain :: Text -> Text -> Either Text Inv
 doesn'tContain cn = Left . sformat m cn
   where
     m = "The " >> " doesn't contain " >> "."
-
 
 doesn'tContainAny :: Text -> Text -> Either Text Inv
 doesn'tContainAny cn = Left . sformat m cn
   where
     m = "The " >> " doesn't contain any " >> "s."
 
-
 doesn'tContainIndexed :: Text -> Int -> Text -> Either Text Inv
 doesn'tContainIndexed cn x = Left . sformat m cn x
   where
     m = do { "The "; " doesn't contain " % int % " "; "." }
 
-
 -- ==================================================
 -- Processing "ReconciledCoins":
-
 
 procReconciledCoinsMobInv :: ReconciledCoins -> Either [Text] Coins
 procReconciledCoinsMobInv (Left  Empty)                            = Left . pure $ "You don't have any coins."
@@ -437,16 +388,13 @@ procReconciledCoinsMobInv (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extr
     g = msgOnNonzero gol . sformat ("You don't have " % int % " gold pieces."  ) $ gol
 procReconciledCoinsMobInv rc = pmf "procReconciledCoinsMobInv" rc
 
-
 extractCoinsTxt :: [Maybe Text] -> [Text]
 extractCoinsTxt []           = []
 extractCoinsTxt (Nothing:xs) =     extractCoinsTxt xs
 extractCoinsTxt (Just  x:xs) = x : extractCoinsTxt xs
 
-
 msgOnNonzero :: Int -> Text -> Maybe Text
 msgOnNonzero x msg = guard (isNonZero x) Prelude.>> return msg
-
 
 procReconciledCoinsRm :: ReconciledCoins -> Either [Text] Coins
 procReconciledCoinsRm (Left  Empty)                            = Left . pure $ "You don't see any coins here."
@@ -463,7 +411,6 @@ procReconciledCoinsRm (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extractC
     g = msgOnNonzero gol . sformat ("You don't see " % int % " gold pieces here."  ) $ gol
 procReconciledCoinsRm rc = pmf "procReconciledCoinsRm" rc
 
-
 procReconciledCoinsCon :: ConName -> ReconciledCoins -> Either [Text] Coins
 procReconciledCoinsCon cn (Left  Empty)                            = doesn'tContainAnyCoins cn
 procReconciledCoinsCon cn (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
@@ -478,7 +425,6 @@ procReconciledCoinsCon cn (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extr
     s = msgOnNonzero sil . sformat (do { "The "; "doesn't contain " % int % " silver pieces." }) cn $ sil
     g = msgOnNonzero gol . sformat (do { "The "; "doesn't contain " % int % " gold pieces."   }) cn $ gol
 procReconciledCoinsCon _ rc = pmf "procReconciledCoinsCon" rc
-
 
 doesn'tContainAnyCoins :: Text -> Either [Text] Coins
 doesn'tContainAnyCoins cn = Left [ sformat ("The " >> " doesn't contain any coins.") cn ]

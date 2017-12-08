@@ -41,13 +41,10 @@ import           Data.Tuple (swap)
 import           GHC.Stack (HasCallStack)
 import qualified Data.Text as T
 
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Cmds.Util.EmoteExp.EmoteExp"
 
-
 -- ==================================================
-
 
 targetify :: HasCallStack => Id -> ChanContext -> [(Id, Text, Text)] -> Text -> Either Text (Either () [Broadcast])
 targetify i cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
@@ -55,7 +52,6 @@ targetify i cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't chanTargetChar msg = Left sorryWtf
   | c == chanTargetChar          = fmap Right . procChanTarget i cc triples . parseOutDenotative ws $ rest
   | otherwise = Right . Left $ ()
-
 
 procChanTarget :: HasCallStack => Id -> ChanContext -> [(Id, Text, Text)] -> Args -> Either Text [Broadcast]
 procChanTarget i cc triples ((T.toLower -> target):rest)
@@ -73,16 +69,13 @@ procChanTarget i cc triples ((T.toLower -> target):rest)
     getIdForMatch match  = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
 procChanTarget _ _ _ as = pmf "procChanTarget" as
 
-
 -----
-
 
 emotify :: HasCallStack => Id -> MudState -> ChanContext -> [(Id, Text, Text)] -> Text -> Either [Text] (Either () [Broadcast])
 emotify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't emoteChar msg = Left . pure $ sorryWtf
   | c == emoteChar          = fmap Right . procEmote i ms cc triples . parseOutDenotative ws $ rest
   | otherwise = Right . Left $ ()
-
 
 procEmote :: HasCallStack => Id -> MudState -> ChanContext -> [(Id, Text, Text)] -> Args -> Either [Text] [Broadcast]
 procEmote _ _  cc _       as | hasYou as = Left . pure . adviceYouEmoteChar . pp $ cc
@@ -129,9 +122,7 @@ procEmote i ms cc triples as             =
     mkEmoteWord          = bool ForTarget ForTargetPoss
     tunedIds             = select _1 triples
 
-
 -----
-
 
 expCmdify :: HasCallStack => Id -> MudState -> ChanContext -> [(Id, Text, Text)] -> Text -> Either Text ([Broadcast], Text)
 expCmdify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
@@ -141,7 +132,6 @@ expCmdify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   where
     format xs = xs & _1 %~ map (_1 %~ angleBracketQuote)
                    & _2 %~ angleBracketQuote
-
 
 procExpCmd :: HasCallStack => Id -> MudState -> ChanContext -> [(Id, Text, Text)] -> Args -> Either Text ([Broadcast], Text)
 procExpCmd _ _  _  _       (_:_:_:_)                               = Left sorryExpCmdLen
@@ -185,9 +175,7 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
                    in bool w (a <> colorWith emoteTargetColor c <> d) $ T.toLower c `elem` yous
 procExpCmd _ _ _ _ as = pmf "procExpCmd" as
 
-
 -----
-
 
 adminChanTargetify :: HasCallStack => Inv -> [Sing] -> Text -> Either Text (Either () [Broadcast])
 adminChanTargetify tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
@@ -196,7 +184,6 @@ adminChanTargetify tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c
   | c == chanTargetChar          =
       fmap Right . adminChanProcChanTarget tunedIds tunedSings . parseOutDenotative ws $ rest
   | otherwise = Right . Left $ ()
-
 
 adminChanProcChanTarget :: HasCallStack => Inv -> [Sing] -> Args -> Either Text [Broadcast]
 adminChanProcChanTarget tunedIds tunedSings ((capitalize . T.toLower -> target):rest) =
@@ -212,9 +199,7 @@ adminChanProcChanTarget tunedIds tunedSings ((capitalize . T.toLower -> target):
     sorry = Left . sorryAdminChanTargetName $ target
 adminChanProcChanTarget _ _ as = pmf "adminChanProcChanTarget" as
 
-
 -----
-
 
 adminChanEmotify :: HasCallStack => Id -> MudState -> Inv -> [Sing] -> Text -> Either [Text] (Either () [Broadcast])
 adminChanEmotify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
@@ -222,7 +207,6 @@ adminChanEmotify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head ->
   | c == emoteChar          =
       fmap Right . adminChanProcEmote i ms tunedIds tunedSings . parseOutDenotative ws $ rest
   | otherwise = Right . Left $ ()
-
 
 adminChanProcEmote :: HasCallStack => Id -> MudState -> Inv -> [Sing] -> Args -> Either [Text] [Broadcast]
 adminChanProcEmote _ _  _        _          as | hasYou as = Left . pure . adviceYouEmoteChar . prefixAdminCmd $ "admin"
@@ -268,9 +252,7 @@ adminChanProcEmote i ms tunedIds tunedSings as =
     addSuffix   isPoss p = (<> p) . onTrue isPoss (<> "'s")
     mkEmoteWord          = bool ForTarget ForTargetPoss
 
-
 -----
-
 
 adminChanExpCmdify :: HasCallStack => Id -> MudState -> Inv -> [Sing] -> Text -> Either Text ([Broadcast], Text)
 adminChanExpCmdify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
@@ -281,7 +263,6 @@ adminChanExpCmdify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head 
   where
     format xs = xs & _1 %~ map (_1 %~ angleBracketQuote)
                    & _2 %~ angleBracketQuote
-
 
 adminChanProcExpCmd :: HasCallStack => Id -> MudState -> Inv -> [Sing] -> Args -> Either Text ([Broadcast], Text)
 adminChanProcExpCmd _ _ _ _ (_:_:_:_) = Left sorryExpCmdLen

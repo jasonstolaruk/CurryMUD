@@ -52,28 +52,22 @@ import           Network (PortID(..), accept, listenOn, sClose)
 import           System.IO (hClose)
 import           System.Time.Utils (renderSecs)
 
-
 logExMsg :: Text -> Text -> SomeException -> MudStack ()
 logExMsg = L.logExMsg "Mud.Threads.Listen"
-
 
 logIOEx :: Text -> IOException -> MudStack ()
 logIOEx = L.logIOEx "Mud.Threads.Listen"
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.Listen"
 
-
 -- ==================================================
-
 
 threadListen :: HasCallStack => MudStack ()
 threadListen = a `finally` b
   where
     a = logNotice "threadListen" "server started." >> listen
     b = sequence_ [ getUptime >>= saveUptime, closeLogs, liftIO . T.putStrLn . nl $ "Goodbye!" ]
-
 
 listen :: HasCallStack => MudStack ()
 listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed halt -- Keep this exception handler here.
@@ -118,17 +112,14 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
                                 liftIO . atomically . void . takeTMVar =<< getLock persistLock
     halt = liftIO . T.putStrLn $ loadWorldErrorMsg
 
-
 listenExHandler :: HasCallStack => SomeException -> MudStack ()
 listenExHandler e = let fn = "listenExHandler" in case fromException e of
   Just UserInterrupt -> logNotice fn "exiting on user interrupt."
   Just ThreadKilled  -> logNotice fn "thread killed."
   _                  -> logExMsg  fn "exception caught on listen thread" e >> liftIO printPanicMsg
 
-
 sortAllInvs :: HasCallStack => MudStack ()
 sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> tweak (\ms -> ms & invTbl %~ IM.map (sortInv ms))
-
 
 saveUptime :: HasCallStack => Int64 -> MudStack ()
 saveUptime up@(T.pack . renderSecs . fromIntegral -> upTxt) =

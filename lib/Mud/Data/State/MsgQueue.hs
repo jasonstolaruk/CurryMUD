@@ -8,9 +8,7 @@ import Mud.TopLvlDefs.Seconds
 import Control.Concurrent.STM.TQueue (TQueue)
 import Data.Text (Text)
 
-
 type MsgQueue = TQueue ThreadMsg
-
 
 data ThreadMsg = AsSelf Text
                | BlankLine
@@ -31,15 +29,11 @@ data ThreadMsg = AsSelf Text
                | SilentBoot
                | ToNpc Text
 
-
 -----
-
 
 type NpcMsgQueue = TQueue NpcThreadMsg
 
-
 data NpcThreadMsg = ExternCmd MsgQueue Cols Text
                   | StopNpcServer
-
 
 type Cols = Int

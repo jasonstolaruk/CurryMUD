@@ -25,7 +25,6 @@ import           Control.Monad (guard)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 
-
 mkChoiceTxt :: [Text] -> Text
 mkChoiceTxt = bracketQuote . T.intercalate "/" . colorize
   where
@@ -33,41 +32,30 @@ mkChoiceTxt = bracketQuote . T.intercalate "/" . colorize
     colorize ((T.uncons -> Just (T.singleton -> x, rest)):xs) = (colorWith abbrevColor x <> rest) : colorize xs
     colorize (_:xs)                                           = colorize xs
 
-
 mkYesNoChoiceTxt :: Text
 mkYesNoChoiceTxt = mkChoiceTxt [ "yes", "no" ]
 
-
 -----
-
 
 neverMind :: Id -> MsgQueue -> MudStack ()
 neverMind i mq = send mq (nlnl "Never mind.") >> sendDfltPrompt mq i >> resetInterp i
 
-
 -----
-
 
 promptChangeIt :: MsgQueue -> Cols -> MudStack ()
 promptChangeIt mq cols = wrapSendPrompt mq cols $ "Would you like to change it? " <> mkYesNoChoiceTxt
 
-
 -----
-
 
 promptRetryYesNo :: MsgQueue -> Cols -> MudStack ()
 promptRetryYesNo mq cols = wrapSendPrompt mq cols . T.concat $ [ "Please answer ", dblQuote "yes", " or ", dblQuote "no", "." ]
 
-
 -----
-
 
 resetInterp :: Id -> MudStack ()
 resetInterp i = tweak (mobTbl.ind i.interp .~ Nothing)
 
-
 -----
-
 
 yesNoHelper :: Text -> Maybe Bool
 yesNoHelper (T.toLower -> a) = guard (()!# a) >> helper

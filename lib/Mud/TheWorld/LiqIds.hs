@@ -4,7 +4,6 @@ module Mud.TheWorld.LiqIds where
 
 import Mud.Data.State.MudData (Id)
 
-
 iLiqOil                = 0   :: Id
 iLiqWater              = 1   :: Id
 

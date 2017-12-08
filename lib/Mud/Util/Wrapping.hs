@@ -32,13 +32,10 @@ import           Data.Text (Text)
 import           GHC.Stack (HasCallStack)
 import qualified Data.Text as T
 
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Util.Wrapping"
 
-
 -- ==================================================
-
 
 wrap :: HasCallStack => Cols -> Text -> [Text]
 wrap cols t | extracted <- extractANSI t
@@ -52,39 +49,29 @@ wrap cols t | extracted <- extractANSI t
       where
         (beforeMax, afterMax) = T.splitAt cols txt
 
-
 breakEnd :: HasCallStack => Text -> (Text, Text)
 breakEnd (T.break isSpace . T.reverse -> (after, before)) = (before, after) & both %~ T.reverse
 
-
 -----
-
 
 wrapUnlines :: HasCallStack => Cols -> Text -> Text
 wrapUnlines cols = T.unlines . wrap cols
 
-
 wrapUnlinesNl :: HasCallStack => Cols -> Text -> Text
 wrapUnlinesNl cols = nl . wrapUnlines cols
-
 
 wrapUnlinesInit :: HasCallStack => Cols -> Text -> Text
 wrapUnlinesInit cols = nls . wrap cols
 
-
 -----
-
 
 multiWrap :: HasCallStack => Cols -> [Text] -> Text
 multiWrap cols = T.unlines . concatMap (wrap cols)
 
-
 multiWrapNl :: HasCallStack => Cols -> [Text] -> Text
 multiWrapNl cols = nl . multiWrap cols
 
-
 -----
-
 
 wrapIndent :: HasCallStack => Int -> Cols -> Text -> [Text]
 wrapIndent n cols t = let extracted = extractANSI t
@@ -101,26 +88,20 @@ wrapIndent n cols t = let extracted = extractANSI t
         (beforeMax, afterMax) = T.splitAt cols txt
         leadingIndent         = T.replicate (adjustIndent n cols) . T.singleton $ indentFiller
 
-
 leadingSpcsToFiller :: HasCallStack => Text -> Text
 leadingSpcsToFiller = xformLeading ' ' indentFiller
 
-
 leadingFillerToSpcs :: HasCallStack => Text -> Text
 leadingFillerToSpcs = xformLeading indentFiller ' '
-
 
 xformLeading :: HasCallStack => Char -> Char -> Text -> Text
 xformLeading _ _                  ""                                       = ""
 xformLeading a (T.singleton -> b) (T.span (== a) -> (T.length -> n, rest)) = T.replicate n b <> rest
 
-
 adjustIndent :: HasCallStack => Int -> Cols -> Int
 adjustIndent n cols = n >= cols ? pred cols :? n
 
-
 -----
-
 
 wrapLines :: HasCallStack => Cols -> [Text] -> [[Text]]
 wrapLines _    []                          = []
@@ -137,15 +118,12 @@ wrapLines cols (a:b:rest) | ()# a          = mMempty  : wrapNext
       | otherwise      = wrap cols
     (nolsa, nolsb)     = (a, b) & both %~ noOfLeadingSpcs
 
-
 hasIndentTag :: HasCallStack => Text -> Bool
 hasIndentTag "" = False
 hasIndentTag t  = T.last t == indentTagChar
 
-
 noOfLeadingSpcs :: HasCallStack => Text -> Int
 noOfLeadingSpcs = T.length . T.takeWhile isSpace
-
 
 wrapLineWithIndentTag :: HasCallStack => Cols -> Text -> [Text]
 wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> broken) = wrapIndent n cols t
@@ -159,14 +137,11 @@ wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> brok
     n | isZero indent           = calcIndent . dropANSI $ t
       | otherwise               = adjustIndent indent cols
 
-
 calcIndent :: HasCallStack => Text -> Int
 calcIndent (T.break isSpace -> (T.length -> lenOfFirstWord, rest)) | ()# rest  = 0
                                                                    | otherwise = lenOfFirstWord + noOfLeadingSpcs rest
 
-
 -----
-
 
 xformLeadingSpaceChars :: HasCallStack => Text -> Text
 xformLeadingSpaceChars = xformLeading leadingSpaceChar ' '

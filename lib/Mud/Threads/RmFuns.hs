@@ -17,17 +17,13 @@ import qualified Data.IntMap.Strict as IM (filter, toList)
 import           Data.Text (Text)
 import           GHC.Stack (HasCallStack)
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.RmFuns"
 
-
 -- ==================================================
-
 
 runRmFunAsync :: HasCallStack => Id -> Fun -> MudStack () -- Room functions should have their own exception handlers.
 runRmFunAsync i f = runAsync f >>= \a -> tweak $ rmTbl.ind i.rmFunAsyncs <>~ pure a
-
 
 startRmFuns :: HasCallStack => MudStack ()
 startRmFuns = getState >>= \ms -> do logNotice "startRmFuns" "starting room functions."
@@ -35,12 +31,10 @@ startRmFuns = getState >>= \ms -> do logNotice "startRmFuns" "starting room func
   where
     helper = views rmTbl (map (second (view rmFunNames)) . IM.toList . IM.filter (views rmFunNames (()!#)))
 
-
 stopRmFuns :: HasCallStack => MudStack ()
 stopRmFuns = do
     logNotice "stopRmFuns" "stopping room functions."
     mapM_ (uncurry throwWaitRmFuns) . views rmTbl (IM.toList . IM.filter (views rmFunAsyncs (()!#))) =<< getState
-
 
 throwWaitRmFuns :: HasCallStack => Id -> Rm -> MudStack ()
 throwWaitRmFuns i r = views rmFunAsyncs (mapM_ throwDeathWait) r >> tweak (rmTbl.ind i.rmFunAsyncs .~ [])

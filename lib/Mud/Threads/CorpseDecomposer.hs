@@ -37,33 +37,24 @@ import           GHC.Stack (HasCallStack)
 import qualified Data.IntMap.Strict as IM (elems, empty, toList)
 import qualified Data.Text as T
 
-
 blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Threads.CorpseDecomposer"
 
-
 -----
-
 
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.CorpseDecomposer"
 
-
 -- ==================================================
-
 
 data PauseCorpseDecomp = PauseCorpseDecomp deriving (Show, Typeable)
 
-
 instance Exception PauseCorpseDecomp
-
 
 -----
 
-
 startCorpseDecomp :: HasCallStack => Id -> SecondsPair -> MudStack ()
 startCorpseDecomp i secs = runAsync (threadCorpseDecomp i secs) >>= \a -> tweak $ corpseDecompAsyncTbl.ind i .~ a
-
 
 threadCorpseDecomp :: HasCallStack => Id -> SecondsPair -> MudStack ()
 threadCorpseDecomp i secs = handle (threadExHandler (Just i) "corpse decomposer") $ do
@@ -74,10 +65,8 @@ threadCorpseDecomp i secs = handle (threadExHandler (Just i) "corpse decomposer"
   where
     finish = tweak $ corpseDecompAsyncTbl.at i .~ Nothing
 
-
 mkSecsTxt :: HasCallStack => SecondsPair -> Text
 mkSecsTxt = parensQuote . uncurry (middle (<>) "/") . (both %~ commaShow)
-
 
 corpseDecomp :: HasCallStack => Id -> SecondsPair -> MudStack ()
 corpseDecomp i pair = getObjWeight i <$> getState >>= \w -> catch <$> loop w <*> handler =<< liftIO (newIORef pair)
@@ -92,7 +81,6 @@ corpseDecomp i pair = getObjWeight i <$> getState >>= \w -> catch <$> loop w <*>
       let msg = prd $ "pausing corpse decomposer for ID " <> showTxt i |<>| mkSecsTxt secs
       in logHelper msg >> tweak (pausedCorpseDecompsTbl.ind i .~ secs)
     logHelper = logNotice "corpseDecomp"
-
 
 corpseDecompHelper :: HasCallStack => Id -> Weight -> SecondsPair -> MudStack ()
 corpseDecompHelper i w (x, total) = getState >>= \ms ->
@@ -123,7 +111,6 @@ corpseDecompHelper i w (x, total) = getState >>= \ms ->
                   , corpseTbl.ind i           %~ (ipc ? set pcCorpseSing corpsePlaceholder :? id) ]
       | otherwise -> []
 
-
 finishDecomp :: HasCallStack => Id -> MudStack ()
 finishDecomp i = modifyStateSeq $ \ms ->
     let invId       = fromMaybe oops . findInvContaining i $ ms
@@ -138,9 +125,7 @@ finishDecomp i = modifyStateSeq $ \ms ->
         oops        = blowUp "finishDecomp" (descSingId i ms <> " is in limbo") ""
     in (ms, [ destroyDisintegratedCorpse i, bcastNl bs ])
 
-
 -----
-
 
 pauseCorpseDecomps :: HasCallStack => MudStack ()
 pauseCorpseDecomps = do logNotice "pauseCorpseDecomps" "pausing corpse decomposers."
@@ -149,9 +134,7 @@ pauseCorpseDecomps = do logNotice "pauseCorpseDecomps" "pausing corpse decompose
     f :: HasCallStack => CorpseDecompAsync -> MudStack ()
     f a = sequence_ [ throwTo (asyncThreadId a) PauseCorpseDecomp, liftIO . void . wait $ a ]
 
-
 -----
-
 
 restartCorpseDecomps :: HasCallStack => MudStack ()
 restartCorpseDecomps = do logNotice "restartCorpseDecomps" "restarting corpse decomposers."

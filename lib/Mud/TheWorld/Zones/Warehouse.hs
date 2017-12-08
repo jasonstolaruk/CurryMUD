@@ -28,14 +28,11 @@ import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.TheWorld.Zones.Warehouse"
 
-
 -- ==================================================
 -- Zone definition:
-
 
 createWarehouse :: MudStack ()
 createWarehouse = do
@@ -1146,25 +1143,19 @@ createWarehouse = do
 
   putRmTeleName iWarehouseWelcome "warehouse"
 
-
 -- ==================================================
 -- Zone definition helper functions:
-
 
 lampCeramicTaste :: Maybe Text
 lampCeramicTaste = Just "You feel the coarse ceramic surface of the lamp with your tongue."
 
-
 mkLampSmell :: Text -> Maybe Text
 mkLampSmell t = Just $ "There is a slight smell of " <> t <> " and a lingering scent of oil."
 
-
 type IsSing = Bool
-
 
 mkFabricSmell :: IsSing -> Text -> Maybe Text
 mkFabricSmell b t = Just . T.concat $ [ "The ", t, " smell", sOnTrue b, " like fabric." ]
-
 
 mkFabricTaste :: IsSing -> Text -> Maybe Text
 mkFabricTaste b t = Just . T.concat $ [ "You munch on the ", t, ". ", txt, " taste", sOnTrue b, " like fabric." ]
@@ -1172,14 +1163,11 @@ mkFabricTaste b t = Just . T.concat $ [ "You munch on the ", t, ". ", txt, " tas
     txt | b         = "It"
         | otherwise = "They"
 
-
 mkLeatherSmell :: Text -> Maybe Text
 mkLeatherSmell t = Just . the' $ t <> " like leather and not much else."
 
-
 mkLeatherTaste :: Text -> Maybe Text
 mkLeatherTaste t = Just $ "You chew on the " <> t <> ". It tastes like leather."
-
 
 mkLeatherTasteSalty :: Text -> Text -> Maybe Text
 mkLeatherTasteSalty a b = Just . T.concat $ [ "You chew on the "
@@ -1187,7 +1175,6 @@ mkLeatherTasteSalty a b = Just . T.concat $ [ "You chew on the "
                                             , ". The leather tastes a bit salty. Probably from "
                                             , b
                                             , " sweat." ]
-
 
 mkPotionFlask :: Bool -> Id -> Maybe VesselCont -> MudStack ()
 mkPotionFlask isLrg i mc = putVessel i
@@ -1213,7 +1200,6 @@ mkPotionFlask isLrg i mc = putVessel i
     f a b | isLrg     = a
           | otherwise = b
 
-
 mkWaterskin :: Id -> Maybe VesselCont -> MudStack ()
 mkWaterskin i mc = putVessel i
     (Ent i
@@ -1232,22 +1218,17 @@ mkWaterskin i mc = putVessel i
     mc
     Nothing
 
-
 mkWpnSmell :: Text -> Maybe Text
 mkWpnSmell t = Just $ "The head of the " <> t <> " smells like metal. The handle doesn't smell like much at all."
-
 
 mkWpnTaste :: Text -> Maybe Text
 mkWpnTaste t = Just $ "You lick the head of the " <> t <> ". It tastes metallic."
 
-
 swordSmell :: Maybe Text
 swordSmell = Just "The blade of the sword smells like metal."
 
-
 swordTaste :: Maybe Text
 swordTaste = Just "You lick the blade of the sword, taking care not to cut your tongue. It tastes slightly metallic."
-
 
 waterskinDesc :: Text
 waterskinDesc = "The handy waterskin, crafted from the bladder of a bovine animal, is an indispensable piece of \

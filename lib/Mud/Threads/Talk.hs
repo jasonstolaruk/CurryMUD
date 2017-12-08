@@ -46,20 +46,15 @@ import           System.FilePath ((</>))
 import           System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1)
 import           System.Random (randomIO, randomRIO)
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.Talk"
 
-
 -- ==================================================
-
 
 runTalkAsync :: HasCallStack => Handle -> HostName -> MudStack ()
 runTalkAsync h host = runAsync (threadTalk h host) >>= \a@(asyncThreadId -> ti) -> tweak $ talkAsyncTbl.at ti ?~ a
 
-
 -----
-
 
 threadTalk :: HasCallStack => Handle -> HostName -> MudStack ()
 threadTalk h host = helper `finally` cleanUp
@@ -86,7 +81,6 @@ threadTalk h host = helper `finally` cleanUp
     nlMode          = NewlineMode { inputNL = CRLF, outputNL = CRLF }
     cleanUp         = do logNotice "threadTalk cleanUp" . prd $ "closing the handle for " <> T.pack host
                          liftIO . hClose $ h
-
 
 adHoc :: HasCallStack => MsgQueue -> HostName -> MudStack (Id, Sing)
 adHoc mq host = do
@@ -169,21 +163,17 @@ adHoc mq host = do
                           , typeTbl            .ind i .~ PlaType ]
         in (ms' & invTbl.ind iWelcome %~ addToInv ms' (pure i), (i, s))
 
-
 randomSex :: HasCallStack => IO Sex
 randomSex = ([ Male, Female ] !!) . fromEnum <$> randomIO @Bool
 
-
 randomRace :: HasCallStack => IO Race
 randomRace = randomIO
-
 
 initPlaFlags :: HasCallStack => Flags
 initPlaFlags = foldl setBit zeroBits . map fromEnum $ [ IsShowingHp
                                                       , IsShowingMp
                                                       , IsShowingPp
                                                       , IsShowingFp ]
-
 
 dumpTitle :: HasCallStack => MsgQueue -> MudStack ()
 dumpTitle mq = liftIO mkFilename >>= try . takeADump >>= eitherRet (fileIOExHandler "dumpTitle")

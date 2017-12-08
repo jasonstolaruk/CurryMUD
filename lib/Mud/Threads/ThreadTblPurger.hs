@@ -23,13 +23,10 @@ import           Data.Text (Text)
 import           GHC.Conc (ThreadStatus(..), threadStatus)
 import           GHC.Stack (HasCallStack)
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.ThreadTblPurger"
 
-
 -- ==================================================
-
 
 threadThreadTblPurger :: HasCallStack => MudStack ()
 threadThreadTblPurger = handle (threadExHandler Nothing "thread table purger") $ do
@@ -38,11 +35,9 @@ threadThreadTblPurger = handle (threadExHandler Nothing "thread table purger") $
     let loop = sequence_ [ liftIO . delaySecs $ threadTblPurgerDelay, purgeThreadTbls ]
     forever loop `catch` die Nothing "thread table purger"
 
-
 purgeThreadTbls :: HasCallStack => MudStack ()
 purgeThreadTbls = do logNotice "purgeThreadTbls" "purging the thread tables."
                      sequence_ [ purgePlaLogTbl, purgeTalkAsyncTbl, purgeThreadTbl ]
-
 
 purgePlaLogTbl :: HasCallStack => MudStack ()
 purgePlaLogTbl = views plaLogTbl (unzip . IM.assocs) <$> getState >>= \(is, map fst -> asyncs) -> do
@@ -52,7 +47,6 @@ purgePlaLogTbl = views plaLogTbl (unzip . IM.assocs) <$> getState >>= \(is, map 
     purger (_poo, Nothing) = id
     purger (i,    _poo   ) = at i .~ Nothing
 
-
 purgeTalkAsyncTbl :: HasCallStack => MudStack ()
 purgeTalkAsyncTbl = views talkAsyncTbl M.elems <$> getState >>= \asyncs -> do
     zipped <- [ zip asyncs statuses | statuses <- liftIO . mapM poll $ asyncs ]
@@ -60,7 +54,6 @@ purgeTalkAsyncTbl = views talkAsyncTbl M.elems <$> getState >>= \asyncs -> do
   where
     purger (_poo,                Nothing) = id
     purger (asyncThreadId -> ti, _poo   ) = at ti .~ Nothing
-
 
 purgeThreadTbl :: HasCallStack => MudStack ()
 purgeThreadTbl = views threadTbl M.keys <$> getState >>= \threadIds -> do

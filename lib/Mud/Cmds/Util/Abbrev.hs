@@ -17,16 +17,12 @@ import           Data.Text (Text)
 import           GHC.Stack (HasCallStack)
 import qualified Data.Text as T
 
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Cmds.Util.Abbrev"
 
-
 -- ==================================================
 
-
 type FullWord = Text
-
 
 styleAbbrevs :: HasCallStack => DoOrDon'tQuote -> [FullWord] -> [Text]
 styleAbbrevs quote fws = let abbrevs   = mkAbbrevs fws
@@ -34,11 +30,9 @@ styleAbbrevs quote fws = let abbrevs   = mkAbbrevs fws
                              f         = uncurry (<>) . first (quoteWith' (abbrevColor, dfltColor'))
                          in map helper fws
 
-
 type Abbrev         = Text
 type Rest           = Text
 type PrevWordInList = Text
-
 
 mkAbbrevs :: HasCallStack => [FullWord] -> [(FullWord, (Abbrev, Rest))]
 mkAbbrevs = helper "" . nubSort
@@ -49,7 +43,6 @@ mkAbbrevs = helper "" . nubSort
     helper prev (x:xs) = let abbrev = calcAbbrev x prev
                          in (: helper x xs) . (x, ) $ case abbrev `T.stripPrefix` x of Nothing   -> (x,      ""  )
                                                                                        Just rest -> (abbrev, rest)
-
 
 calcAbbrev :: HasCallStack => Text -> Text -> Text
 calcAbbrev (T.uncons -> Just (x, _ )) ""                                  = T.singleton x

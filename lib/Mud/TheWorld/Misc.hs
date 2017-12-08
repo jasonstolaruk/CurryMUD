@@ -42,41 +42,31 @@ import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
 
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.TheWorld.Misc"
 
-
 -----
-
 
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.TheWorld.Misc"
 
-
 logPlaOut :: Text -> Id -> [Text] -> MudStack ()
 logPlaOut = L.logPlaOut "Mud.TheWorld.Misc"
 
-
 -- ==================================================
 -- Common hooks:
-
 
 commonHooks :: [(HookName, HookFun)]
 commonHooks = [ (lookTrashHookName, lookTrashHookFun)
               , (putTrashHookName,  putTrashHookFun ) ]
 
-
 -----
-
 
 lookTrashHook :: Hook
 lookTrashHook = Hook lookTrashHookName [ "trash", "bin" ]
 
-
 lookTrashHookName :: HookName
 lookTrashHookName = "(common)_lookTrash"
-
 
 lookTrashHookFun :: HookFun
 lookTrashHookFun = mkGenericHookFun trashDesc "looks at the trash bin." "looked at trash bin"
@@ -89,7 +79,6 @@ lookTrashHookFun = mkGenericHookFun trashDesc "looks at the trash bin." "looked 
                 \Carefully lifting open the lid and peaking inside, you find only an ominous darkness; not even the \
                 \bottom of the bin is visible."
 
-
 mkGenericHookFun :: Text -> Text -> Text -> HookFun
 mkGenericHookFun toSelf bcastTxt logMsgTxt = f
   where
@@ -100,22 +89,17 @@ mkGenericHookFun toSelf bcastTxt logMsgTxt = f
              & _2._3 <>~ pure (serialize selfDesig |<>| bcastTxt, desigOtherIds selfDesig)
              & _2._4 <>~ pure (bracketQuote hookName |<>| parseDesigSuffix i ms logMsgTxt)
 
-
 -----
-
 
 putTrashHook :: Hook
 putTrashHook = Hook putTrashHookName [ "trash", "bin" ]
 
-
 putTrashHookName :: HookName
 putTrashHookName = "(common)_putTrash"
-
 
 putTrashHookFun :: HookFun
 putTrashHookFun i _ _ a@(as, (ms, _, _, _), _) = let (gir, fs) = trashHelper i ms as
                                                  in a & _2 .~ gir & _3 .~ fs
-
 
 trashHelper :: Id -> MudState -> Args -> (GenericIntermediateRes, Funs)
 trashHelper i ms as =
@@ -138,25 +122,19 @@ trashHelper i ms as =
                             liftIO . delaySecs $ secs
                             getState >>= \ms' -> bcastNl . pure $ (msg, findMobIds ms' . getMobRmInv i $ ms')
 
-
 -- ==================================================
 -- Common room action functions:
-
 
 commonRmActionFuns :: [(FunName, RmActionFun)]
 commonRmActionFuns = pure (trashRmActionFunName, trash)
 
-
 -----
-
 
 trashRmAction :: RmAction
 trashRmAction = RmAction "trash" trashRmActionFunName
 
-
 trashRmActionFunName :: FunName
 trashRmActionFunName = "(common)_trash"
-
 
 trash :: RmActionFun
 trash p@AdviseNoArgs          = advise p [] adviceTrashNoArgs
@@ -168,7 +146,6 @@ trash (LowerNub i mq cols as) = helper |&| modifyState >=> \((toSelfs, bs, logMs
   where
     helper ms = let ((ms', toSelfs, bs, logMsgs), fs) = trashHelper i ms as in (ms', ((toSelfs, bs, logMsgs), fs))
 trash p = pmf "trash" p
-
 
 helperTrashEitherInv :: Id
                     -> Desig
@@ -183,7 +160,6 @@ helperTrashEitherInv i d a@(ms, _, _) = \case
                     & _2                       <>~ toSelfs
                     & _3                       <>~ bs
 
-
 mkTrashInvDescs :: Id -> MudState -> Desig -> Inv -> ([Text], [Broadcast])
 mkTrashInvDescs i ms d (mkNameCountBothList i ms -> ncbs) = unzip . map helper $ ncbs
   where
@@ -194,7 +170,6 @@ mkTrashInvDescs i ms d (mkNameCountBothList i ms -> ncbs) = unzip . map helper $
       where
         rest' = T.concat [ showTxt c, " ", mkPlurFromBoth b, rest ]
     rest = " into the trash bin."
-
 
 helperTrashEitherCoins :: Id
                        -> Desig
@@ -214,11 +189,9 @@ helperTrashEitherCoins i d (ms, toSelfs, bs, logMsgs) ecs =
                          & _3                         <>~ toSelfs'
                          & _4                         <>~ c
 
-
 mkTrashCoinsDescOthers :: Desig -> Coins -> [Broadcast]
 mkTrashCoinsDescOthers d c =
   c |!| [ (T.concat [ serialize d, " deposits ", aCoinSomeCoins c, " into the trash bin." ], desigOtherIds d) ]
-
 
 mkTrashCoinsDescsSelf :: Coins -> [Text]
 mkTrashCoinsDescsSelf = mkCoinsMsgs helper
@@ -226,10 +199,8 @@ mkTrashCoinsDescsSelf = mkCoinsMsgs helper
     helper 1 cn = T.concat [ "You deposit ", aOrAn cn,            " into the trash bin." ]
     helper a cn = T.concat [ "You deposit ", showTxt a, " ", cn, "s into the trash bin." ]
 
-
 -- ==================================================
 -- Other:
-
 
 -- If "prob" is 25 (1 in 4), and "secs" is 60, we can expect the event to occur once every 4 mins.
 mkRndmBcastRmFun :: Id -> Text -> FunName -> Int -> Seconds -> Text -> Fun

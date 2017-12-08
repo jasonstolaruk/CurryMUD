@@ -4,7 +4,6 @@ module Mud.TheWorld.Zones.AdminZoneIds where
 
 import Mud.Data.State.MudData (Id)
 
-
 iWelcome = 0 :: Id
 
 -----

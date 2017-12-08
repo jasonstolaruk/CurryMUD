@@ -13,28 +13,22 @@ import qualified Data.Text as T
 import           Test.QuickCheck (Gen, choose)
 import           Test.QuickCheck.Monadic (PropertyM, run)
 
-
 inWorld :: MudStack a -> PropertyM IO a
 inWorld f = run helper
   where
     helper = runReaderT (initWorld >> f) =<< (liftIO . initMudData . ServerSettings False False False $ False)
 
-
 genAsciiAlphaNum :: Gen Char
 genAsciiAlphaNum = chr <$> choose (32, 126)
-
 
 genCols :: Gen Int
 genCols = choose (minCols, maxCols)
 
-
 genTxtOfLen :: Int -> Gen Text
 genTxtOfLen n = T.pack <$> replicateM n genAsciiAlphaNum
 
-
 genTxtOfRndmLen :: (Int, Int) -> Gen Text
 genTxtOfRndmLen (nMin, nMax) = genTxtOfLen =<< choose (nMin, nMax)
-
 
 genTxtLongerThan :: Int -> Gen Text
 genTxtLongerThan n = genTxtOfLen . (n +) =<< choose (1, 50)

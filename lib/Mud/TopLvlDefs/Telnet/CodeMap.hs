@@ -7,7 +7,6 @@ import           Control.Arrow (first)
 import           Data.Char (ord)
 import qualified Data.IntMap.Strict as IM (IntMap, fromList)
 
-
 telnetCodeMap :: IM.IntMap TelnetCode
 telnetCodeMap = IM.fromList mkList
   where

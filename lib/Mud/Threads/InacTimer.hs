@@ -26,17 +26,13 @@ import           GHC.Stack (HasCallStack)
 import qualified Data.Text as T
 import           System.Time.Utils (renderSecs)
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.InacTimer"
-
 
 logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Threads.InacTimer"
 
-
 -- ==================================================
-
 
 threadInacTimer :: HasCallStack => Id -> MsgQueue -> InacTimerQueue -> MudStack ()
 threadInacTimer i mq q = let f    = sequence_ funs `catch` threadExHandler (Just i) "inactivity timer"
@@ -59,9 +55,7 @@ threadInacTimer i mq q = let f    = sequence_ funs `catch` threadExHandler (Just
         writeMsg mq InacBoot
     showSecs = T.pack . renderSecs . fromIntegral
 
-
 -----
-
 
 stopInacTimer :: HasCallStack => InacTimerQueue -> MudStack ()
 stopInacTimer = liftIO . atomically . closeTMQueue

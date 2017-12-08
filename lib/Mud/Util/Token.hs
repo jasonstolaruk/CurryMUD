@@ -16,35 +16,26 @@ import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
 
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Util.Token"
 
-
 -- ==================================================
-
 
 parseTokens :: ServerSettings -> Text -> Text
 parseTokens s = parseCharTokens . parseStyleTokens . parseMiscTokens s
 
-
 -----
 
-
 type Delimiter = Char
-
 
 parser :: (Char -> Text) -> Delimiter -> Text -> Text
 parser f d t | T.singleton d `notInfixOf` t                                           = t
              | (left, headTail . T.tail -> (c, right)) <- T.breakOn (T.singleton d) t = left <> f c <> parser f d right
 
-
 -----
-
 
 parseCharTokens :: Text -> Text
 parseCharTokens = parser expandCharCode charTokenDelimiter
-
 
 expandCharCode :: Char -> Text -- '#'
 expandCharCode c | c == charTokenDelimiter = T.singleton charTokenDelimiter
@@ -68,9 +59,7 @@ expandCharCode (toLower -> code)           = T.singleton $ case code of
   'x' -> emoteChar
   x   -> pmf "expandCharCode" x
 
-
 -----
-
 
 parseMiscTokens :: ServerSettings -> Text -> Text
 parseMiscTokens s = miscTokenParser (expandMiscCode s) miscTokenDelimiter
@@ -82,7 +71,6 @@ parseMiscTokens s = miscTokenParser (expandMiscCode s) miscTokenDelimiter
           let expanded  = f c
               expanded' = onFalse (expanded == T.singleton miscTokenDelimiter) (miscTokenParser f d) expanded
           in left <> expanded' <> miscTokenParser f d right
-
 
 expandMiscCode :: ServerSettings -> Char -> Text -- '@'
 expandMiscCode _ c | c == miscTokenDelimiter = T.singleton miscTokenDelimiter
@@ -101,13 +89,10 @@ expandMiscCode s (toLower -> code)           = case code of
   'z' -> yesNo . ((&&) <$> settingDebug <*> settingZBackDoor) $ s
   x   -> pmf "expandMiscCode" x
 
-
 -----
-
 
 parseStyleTokens :: Text -> Text
 parseStyleTokens = parser expandStyleCode styleTokenDelimiter
-
 
 expandStyleCode :: Char -> Text -- '\'
 expandStyleCode c | c == styleTokenDelimiter = T.singleton styleTokenDelimiter

@@ -19,13 +19,10 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.Text (Text)
 import           GHC.Stack (HasCallStack)
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.CurryTime"
 
-
 -- ==================================================
-
 
 threadCurryTime :: HasCallStack => MudStack ()
 threadCurryTime = handle (threadExHandler Nothing "curry time") $ do
@@ -34,10 +31,8 @@ threadCurryTime = handle (threadExHandler Nothing "curry time") $ do
     let loop = sequence_ [ liftIO . delaySecs $ 1, notifyTime =<< liftIO getCurryTime ]
     forever loop `catch` die Nothing "curry time"
 
-
 notifyTime :: HasCallStack => CurryTime -> MudStack ()
 notifyTime = maybeVoid bcastToOutsideMobs . mkNotification
-
 
 {-
 It's light out from 6:00 to 17:59 (12 hours).
@@ -50,7 +45,6 @@ mkNotification ct | isHourMin ct 17 45 = helper . thrice prd $ "Very soon now it
                   | otherwise          = Nothing
   where
     helper = Just . colorWith timeNotificationColor
-
 
 isHourMin :: HasCallStack => CurryTime -> Hour -> Min -> Bool
 isHourMin CurryTime { .. } h m | curryHour == h, curryMin == m = currySec == 0

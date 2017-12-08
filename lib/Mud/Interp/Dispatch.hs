@@ -19,16 +19,12 @@ import           Data.List (sort)
 import           Data.Maybe (isNothing)
 import           GHC.Stack (HasCallStack)
 
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Interp.Dispatch"
 
-
 -- ==================================================
 
-
 type FindActionFun = Id -> MudState -> CmdName -> MudStack (Maybe Action)
-
 
 dispatch :: HasCallStack => FindActionFun -> Interp
 dispatch f cn p@ActionParams { .. } = getState >>= \ms -> maybe notFound found =<< f myId ms cn
@@ -38,9 +34,7 @@ dispatch f cn p@ActionParams { .. } = getState >>= \ms -> maybe notFound found =
                                  ms <- getState
                                  when (b && isNothing (getInterp myId ms)) . sendDfltPrompt plaMsgQueue $ myId
 
-
 -----
-
 
 findActionHelper :: HasCallStack => Id -> MudState -> CmdName -> [Cmd] -> MudStack (Maybe Action)
 findActionHelper i ms cn cmds =

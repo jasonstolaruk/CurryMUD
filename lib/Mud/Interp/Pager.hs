@@ -24,16 +24,12 @@ import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
 
-
 default (Int, Double)
-
 
 -- ==================================================
 
-
 type PageLen      = Int
 type EntireTxtLen = Int
-
 
 interpPager :: Maybe Fun -> PageLen -> EntireTxtLen -> ([Text], [Text]) -> Interp
 interpPager mf pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols) = getState >>= \ms ->
@@ -59,14 +55,12 @@ interpPager mf pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols)
              setInterp i . Just . interpPager mf pageLen txtLen $ (left'' ++ prevPage, currPage ++ right)
 interpPager _ _ _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetry plaMsgQueue plaCols
 
-
 sendPagerPrompt :: MsgQueue -> PageLen -> EntireTxtLen -> MudStack ()
 sendPagerPrompt mq pageLen txtLen =
     let txt = T.concat [ showTxt pageLen, " of ", showTxt txtLen, " lines ", parensQuote $ per <> "%" ]
     in sendPrompt mq . colorWith pagerPromptColor . spaced . bracketQuote . spaced $ txt
   where
     per = uncurry (<>) . second (T.take 2) . T.breakOn "." . showTxt $ pageLen `divide` txtLen * 100
-
 
 promptRetry :: MsgQueue -> Cols -> MudStack ()
 promptRetry mq cols = wrapSend1Nl mq cols sorryInterpPager

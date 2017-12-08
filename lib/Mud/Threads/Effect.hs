@@ -41,24 +41,19 @@ import qualified Data.IntMap.Strict as IM (keys, toList)
 import qualified Data.Map.Strict as M (delete, lookup)
 import qualified Data.Text as T
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.Effect"
-
 
 logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Threads.Effect"
 
-
 -- ==================================================
-
 
 startEffect :: HasCallStack => Id -> Effect -> MudStack ()
 startEffect i e@(Effect effTag _ (Just (EffectRangedVal range)) _ _) =
   handle (threadStarterExHandler i "startEffect" effTag) $ rndmR range >>= \x ->
       startEffectHelper i $ e & effectVal ?~ EffectFixedVal x
 startEffect i e = startEffectHelper i e
-
 
 startEffectHelper :: HasCallStack => Id -> Effect -> MudStack ()
 startEffectHelper i e = getDurEffects i <$> getState >>= \durEffs -> do
@@ -74,9 +69,7 @@ startEffectHelper i e = getDurEffects i <$> getState >>= \durEffs -> do
   where
     logHelper = logPla "startEffectHelper" i
 
-
 -----
-
 
 threadEffect :: HasCallStack => Id -> Effect -> EffectQueue -> MudStack ()
 threadEffect i (Effect _ effSub _ secs _) q = handle (threadExHandler (Just i) "effect") $ do
@@ -103,9 +96,7 @@ threadEffect i (Effect _ effSub _ secs _) q = handle (threadExHandler (Just i) "
   where
     logHelper rest = logNotice "threadEffect" . T.concat $ [ "effect thread for ID ", showTxt i, " ", rest ]
 
-
 -----
-
 
 pauseEffects :: HasCallStack => Id -> MudStack () -- When a player logs out.
 pauseEffects i = getDurEffects i <$> getState >>= \es ->
@@ -124,24 +115,19 @@ pauseEffects i = getDurEffects i <$> getState >>= \es ->
                                    (return False)
                                    (writeTMQueue q (PauseEffect tmv) >> return True)
 
-
 massPauseEffects :: HasCallStack => MudStack () -- At server shutdown, after everyone has been disconnected.
 massPauseEffects = sequence_ [ logNotice "massPauseEffects" "mass pausing effects."
                              , mapM_ pauseEffects . views durationalEffectTbl IM.keys =<< getState ]
 
-
 -----
-
 
 restartPausedEffects :: HasCallStack => Id -> MudStack () -- When a player logs in.
 restartPausedEffects i = do pes <- getPausedEffects i <$> getState
                             unless (null pes) . restartPausedHelper i $ pes
 
-
 restartPausedHelper :: HasCallStack => Id -> [PausedEffect] -> MudStack ()
 restartPausedHelper i pes = sequence_ [ forM_ pes $ \(PausedEffect e) -> startEffect i e
                                       , tweak $ pausedEffectTbl.ind i .~ [] ]
-
 
 massRestartPausedEffects :: HasCallStack => MudStack () -- At server startup.
 massRestartPausedEffects = getState >>= \ms -> do logNotice "massRestartPausedEffects" "mass restarting paused effects."
@@ -151,13 +137,10 @@ massRestartPausedEffects = getState >>= \ms -> do logNotice "massRestartPausedEf
     helper ms (i, _  ) | getType i ms == PlaType = unit
     helper _  (i, pes)                           = restartPausedHelper i pes
 
-
 -----
-
 
 stopEffect :: HasCallStack => Id -> DurationalEffect -> MudStack ()
 stopEffect i (DurationalEffect e (_, q)) = sequence_ [ liftIO . atomically . writeTMQueue q $ StopEffect, stopFeeling i e ]
-
 
 stopFeeling :: HasCallStack => Id -> Effect -> MudStack ()
 stopFeeling i (view effectFeeling -> feel) = getState >>= \ms ->
@@ -165,7 +148,6 @@ stopFeeling i (view effectFeeling -> feel) = getState >>= \ms ->
                 flip maybeVoid (M.lookup tag . getFeelingMap i $ ms) $ \(Feeling _ _ a) ->
                     sequence_ [ liftIO . cancel $ a, tweak $ mobTbl.ind i.feelingMap %~ (tag `M.delete`) ]
     in when (hasMobId i ms) f
-
 
 stopEffects :: HasCallStack => Id -> MudStack ()
 stopEffects i = mapM_ (stopEffect i) =<< getDurEffects i <$> getState

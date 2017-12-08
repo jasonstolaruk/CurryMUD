@@ -89,32 +89,24 @@ import           System.Environment (getEnvironment)
 import           System.IO (hClose, hGetBuffering, openTempFile)
 import           Unsafe.Coerce (unsafeCoerce)
 
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Cmds.Debug"
 
-
 -----
-
 
 logAndDispIOEx :: MsgQueue -> Cols -> Text -> IOException -> MudStack ()
 logAndDispIOEx mq cols = L.logAndDispIOEx mq cols "Mud.Cmds.Debug"
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Cmds.Debug"
-
 
 logPlaExec :: CmdName -> Id -> MudStack ()
 logPlaExec = L.logPlaExec "Mud.Cmds.Debug"
 
-
 logPlaExecArgs :: CmdName -> Args -> Id -> MudStack ()
 logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Debug"
 
-
 -- ==================================================
-
 
 debugCmds :: HasCallStack => [Cmd]
 debugCmds =
@@ -187,7 +179,6 @@ debugCmds =
                                                 \sequences." ]
   where {- -}
 
-
 mkDebugCmd :: HasCallStack => Text -> ActionFun -> CmdDesc -> Cmd
 mkDebugCmd (prefixDebugCmd -> cn) f cd = Cmd { cmdName           = cn
                                              , cmdPriorityAbbrev = Nothing
@@ -195,24 +186,18 @@ mkDebugCmd (prefixDebugCmd -> cn) f cd = Cmd { cmdName           = cn
                                              , cmdAction         = Action f True
                                              , cmdDesc           = cd }
 
-
 -----
-
 
 debugAp :: HasCallStack => ActionFun
 debugAp p@(ActionParams i mq cols _) = logPlaExec (prefixDebugCmd "ap") i >> wrapSend mq cols (showTxt p)
 
-
 -----
-
 
 debugAYT :: HasCallStack => ActionFun
 debugAYT (NoArgs' i mq) = logPlaExec (prefixDebugCmd "ayt") i >> send mq (T.pack [ telnetIAC, telnetAYT ]) >> ok mq
 debugAYT p              = withoutArgs debugAYT p
 
-
 -----
-
 
 debugBcast :: HasCallStack => ActionFun
 debugBcast (NoArgs'' i) = logPlaExec (prefixDebugCmd "broadcast") i >> bcastNl (mkBcast i msg)
@@ -229,9 +214,7 @@ debugBcast (NoArgs'' i) = logPlaExec (prefixDebugCmd "broadcast") i >> bcastNl (
           \[0] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij"
 debugBcast p = withoutArgs debugBcast p
 
-
 -----
-
 
 debugBonus :: HasCallStack => ActionFun
 debugBonus p@AdviseNoArgs                               = advise p [] adviceDBonusNoArgs
@@ -243,17 +226,13 @@ debugBonus   (OneArgNubbed i mq cols (capitalize -> a)) = getState >>= \ms ->
     in findFullNameForAbbrev a pcSings |&| maybe notFound found
 debugBonus p = advise p [] adviceDBonusExcessArgs
 
-
 -----
-
 
 debugBoot :: HasCallStack => ActionFun
 debugBoot (NoArgs' i mq) = logPlaExec (prefixDebugCmd "boot") i >> ok mq >> massMsg (MsgBoot dfltBootMsg)
 debugBoot p              = withoutArgs debugBoot p
 
-
 -----
-
 
 debugBuffCheck :: HasCallStack => ActionFun
 debugBuffCheck (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "buffer") i
@@ -266,9 +245,7 @@ debugBuffCheck (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "buffer") i
         T.concat [ "Default buffering mode for temp file ", fn, " is ", mode, "." ]
 debugBuffCheck p = withoutArgs debugBuffCheck p
 
-
 -----
-
 
 debugCins :: HasCallStack => ActionFun
 debugCins p@AdviseNoArgs         = advise p [] adviceDCinsNoArgs
@@ -285,13 +262,10 @@ debugCins   (OneArg i mq cols a) = getState >>= \ms -> case reads . T.unpack $ a
         header = T.concat [ "All channel ID/names ", parensQuote "IM.IntMap [(Id, Text)]", " for ID ", targetIdTxt, ":" ]
 debugCins p = advise p [] adviceDCinsExcessArgs
 
-
 -----
-
 
 class Myモルモット a where {}; instance Myモルモット Bool where {}
 data Penny = forall a. (Myモルモット a) => Pennyちゃん a
-
 
 debugCoercePenny :: HasCallStack => ActionFun
 debugCoercePenny (NoArgs' i mq) = let penny        = Pennyちゃん True
@@ -303,9 +277,7 @@ debugCoercePenny (NoArgs' i mq) = let penny        = Pennyちゃん True
     coercePenny (Pennyちゃん a) = unsafeCoerce a
 debugCoercePenny p = withoutArgs debugCoercePenny p
 
-
 -----
-
 
 debugColor :: HasCallStack => ActionFun
 debugColor (NoArgs' i mq) = sequence_ [ logPlaExec (prefixDebugCmd "color") i, send mq . nl . T.concat $ msg ]
@@ -319,9 +291,7 @@ debugColor (NoArgs' i mq) = sequence_ [ logPlaExec (prefixDebugCmd "color") i, s
     mkColorName = (<>) <$> pad 6 . showTxt <*> padColorName . showTxt
 debugColor p = withoutArgs debugColor p
 
-
 -----
-
 
 debugCores :: HasCallStack => ActionFun
 debugCores (NoArgs i mq cols) = do
@@ -330,9 +300,7 @@ debugCores (NoArgs i mq cols) = do
                          | cores <- liftIO . safePerformIO $ getNumCapabilities ]
 debugCores p = withoutArgs debugCores p
 
-
 -----
-
 
 debugCPU :: HasCallStack => ActionFun
 debugCPU (NoArgs i mq cols) = let cpuTime = showTxt . (`divide` 10 ^ 12) <$> getCPUTime in do
@@ -340,9 +308,7 @@ debugCPU (NoArgs i mq cols) = let cpuTime = showTxt . (`divide` 10 ^ 12) <$> get
     wrapSend mq cols =<< [ "CPU time: " <> time | time <- liftIO . safePerformIO $ cpuTime ]
 debugCPU p = withoutArgs debugCPU p
 
-
 -----
-
 
 debugCurryTime :: HasCallStack => ActionFun
 debugCurryTime (OneArg i mq cols a) = case reads . T.unpack $ a of
@@ -354,17 +320,13 @@ debugCurryTime (OneArg i mq cols a) = case reads . T.unpack $ a of
                               multiWrapSend mq cols . showCurryTime . secsToCurryTime $ x
 debugCurryTime p = advise p [] adviceDCurryTimeExcessArgs
 
-
 -----
-
 
 debugDispCmdList :: HasCallStack => ActionFun
 debugDispCmdList p@(LowerNub' i as) = logPlaExecArgs (prefixDebugCmd "?") as i >> dispCmdList debugCmds p
 debugDispCmdList p                  = pmf "debugDispCmdList" p
 
-
 -----
-
 
 debugEchoWill :: HasCallStack => ActionFun
 debugEchoWill (NoArgs' i mq) = do logPlaExec (prefixDebugCmd "echowill") i
@@ -372,9 +334,7 @@ debugEchoWill (NoArgs' i mq) = do logPlaExec (prefixDebugCmd "echowill") i
                                   ok mq
 debugEchoWill p              = withoutArgs debugEchoWill p
 
-
 -----
-
 
 debugEchoWon't :: HasCallStack => ActionFun
 debugEchoWon't (NoArgs' i mq) = do logPlaExec (prefixDebugCmd "echowon't") i
@@ -382,9 +342,7 @@ debugEchoWon't (NoArgs' i mq) = do logPlaExec (prefixDebugCmd "echowon't") i
                                    ok mq
 debugEchoWon't p              = withoutArgs debugEchoWon't p
 
-
 -----
-
 
 debugEffect :: HasCallStack => ActionFun
 debugEffect (NoArgs' i mq) = do
@@ -398,9 +356,7 @@ debugEffect (NoArgs' i mq) = do
     startEffect i . Effect tag effSub effVal effDur $ effFeel
 debugEffect p = withoutArgs debugEffect p
 
-
 -----
-
 
 debugEnv :: HasCallStack => ActionFun
 debugEnv (NoArgs   i mq cols   ) = do logPlaExecArgs (prefixDebugCmd "env") [] i
@@ -411,13 +367,10 @@ debugEnv (WithArgs i mq cols as) = do
     dispMatches i mq cols 2 IsRegex as =<< [ mkEnvListTxt env | env <- liftIO . safePerformIO $ getEnvironment ]
 debugEnv p = pmf "debugEnv" p
 
-
 mkEnvListTxt :: HasCallStack => [(String, String)] -> [Text]
 mkEnvListTxt = map (uncurry (<>) . first (<> ": ") . (both %~ T.pack))
 
-
 -----
-
 
 debugExp :: HasCallStack => ActionFun
 debugExp (NoArgs' i mq) = let cn = prefixDebugCmd "exp" in do logPlaExec cn i
@@ -425,9 +378,7 @@ debugExp (NoArgs' i mq) = let cn = prefixDebugCmd "exp" in do logPlaExec cn i
                                                               ok mq
 debugExp p              = withoutArgs debugExp p
 
-
 -----
-
 
 debugFun :: HasCallStack => ActionFun
 debugFun (NoArgs i mq cols) = getState >>= \ms ->
@@ -442,9 +393,7 @@ debugFun (NoArgs i mq cols) = getState >>= \ms ->
           pager i mq Nothing . concatMap (wrapIndent 2 cols) . intercalateDivider cols $ tss
 debugFun p = withoutArgs debugFun p
 
-
 -----
-
 
 debugGmcpDo :: HasCallStack => ActionFun
 debugGmcpDo (NoArgs' i mq) = do logPlaExec (prefixDebugCmd "gmcpdo") i
@@ -452,9 +401,7 @@ debugGmcpDo (NoArgs' i mq) = do logPlaExec (prefixDebugCmd "gmcpdo") i
                                 ok mq
 debugGmcpDo p              = withoutArgs debugGmcpDo p
 
-
 -----
-
 
 debugGmcpRm :: HasCallStack => ActionFun
 debugGmcpRm (NoArgs i mq cols) = do
@@ -462,18 +409,14 @@ debugGmcpRm (NoArgs i mq cols) = do
     ((>>) <$> wrapSend mq cols . gmcpRmInfo Nothing i <*> sendGmcpRmInfo Nothing i) =<< getState
 debugGmcpRm p = withoutArgs debugGmcpRm p
 
-
 -----
-
 
 debugGmcpVitals :: HasCallStack => ActionFun
 debugGmcpVitals (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "gmcpvitals") i
                                         ((>>) <$> wrapSend mq cols . gmcpVitals i <*> sendGmcpVitals i) =<< getState
 debugGmcpVitals p                  = withoutArgs debugGmcpVitals p
 
-
 -----
-
 
 debugGmcpWill :: HasCallStack => ActionFun
 debugGmcpWill (NoArgs' i mq) = do logPlaExec (prefixDebugCmd "gmcpwill") i
@@ -481,17 +424,13 @@ debugGmcpWill (NoArgs' i mq) = do logPlaExec (prefixDebugCmd "gmcpwill") i
                                   ok mq
 debugGmcpWill p              = withoutArgs debugGmcpWill p
 
-
 -----
-
 
 debugHandle :: HasCallStack => ActionFun
 debugHandle (NoArgs' i mq) = logPlaExec (prefixDebugCmd "handle") i >> writeMsg mq ShowHandle
 debugHandle p              = withoutArgs debugHandle p
 
-
 -----
-
 
 debugId :: HasCallStack => ActionFun
 debugId p@AdviseNoArgs         = advise p [] adviceDIdNoArgs
@@ -560,7 +499,6 @@ debugId   (OneArg i mq cols a) = case reads . T.unpack $ a of [(searchId, "")] -
           pager i mq Nothing . concat . wrapLines cols . intercalate mMempty $ mkTxt
 debugId p = advise p [] adviceDIdExcessArgs
 
-
 mkTblNameKeysList :: HasCallStack => MudState -> [(Text, Inv)]
 mkTblNameKeysList ms = [ ("Arm",                 tblKeys armTbl                 ms)
                        , ("Chan",                tblKeys chanTbl                ms)
@@ -597,13 +535,10 @@ mkTblNameKeysList ms = [ ("Arm",                 tblKeys armTbl                 
                        , ("Wpn",                 tblKeys wpnTbl                 ms)
                        , ("Writable",            tblKeys writableTbl            ms) ]
 
-
 tblKeys :: HasCallStack => Optical (->) (->) (Const Inv) MudState MudState (IM.IntMap a) (IM.IntMap a) -> MudState -> Inv
 tblKeys lens = views lens IM.keys
 
-
 -----
-
 
 debugKeys :: HasCallStack => ActionFun
 debugKeys (NoArgs i mq cols) = getState >>= \ms -> let mkKeysTxt (tblName, ks) = [ tblName <> ": ", showTxt ks ] in do
@@ -611,9 +546,7 @@ debugKeys (NoArgs i mq cols) = getState >>= \ms -> let mkKeysTxt (tblName, ks) =
     pager i mq Nothing . concat . wrapLines cols . intercalate mMempty . map mkKeysTxt . mkTblNameKeysList $ ms
 debugKeys p = withoutArgs debugKeys p
 
-
 -----
-
 
 debugLiq :: HasCallStack => ActionFun
 debugLiq p@AdviseNoArgs            = advise p [] adviceDLiqNoArgs
@@ -631,7 +564,6 @@ debugLiq   (WithArgs i mq cols as) = getState >>= \ms ->
         mkStomachConts now = replicate amt . StomachCont (Left . DistinctLiqId $ di) now $ False
 debugLiq p = advise p [] adviceDLiqExcessArgs
 
-
 parseTwoIntArgs :: HasCallStack => MsgQueue
                                 -> Cols
                                 -> [Text]
@@ -648,9 +580,7 @@ parseTwoIntArgs mq cols [a, b] sorryParseA sorryParseB helper =
                                                         _         -> emptied . wrapSend mq cols . sorry $ txt
 parseTwoIntArgs _ _ as _ _ _ = pmf "parseTwoIntArgs" as
 
-
 -----
-
 
 debugLog :: HasCallStack => ActionFun
 debugLog (NoArgs' i mq) = logPlaExec (prefixDebugCmd "log") i >> helper >> ok mq
@@ -660,18 +590,14 @@ debugLog (NoArgs' i mq) = logPlaExec (prefixDebugCmd "log") i >> helper >> ok mq
     mkMsg        = [ prd $ "Logging from " <> ti | ti <- showTxt <$> liftIO myThreadId ]
 debugLog p = withoutArgs debugLog p
 
-
 -----
-
 
 debugMissingEnt :: HasCallStack => ActionFun
 debugMissingEnt (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "missingent") i
                                         wrapSend mq cols =<< getEntDesc (-1) <$> getState
 debugMissingEnt p                  = withoutArgs debugMissingEnt p
 
-
 -----
-
 
 debugMissingFeel :: HasCallStack => ActionFun
 debugMissingFeel (NoArgs'' i) = getState >>= \ms -> do
@@ -680,9 +606,7 @@ debugMissingFeel (NoArgs'' i) = getState >>= \ms -> do
     void . return $ x -- Suppress the "unused local binds" warning.
 debugMissingFeel p = withoutArgs debugMissingFeel p
 
-
 -----
-
 
 debugMkKewpie :: HasCallStack => ActionFun
 debugMkKewpie (NoArgs' i mq) = do
@@ -699,9 +623,7 @@ debugMkKewpie (NoArgs' i mq) = do
                             in second (++ pure (ok mq)) . dropFst . newObj ms et ot . getRmId i $ ms
 debugMkKewpie p = withoutArgs debugMkKewpie p
 
-
 -----
-
 
 debugMultiLine :: HasCallStack => ActionFun
 debugMultiLine (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "multiline") i
@@ -714,9 +636,7 @@ debugMultiLine (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "multiline") i
               resetInterp i
 debugMultiLine p = withoutArgs debugMultiLine p
 
-
 -----
-
 
 debugNOP :: HasCallStack => ActionFun
 debugNOP (NoArgs' i mq) = do logPlaExec (prefixDebugCmd "nop") i
@@ -724,9 +644,7 @@ debugNOP (NoArgs' i mq) = do logPlaExec (prefixDebugCmd "nop") i
                              ok mq
 debugNOP p              = withoutArgs debugNOP p
 
-
 -----
-
 
 debugNotifyTime :: HasCallStack => ActionFun
 debugNotifyTime (NoArgs' i mq) = liftIO getCurryTime >>= \ct -> do
@@ -736,20 +654,15 @@ debugNotifyTime (NoArgs' i mq) = liftIO getCurryTime >>= \ct -> do
     ok mq
 debugNotifyTime p = withoutArgs debugNotifyTime p
 
-
 -----
-
 
 debugNpcServer :: HasCallStack => ActionFun
 debugNpcServer (NoArgs' i mq) = logPlaExec (prefixDebugCmd "npcserver") i >> stopNpcServers >> ok mq
 debugNpcServer p              = withoutArgs debugNpcServer p
 
-
 -----
 
-
 type Base = Int
-
 
 debugNumber :: HasCallStack => ActionFun
 debugNumber p@AdviseNoArgs                             = advise p [] adviceDNumberNoArgs
@@ -763,10 +676,8 @@ debugNumber   (WithArgs i mq cols [ numTxt, baseTxt ]) = case reads . T.unpack $
   _ -> wrapSend mq cols . sorryParseBase $ baseTxt
 debugNumber p = advise p [] adviceDNumberExcessArgs
 
-
 inBase :: HasCallStack => Text -> Base -> [(Int, String)]
 numTxt `inBase` base = readInt base (isValidDigit base) letterToNum . T.unpack $ numTxt
-
 
 isValidDigit :: HasCallStack => Base -> Char -> Bool
 isValidDigit base (toLower -> c) | isDigit c                    = digitToInt c < base
@@ -774,39 +685,30 @@ isValidDigit base (toLower -> c) | isDigit c                    = digitToInt c <
                                  | otherwise                    = maybe False (<= base) . lookup c . zip a $ b
   where { a = 'a' `enumFromTo` 'z'; b = enumFrom 11 }
 
-
 letterToNum :: HasCallStack => Char -> Int
 letterToNum c | isDigit c = digitToInt c
               | otherwise = let (🍪) = (-) `on` ord in (c 🍪 'a') + 10
 
-
 -----
-
 
 debugOut :: HasCallStack => ActionFun
 debugOut (NoArgs i mq cols) = getState >>= \ms -> do logPlaExec (prefixDebugCmd "out") i
                                                      wrapSend mq cols . showTxt . getInv iLoggedOut $ ms
 debugOut p                  = withoutArgs debugOut p
 
-
 -----
-
 
 debugPause :: HasCallStack => ActionFun
 debugPause (NoArgs' i mq) = logPlaExec (prefixDebugCmd "pause") i >> pause i mq Nothing
 debugPause p              = withoutArgs debugPause p
 
-
 -----
-
 
 debugPersist :: HasCallStack => ActionFun
 debugPersist (NoArgs' i mq) = logPlaExec (prefixDebugCmd "persist") i >> replicateM_ 10 (persist >> ok mq)
 debugPersist p              = withoutArgs debugPersist p
 
-
 -----
-
 
 debugPidge :: HasCallStack => ActionFun
 debugPidge (NoArgs' i mq) = serialize . flip (mkStdDesig i) Don'tCap <$> getState >>= \d -> do
@@ -815,33 +717,25 @@ debugPidge (NoArgs' i mq) = serialize . flip (mkStdDesig i) Don'tCap <$> getStat
     ok mq
 debugPidge p = withoutArgs debugPidge p
 
-
 -----
-
 
 debugPmf :: HasCallStack => ActionFun
 debugPmf (NoArgs'' i) = logPlaExec (prefixDebugCmd "pmf") i >> pmf "debugPmf" (0, 'a', "abcdef")
 debugPmf p            = withoutArgs debugPmf p
 
-
 -----
-
 
 debugPropNames :: HasCallStack => ActionFun
 debugPropNames (NoArgs' i mq) = logPlaExec (prefixDebugCmd "propnames") i >> initPropNamesTbl >> ok mq
 debugPropNames p              = withoutArgs debugPropNames p
 
-
 -----
-
 
 debugPurge :: HasCallStack => ActionFun
 debugPurge (NoArgs' i mq) = logPlaExec (prefixDebugCmd "purge") i >> purgeThreadTbls >> ok mq
 debugPurge p              = withoutArgs debugPurge p
 
-
 -----
-
 
 debugRandom :: HasCallStack => ActionFun
 debugRandom (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "random") i
@@ -849,9 +743,7 @@ debugRandom (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "random") i
                                     wrapSend mq cols . showTxt =<< rndmInts 10
 debugRandom p                  = withoutArgs debugRandom p
 
-
 -----
-
 
 debugRegen :: HasCallStack => ActionFun
 debugRegen p@AdviseNoArgs         = advise p [] adviceDRegenNoArgs
@@ -872,9 +764,7 @@ debugRegen   (OneArg i mq cols a) = case reads . T.unpack $ a of [(targetId, "")
                                                  , showTxt . calcDelay targetId $ ms, " sec" ]
 debugRegen p = advise p [] adviceDRegenExcessArgs
 
-
 -----
-
 
 debugRemPut :: HasCallStack => ActionFun
 debugRemPut (NoArgs' i mq) = do logPlaExec (prefixDebugCmd "remput") i
@@ -883,9 +773,7 @@ debugRemPut (NoArgs' i mq) = do logPlaExec (prefixDebugCmd "remput") i
     rest = spaced (T.singleton allChar) <> ('r' `T.cons` selectorChar `T.cons` "sack")
 debugRemPut p = withoutArgs debugRemPut p
 
-
 -----
-
 
 debugRndm :: HasCallStack => ActionFun
 debugRndm (NoArgs i mq cols) = do
@@ -894,7 +782,6 @@ debugRndm (NoArgs i mq cols) = do
 debugRndm (WithArgs i mq cols as) = do logPlaExecArgs (prefixDebugCmd "rndm") as i
                                        dispMatches i mq cols 2 IsRegex as . mkRndmNamesMstrTblTxt =<< getState
 debugRndm p                       = pmf "debugRndm" p
-
 
 mkRndmNamesMstrTblTxt :: HasCallStack => MudState -> [Text]
 mkRndmNamesMstrTblTxt ms = sort . views rndmNamesMstrTbl helper $ ms
@@ -905,9 +792,7 @@ mkRndmNamesMstrTblTxt ms = sort . views rndmNamesMstrTbl helper $ ms
         f :: HasCallStack => (Id, RndmNamesTbl) -> Text
         f = uncurry (|<>|) . ((<> ":") . (`descSingId` ms) *** noneOnNull . commas . map (uncurry (|<>|)) . M.toList)
 
-
 -----
-
 
 debugRnt :: HasCallStack => ActionFun
 debugRnt (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "rnt") i
@@ -922,9 +807,7 @@ debugRnt (OneArgNubbed i mq cols (capitalize -> a)) = getState >>= \ms ->
     in findFullNameForAbbrev a pcSings |&| maybe notFound found
 debugRnt p = advise p [] adviceDRntExcessArgs
 
-
 -----
-
 
 debugRotate :: HasCallStack => ActionFun
 debugRotate (NoArgs' i mq) = getState >>= \ms -> let lq = getLogQueue i ms in do writeLog lq RotateLog
@@ -932,9 +815,7 @@ debugRotate (NoArgs' i mq) = getState >>= \ms -> let lq = getLogQueue i ms in do
                                                                                  logPlaExec (prefixDebugCmd "rotate") i
 debugRotate p              = withoutArgs debugRotate p
 
-
 -----
-
 
 debugRules :: HasCallStack => ActionFun
 debugRules (NoArgs i mq cols) = getServerSettings >>= \s -> do logPlaExec (prefixDebugCmd "rules") i'
@@ -943,9 +824,7 @@ debugRules (NoArgs i mq cols) = getServerSettings >>= \s -> do logPlaExec (prefi
     i' = safeCoerce @Int (i :: Id)
 debugRules p = withoutArgs debugRules p
 
-
 -----
-
 
 debugShiver :: HasCallStack => ActionFun
 debugShiver (NoArgs' i mq) = getState >>= \ms -> do
@@ -954,17 +833,13 @@ debugShiver (NoArgs' i mq) = getState >>= \ms -> do
     ok mq
 debugShiver p = withoutArgs debugShiver p
 
-
 -----
-
 
 debugStopEffects :: HasCallStack => ActionFun
 debugStopEffects (NoArgs' i mq) = logPlaExec (prefixDebugCmd "stopeffects") i >> stopEffects i >> ok mq
 debugStopEffects p              = withoutArgs debugStopEffects p
 
-
 -----
-
 
 debugTalk :: HasCallStack => ActionFun
 debugTalk (NoArgs i mq cols) = views talkAsyncTbl M.toList <$> getState >>= \pairs -> do
@@ -978,9 +853,7 @@ debugTalk (NoArgs i mq cols) = views talkAsyncTbl M.toList <$> getState >>= \pai
                         Just (Right ()) -> "finished"
 debugTalk p = withoutArgs debugTalk p
 
-
 -----
-
 
 debugTele :: HasCallStack => ActionFun
 debugTele (NoArgs i mq cols) = do
@@ -989,7 +862,6 @@ debugTele (NoArgs i mq cols) = do
 debugTele (WithArgs i mq cols as) = do logPlaExecArgs (prefixDebugCmd "tele") as i
                                        dispMatches i mq cols 2 IsRegex as . mkTeleLinkMstrTblTxt =<< getState
 debugTele p                       = pmf "debugTele" p
-
 
 mkTeleLinkMstrTblTxt :: HasCallStack => MudState -> [Text]
 mkTeleLinkMstrTblTxt ms = sort . views teleLinkMstrTbl helper $ ms
@@ -1003,9 +875,7 @@ mkTeleLinkMstrTblTxt ms = sort . views teleLinkMstrTbl helper $ ms
             g :: HasCallStack => (Sing, IsTuned) -> Text
             g = uncurry (|<>|) . second showTxt
 
-
 -----
-
 
 debugThreads :: HasCallStack => ActionFun
 debugThreads (NoArgs   i mq cols   ) = do logPlaExec (prefixDebugCmd "threads") i
@@ -1013,7 +883,6 @@ debugThreads (NoArgs   i mq cols   ) = do logPlaExec (prefixDebugCmd "threads") 
 debugThreads (WithArgs i mq cols as) = do logPlaExecArgs (prefixDebugCmd "threads") as i
                                           dispMatches i mq cols 2 IsRegex as =<< descThreads
 debugThreads p                       = pmf "debugThreads" p
-
 
 descThreads :: HasCallStack => MudStack [Text]
 descThreads = do logAsyncKvs <- getLogThreadIds >>= \case [ a, b ] -> return [ (a, Notice), (b, Error) ]
@@ -1050,26 +919,20 @@ descThreads = do logAsyncKvs <- getLogThreadIds >>= \case [ a, b ] -> return [ (
     mkTypeName (showTxt -> t        ) = t -- For thread types without an ID.
     padAmt                            = 13
 
-
 -----
-
 
 debugThrow :: HasCallStack => ActionFun
 debugThrow (NoArgs'' i) = logPlaExec (prefixDebugCmd "throw") i >> throwIO DivideByZero
 debugThrow p            = withoutArgs debugThrow p
 
-
 -----
-
 
 debugThrowLog :: HasCallStack => ActionFun
 debugThrowLog (NoArgs' i mq) = getState >>= \ms -> let lq = getLogQueue i ms in
     logPlaExec (prefixDebugCmd "throwlog") i >> writeLog lq Throw >> ok mq
 debugThrowLog p = withoutArgs debugThrowLog p
 
-
 -----
-
 
 debugTinnitus :: HasCallStack => ActionFun
 debugTinnitus (NoArgs' i mq) = do
@@ -1083,9 +946,7 @@ debugTinnitus (NoArgs' i mq) = do
     startEffect i . Effect (Just tag) effSub effVal effDur $ effFeel
 debugTinnitus p = withoutArgs debugTinnitus p
 
-
 -----
-
 
 debugToken :: HasCallStack => ActionFun
 debugToken (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "token") i
@@ -1145,9 +1006,7 @@ debugToken (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "token") i
     noUnderlineStyleToken = styleTokenDelimiter `T.cons` "n"
 debugToken p = withoutArgs debugToken p
 
-
 -----
-
 
 debugUnderline :: HasCallStack => ActionFun
 debugUnderline (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "underline") i
@@ -1155,9 +1014,7 @@ debugUnderline (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "underline") i
                                        wrapSend mq cols . quoteWith' pair . underline . spaced $  " This text is underlined. "
 debugUnderline p = withoutArgs debugUnderline p
 
-
 -----
-
 
 debugVolume :: HasCallStack => ActionFun
 debugVolume p@AdviseNoArgs         = advise p [] adviceDVolumeNoArgs
@@ -1171,9 +1028,7 @@ debugVolume   (OneArg i mq cols a) = case reads . T.unpack $ a of [(searchId, ""
                                                        send mq . nlnl . showTxt . calcCarriedVol searchId $ ms
 debugVolume p = advise p [] adviceDVolumeExcessArgs
 
-
 -----
-
 
 debugWeight :: HasCallStack => ActionFun
 debugWeight p@AdviseNoArgs         = advise p [] adviceDWeightNoArgs
@@ -1187,17 +1042,13 @@ debugWeight   (OneArg i mq cols a) = case reads . T.unpack $ a of [(searchId, ""
                                                        send mq . nlnl . showTxt . calcWeight searchId $ ms
 debugWeight p = advise p [] adviceDWeightExcessArgs
 
-
 -----
-
 
 debugWords :: HasCallStack => ActionFun
 debugWords (NoArgs' i mq) = logPlaExec (prefixDebugCmd "words") i >> initWordsTbl >> ok mq
 debugWords p              = withoutArgs debugWords p
 
-
 -----
-
 
 debugWrap :: HasCallStack => ActionFun
 debugWrap p@AdviseNoArgs         = advise p [] adviceDWrapNoArgs
@@ -1211,7 +1062,6 @@ debugWrap   (OneArg i mq cols a) = case reads . T.unpack $ a of
                                                                      send mq . frame lineLen . wrapUnlines lineLen $ wrapMsg
 debugWrap p = advise p [] adviceDWrapExcessArgs
 
-
 wrapMsg :: HasCallStack => Text
 wrapMsg = T.unwords wordy <> dfltColor
   where
@@ -1219,9 +1069,7 @@ wrapMsg = T.unwords wordy <> dfltColor
     wordy = [ T.concat [ u, mkFgColorANSI (Dull, c), "This is ", showTxt c, " text." ]
             | u <- [ underlineANSI, noUnderlineANSI ], c <- Black `delete` colors ]
 
-
 -----
-
 
 debugWrapIndent :: HasCallStack => ActionFun
 debugWrapIndent p@AdviseNoArgs            = advise p [] adviceDWrapIndentNoArgs

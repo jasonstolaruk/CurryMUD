@@ -13,19 +13,15 @@ import Mud.Util.Operators
 import Data.List (delete)
 import Data.Monoid ((<>))
 
-
 langsNoCommon :: [Lang]
 langsNoCommon = CommonLang `delete` allValues
-
 
 mkCmdNameForLang :: Lang -> CmdName
 mkCmdNameForLang CommonLang = "say"
 mkCmdNameForLang l          = pp l
 
-
 mkInLangTxtForLang :: Lang -> CmdName
 mkInLangTxtForLang l = l /= CommonLang |?| (" in " <> pp l)
-
 
 raceToLang :: Race -> Lang
 raceToLang Dwarf     = DwarfLang

@@ -12,13 +12,10 @@ import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
 import qualified Data.IntMap.Strict as IM (IntMap, fromList, lookup)
 
-
 type Zone = Text
-
 
 getZoneForRmId :: Id -> Zone
 getZoneForRmId = fromMaybe "unknown" . (`IM.lookup` zoneMap)
-
 
 zoneMap :: IM.IntMap Zone
 zoneMap = IM.fromList . concat $ [ adminZone
@@ -26,9 +23,7 @@ zoneMap = IM.fromList . concat $ [ adminZone
                                  , tutorialZone
                                  , warehouseZone ]
 
-
 -----
-
 
 adminZone :: [(Id, Zone)]
 adminZone = zip rmIds . repeat $ "Admin zone"
@@ -55,9 +50,7 @@ adminZone = zip rmIds . repeat $ "Admin zone"
             , iVoid
             , iWeightRm ]
 
-
 -----
-
 
 loplenkoZone :: [(Id, Zone)]
 loplenkoZone = zip rmIds . repeat $ "Lop'len-ko"
@@ -65,18 +58,14 @@ loplenkoZone = zip rmIds . repeat $ "Lop'len-ko"
     rmIds = [ iLoplenkoWelcome
             , iLibrary ]
 
-
 -----
-
 
 tutorialZone :: [(Id, Zone)]
 tutorialZone = zip rmIds . repeat $ "Tutorial"
   where
     rmIds = pure iTutWelcome
 
-
 -----
-
 
 warehouseZone :: [(Id, Zone)]
 warehouseZone = zip rmIds . repeat $ "Warehouse"

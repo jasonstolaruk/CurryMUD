@@ -15,30 +15,23 @@ import           Data.Bits (zeroBits)
 import           Data.Text (Text)
 import qualified Data.Map.Strict as M (fromList)
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.TheWorld.Zones.Tutorial"
-
 
 -- ==================================================
 -- Hooks:
 
-
 tutorialHooks :: [(HookName, HookFun)]
 tutorialHooks = []
-
 
 -- ==================================================
 -- Room action functions:
 
-
 tutorialRmActionFuns :: [(FunName, RmActionFun)]
 tutorialRmActionFuns = []
 
-
 -- ==================================================
 -- Zone definition:
-
 
 createTutorial :: MudStack ()
 createTutorial = do

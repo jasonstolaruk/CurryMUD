@@ -4,7 +4,6 @@ module Mud.TheWorld.Zones.WarehouseIds where
 
 import Mud.Data.State.MudData (Id)
 
-
 iWarehouseWelcome = 10000 :: Id
 
 -----

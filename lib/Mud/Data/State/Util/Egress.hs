@@ -43,17 +43,13 @@ import qualified Data.Map.Strict as M (delete, empty, foldl, keys, singleton, to
 import qualified Data.Text as T
 import           System.Time.Utils (renderSecs)
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Data.State.Util.Egress"
-
 
 logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Data.State.Util.Egress"
 
-
 -- ==================================================
-
 
 handleEgress :: HasCallStack => Id -> MsgQueue -> Bool -> MudStack ()
 handleEgress i mq isDropped = egressHelper `finally` writeMsg mq FinishedEgress
@@ -89,7 +85,6 @@ handleEgress i mq isDropped = egressHelper `finally` writeMsg mq FinishedEgress
                                              , movePC        i spirit ]
          in (ms'', (bs, logMsgs))
 
-
 peepHelper :: HasCallStack => Id -> MudState -> Sing -> Bool -> (MudState, [Broadcast], [(Id, Text)])
 peepHelper i ms s spirit =
     let (peeperIds, peepingIds) = getPeepersPeeping i ms
@@ -108,7 +103,6 @@ peepHelper i ms s spirit =
     stopBeingPeeped peeperIds  pt = let f peeperId ptAcc = ptAcc & ind peeperId.peeping %~ (i `delete`)
                                     in foldr f pt peeperIds
 
-
 movePC :: HasCallStack => Id -> Bool -> MudState -> MudState
 movePC i spirit ms = upd ms [ invTbl     .ind ri           %~ (i `delete`)
                             , invTbl     .ind ri'          %~ (i :)
@@ -118,11 +112,9 @@ movePC i spirit ms = upd ms [ invTbl     .ind ri           %~ (i `delete`)
   where
     (ri, ri') = (getRmId i ms, spirit ? iNecropolis :? iLoggedOut)
 
-
 possessHelper :: HasCallStack => Int -> MudState -> MudState
 possessHelper i ms = let f = maybe id (\npcId -> npcTbl.ind npcId.npcPossessor .~ Nothing) . getPossessing i $ ms
                      in upd ms [ plaTbl.ind i.possessing .~ Nothing, f ]
-
 
 updateHostMap :: HasCallStack => Id -> Sing -> UTCTime -> MudState -> MudState
 updateHostMap i s now ms = maybe ms helper . getConnectTime i $ ms
@@ -136,9 +128,7 @@ updateHostMap i s now ms = maybe ms helper . getConnectTime i $ ms
     reviseRecord dur  = (noOfLogouts +~ 1) . (secsConnected +~ dur) . (lastLogout .~ now)
     host              = getCurrHostName i ms
 
-
 -----
-
 
 theBeyond :: HasCallStack => Id -> MsgQueue -> Sing -> Bool -> MudStack ()
 theBeyond i mq s isDropped = modifyStateSeq $ \ms ->
@@ -158,10 +148,8 @@ theBeyond i mq s isDropped = modifyStateSeq $ \ms ->
                           , bcastAdmins $ s <> " passes into the beyond." ]
     in (ms', fs)
 
-
 farewell :: HasCallStack => Id -> MsgQueue -> Cols -> MudStack ()
 farewell i mq cols = multiWrapSend mq cols . mkFarewellStats i =<< getState
-
 
 mkFarewellStats :: HasCallStack => Id -> MudState -> [Text]
 mkFarewellStats i ms = concat [ header, ts, footer ]

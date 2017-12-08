@@ -108,54 +108,40 @@ import           System.Directory (doesFileExist, getDirectoryContents)
 import           System.FilePath ((</>))
 import           System.Time.Utils (renderSecs)
 
-
 default (Int, Double)
 
-
 -----
-
 
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Cmds.Pla"
 
-
 -----
-
 
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Cmds.Pla"
 
-
 logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Cmds.Pla"
-
 
 logPlaExec :: CmdName -> Id -> MudStack ()
 logPlaExec = L.logPlaExec "Mud.Cmds.Pla"
 
-
 logPlaExecArgs :: CmdName -> Args -> Id -> MudStack ()
 logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Pla"
-
 
 logPlaOut :: Text -> Id -> [Text] -> MudStack ()
 logPlaOut = L.logPlaOut "Mud.Cmds.Pla"
 
-
 -- ==================================================
-
 
 mkPlaCmds :: HasCallStack => Id -> MudState -> [Cmd]
 mkPlaCmds i = sort . (plaCmds ++) . mkRacialLangCmds i
 
-
 plaCmds :: HasCallStack => [Cmd]
 plaCmds = regularCmds ++ priorityAbbrevCmds ++ expCmds
 
-
 regularCmds :: HasCallStack => [Cmd]
 regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
-
 
 -- TODO: "buy" and "sell".
 -- TODO: "shout". Consider indoor vs. outdoor. Update the "communication" help topic.
@@ -211,7 +197,6 @@ regularCmdTuples =
     , ("whoami",     whoAmI,             True,  cmdDescWhoAmI)
     , ("zoom",       zoom,               True,  cmdDescZoom) ]
 
-
 mkRegularCmd :: HasCallStack => CmdFullName -> ActionFun -> Bool -> CmdDesc -> Cmd
 mkRegularCmd cfn f b cd = Cmd { cmdName           = cfn
                               , cmdPriorityAbbrev = Nothing
@@ -219,10 +204,8 @@ mkRegularCmd cfn f b cd = Cmd { cmdName           = cfn
                               , cmdAction         = Action f b
                               , cmdDesc           = cd }
 
-
 priorityAbbrevCmds :: HasCallStack => [Cmd]
 priorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd) priorityAbbrevCmdTuples
-
 
 priorityAbbrevCmdTuples :: HasCallStack => [(CmdFullName, CmdPriorityAbbrevTxt, ActionFun, Bool, CmdDesc)]
 priorityAbbrevCmdTuples =
@@ -265,7 +248,6 @@ priorityAbbrevCmdTuples =
     , ("whisper",     "whi", whisper,        True,  cmdDescWhisper)
     , ("who",         "wh",  who,            True,  cmdDescWho) ]
 
-
 mkPriorityAbbrevCmd :: HasCallStack => CmdFullName -> CmdPriorityAbbrevTxt -> ActionFun -> Bool -> CmdDesc -> [Cmd]
 mkPriorityAbbrevCmd cfn cpat f b cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmdName           = cfn
                                                                            , cmdPriorityAbbrev = Just cpat
@@ -283,21 +265,16 @@ mkPriorityAbbrevCmd cfn cpat f b cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmd
                                   , cmdAction         = Action f b
                                   , cmdDesc           = "" }
 
-
 noOfPlaCmds :: HasCallStack => Int
 noOfPlaCmds = length regularCmdTuples + length priorityAbbrevCmdTuples + length langsNoCommon
 
-
 -----
-
 
 spiritCmds :: HasCallStack => [Cmd]
 spiritCmds = spiritRegularCmds ++ spiritPriorityAbbrevCmds
 
-
 spiritRegularCmds :: HasCallStack => [Cmd]
 spiritRegularCmds = sort . map (uncurry4 mkRegularCmd) $ spiritRegularCmdTuples
-
 
 spiritRegularCmdTuples :: HasCallStack => [(CmdFullName, ActionFun, Bool, CmdDesc)]
 spiritRegularCmdTuples =
@@ -328,10 +305,8 @@ spiritRegularCmdTuples =
     , ("whoami",   whoAmI,            True,  cmdDescWhoAmI)
     , ("zoom",     zoom,              True,  cmdDescZoom) ]
 
-
 spiritPriorityAbbrevCmds :: HasCallStack => [Cmd]
 spiritPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd) spiritPriorityAbbrevCmdTuples
-
 
 spiritPriorityAbbrevCmdTuples :: HasCallStack => [(CmdFullName, CmdPriorityAbbrevTxt, ActionFun, Bool, CmdDesc)]
 spiritPriorityAbbrevCmdTuples =
@@ -350,29 +325,22 @@ spiritPriorityAbbrevCmdTuples =
     , ("time",      "ti",  time,  True,  cmdDescTime)
     , ("who",       "wh",  who,   True,  cmdDescWho) ]
 
-
 noOfSpiritCmds :: HasCallStack => Int
 noOfSpiritCmds = length spiritRegularCmdTuples + length spiritPriorityAbbrevCmdTuples
 
-
 -----
-
 
 -- Regarding NPC cmds, messages should not be sent to the executor in the form of broadcasts (otherwise they will be
 -- erroneously decorated with "toNpcColor".)
 
-
 mkNpcCmds :: HasCallStack => Id -> MudState -> [Cmd]
 mkNpcCmds i = sort . (npcCmds ++) . mkRacialLangCmds i
-
 
 npcCmds :: HasCallStack => [Cmd]
 npcCmds = npcRegularCmds ++ npcPriorityAbbrevCmds ++ expCmds
 
-
 npcRegularCmds :: HasCallStack => [Cmd]
 npcRegularCmds = map (uncurry4 mkRegularCmd) npcRegularCmdTuples
-
 
 npcRegularCmdTuples :: HasCallStack => [(CmdFullName, ActionFun, Bool, CmdDesc)]
 npcRegularCmdTuples =
@@ -403,10 +371,8 @@ npcRegularCmdTuples =
     , ("w",          go "w",         True,  cmdDescGoWest)
     , ("zoom",       zoom,           True,  cmdDescZoom) ]
 
-
 npcPriorityAbbrevCmds :: HasCallStack => [Cmd]
 npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd) npcPriorityAbbrevCmdTuples
-
 
 npcPriorityAbbrevCmdTuples :: HasCallStack => [(CmdFullName, CmdPriorityAbbrevTxt, ActionFun, Bool, CmdDesc)]
 npcPriorityAbbrevCmdTuples =
@@ -438,13 +404,10 @@ npcPriorityAbbrevCmdTuples =
     , ("whisper",     "whi", whisper,        True,  cmdDescWhisper)
     , ("whoami",      "wh",  whoAmI,         True,  "Confirm who " <> parensQuote "and what" <> " you are.") ]
 
-
 noOfNpcCmds :: HasCallStack => Int
 noOfNpcCmds = length npcRegularCmdTuples + length npcPriorityAbbrevCmdTuples + length langsNoCommon
 
-
 -----
-
 
 mkRacialLangCmds :: HasCallStack => Id -> MudState -> [Cmd]
 mkRacialLangCmds i ms | tuples  <- map mkRegCmdTuple langsNoCommon
@@ -452,7 +415,6 @@ mkRacialLangCmds i ms | tuples  <- map mkRegCmdTuple langsNoCommon
                       = sort . map (uncurry4 mkRegularCmd) $ matches
   where
     mkRegCmdTuple l = (l, (pp l, actionFunForLang l, True, cmdDescSay l))
-
 
 actionFunForLang :: HasCallStack => Lang -> ActionFun
 actionFunForLang = \case CommonLang    -> undefined
@@ -465,9 +427,7 @@ actionFunForLang = \case CommonLang    -> undefined
                          NymphLang     -> naelyni
                          VulpenoidLang -> vulpenoidean
 
-
 -----
-
 
 about :: HasCallStack => ActionFun
 about (NoArgs i mq cols) = do
@@ -477,9 +437,7 @@ about (NoArgs i mq cols) = do
     helper = multiWrapSend mq cols =<< liftIO [ T.lines cont | file <- mkMudFilePath aboutFileFun, cont <- T.readFile file ]
 about p = withoutArgs about p
 
-
 -----
-
 
 admin :: HasCallStack => ActionFun
 admin p@(NoArgs'' _                        ) = adminList p
@@ -518,7 +476,6 @@ admin   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs 
         in (findFullNameForAbbrev strippedTarget . filterRoot . mkAdminIdSingList $ ms) |&| maybe notFound found
 admin p = pmf "admin" p
 
-
 adminList :: HasCallStack => ActionFun
 adminList (NoArgs i mq cols) = sequence_ [ logPlaExecArgs "admin" [] i, multiWrapSend mq cols =<< helper =<< getState ]
   where
@@ -538,16 +495,13 @@ adminList (NoArgs i mq cols) = sequence_ [ logPlaExecArgs "admin" [] i, multiWra
                 in ()!# combineds ? return combineds :? unadulterated sorryNoAdmins
 adminList p = pmf "adminList" p
 
-
 -----
-
 
 alertExec :: HasCallStack => CmdName -> ActionFun
 alertExec cn (NoArgs      i mq cols         ) = alertExecHelper i mq cols cn "" ""
 alertExec cn (OneArgLower i mq cols a       ) = alertExecHelper i mq cols cn a  a
 alertExec cn (WithArgs    i mq cols as@(a:_)) = alertExecHelper i mq cols cn a . spaces $ as
 alertExec _  p                                = pmf "alertExec" p
-
 
 alertExecHelper :: HasCallStack => Id -> MsgQueue -> Cols -> CmdName -> Text -> Text -> MudStack ()
 alertExecHelper i mq cols cn target args = do
@@ -570,7 +524,6 @@ alertExecHelper i mq cols cn target args = do
     argsMsg | ()# args      = "with no arguments"
             | otherwise     = "with the following arguments: " <> dblQuote args
 
-
 alertExecFindTargetSing :: HasCallStack => Id -> MudState -> Text -> Text
 alertExecFindTargetSing _ _  ""     = ""
 alertExecFindTargetSing i ms target = let (_, _, inRms) = sortArgsInvEqRm InRm . pure $ target
@@ -580,9 +533,7 @@ alertExecFindTargetSing i ms target = let (_, _, inRms) = sortArgsInvEqRm InRm .
                                                                         (Right is:_) -> commas . map (`getSing` ms) $ is
                                                                         _            -> ""
 
-
 -----
-
 
 bars :: HasCallStack => ActionFun
 bars (NoArgs i mq cols) = getState >>= \ms ->
@@ -602,7 +553,6 @@ bars (LowerNub i mq cols as) = getState >>= \ms ->
          = T.concat [ "Please specify any of the following: ", a, ", or ", dblQuote "fp", "." ]
 bars p = pmf "bars" p
 
-
 mkBar :: HasCallStack => Int -> Text -> (Int, Int) -> Text
 mkBar x txt (c, m) = let ratio  = c `divide` m
                          greens = round $ fromIntegral x * ratio
@@ -611,14 +561,11 @@ mkBar x txt (c, m) = let ratio  = c `divide` m
                          b      = colorWith redBarColor   . T.replicate reds   $ " "
                      in T.concat [ T.toUpper txt, ": ", a, b, " ", showTxt . round $ 100 * ratio, "%" ]
 
-
 mkPtPairs :: HasCallStack => Id -> MudState -> [(Text, (Int, Int))]
 mkPtPairs i ms = let (hps, mps, pps, fps) = getPts i ms
                  in [ ("hp", hps), ("mp", mps), ("pp", pps), ("fp", fps) ]
 
-
 -----
-
 
 bonus :: HasCallStack => ActionFun
 bonus p@AdviseNoArgs              = advise p ["bonus"] adviceBonusNoArgs
@@ -665,17 +612,13 @@ bonus   (OneArgLower i mq cols a) = getState >>= \ms ->
     sorry = wrapSend mq cols
 bonus p = advise p ["bonus"] adviceBonusExcessArgs
 
-
 -----
-
 
 bug :: HasCallStack => ActionFun
 bug p@AdviseNoArgs = advise p ["bug"] adviceBugNoArgs
 bug p              = bugTypoLogger p BugLog
 
-
 -----
-
 
 chan :: HasCallStack => ActionFun
 chan (NoArgs i mq cols) = getState >>= \ms ->
@@ -754,17 +697,13 @@ chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     in findFullNameForAbbrev (T.toLower target) (map T.toLower cns) |&| maybe notFound found
 chan p = pmf "chan" p
 
-
 -----
-
 
 clear :: HasCallStack => ActionFun
 clear (NoArgs' i mq) = sequence_ [ logPlaExec "clear" i, send mq . T.pack $ clearScreenCode ]
 clear p              = withoutArgs clear p
 
-
 -----
-
 
 color :: HasCallStack => ActionFun
 color (NoArgs' i mq) = sequence_ [ logPlaExec "color" i, send mq . nl . T.concat $ msg ]
@@ -778,16 +717,12 @@ color (NoArgs' i mq) = sequence_ [ logPlaExec "color" i, send mq . nl . T.concat
             , nl . T.concat $ [ pad 19 "Underlined", underline . spaced $ "CurryMUD" ] ]
 color p = withoutArgs color p
 
-
 -----
-
 
 cmdNotFoundAction :: HasCallStack => ActionFun
 cmdNotFoundAction ActionParams { .. } = sendCmdNotFound myId plaMsgQueue plaCols
 
-
 -----
-
 
 connect :: HasCallStack => ActionFun
 connect p@AdviseNoArgs         = advise p ["connect"] adviceConnectNoArgs
@@ -826,14 +761,11 @@ connect p@(Lower i mq cols as) = getState >>= \ms ->
         rndmDo_ (calcProbConnectBlink targetId ms) . mkExpAction "blink" . mkActionParams targetId ms $ []
 connect p = pmf "connect" p
 
-
 -----
-
 
 date :: HasCallStack => ActionFun
 date (NoArgs i mq cols) = logPlaOut "date" i =<< showDate mq cols
 date p                  = withoutArgs date p
-
 
 showDate :: HasCallStack => MsgQueue -> Cols -> MudStack [Text]
 showDate mq cols = liftIO getCurryTime >>= \CurryTime { .. } ->
@@ -853,9 +785,7 @@ showDate mq cols = liftIO getCurryTime >>= \CurryTime { .. } ->
                , prd $ "The date is " <> T.intercalate "-" (map showTxt [ curryMonth, curryDayOfMonth, curryYear ]) ]
     in ((>>) <$> multiWrapSend mq cols <*> return) msgs
 
-
 -----
-
 
 description :: HasCallStack => ActionFun
 description (NoArgs i mq cols) = getEntDesc i <$> getState >>= \desc -> do
@@ -864,7 +794,6 @@ description (NoArgs i mq cols) = getEntDesc i <$> getState >>= \desc -> do
     promptChangeIt mq cols
     setInterp i . Just $ interpConfirmDescChange
 description p = withoutArgs description p
-
 
 interpConfirmDescChange :: HasCallStack => Interp
 interpConfirmDescChange cn (NoArgs i mq cols) = case yesNoHelper cn of
@@ -877,7 +806,6 @@ interpConfirmDescChange cn (NoArgs i mq cols) = case yesNoHelper cn of
     descRules = T.concat [ lSpcs, rulesIntroMsg, " ", violationMsg, quoteWith nlTxt descRulesMsg, descRule5 ]
 interpConfirmDescChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
-
 descHelper :: HasCallStack => ServerSettings -> Id -> MsgQueue -> Cols -> MudStack ()
 descHelper s i mq cols = sequence_ [ writeMsg mq . InacSecs $ maxInacSecsCompose
                                    , send mq . nl . T.unlines . parseWrapXform s cols $ enterDescMsg
@@ -888,7 +816,6 @@ descHelper s i mq cols = sequence_ [ writeMsg mq . InacSecs $ maxInacSecsCompose
       desc' -> do multiWrapSend  mq cols [ "", "You entered:", desc' ]
                   wrapSendPrompt mq cols $ "Keep this description? " <> mkYesNoChoiceTxt
                   setInterp i . Just . interpConfirmDesc $ desc'
-
 
 interpConfirmDesc :: HasCallStack => Text -> Interp
 interpConfirmDesc desc cn (NoArgs i mq cols) = case yesNoHelper cn of
@@ -907,9 +834,7 @@ interpConfirmDesc desc cn (NoArgs i mq cols) = case yesNoHelper cn of
     resetInacTimer = writeMsg mq . InacSecs $ maxInacSecs
 interpConfirmDesc _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
-
 -----
-
 
 disconnect :: HasCallStack => ActionFun
 disconnect p@AdviseNoArgs         = advise p ["disconnect"] adviceDisconnectNoArgs
@@ -952,9 +877,7 @@ disconnect p@(Lower i mq cols as) = getState >>= \ms ->
         return . concat . zipWith3 f otherIds namesForMe $ namesForTargets
 disconnect p = pmf "disconnect" p
 
-
 -----
-
 
 drink :: HasCallStack => ActionFun
 drink p@(NoArgs' i mq                   ) = advise p ["drink"] adviceDrinkNoArgs   >> sendDfltPrompt mq i
@@ -1020,9 +943,7 @@ drink p@(Lower   i mq cols [amt, target]) = getState >>= \ms ->
                   | otherwise                       -> drinkRm
 drink p = advise p ["drink"] adviceDrinkExcessArgs
 
-
 -----
-
 
 dropAction :: HasCallStack => ActionFun
 dropAction p@AdviseNoArgs     = advise p ["drop"] adviceDropNoArgs
@@ -1042,16 +963,12 @@ dropAction p@(LowerNub' i as) = genericAction p helper "drop"
                 in genericCheckActing i ms (Right "drop an item") [ Drinking, Sacrificing ] f
 dropAction p = pmf "dropAction" p
 
-
 -----
-
 
 dwarvish :: HasCallStack => ActionFun
 dwarvish = sayHelper DwarfLang
 
-
 -----
-
 
 eat :: HasCallStack => ActionFun
 eat p@(NoArgs' i mq                   ) = advise p ["eat"] adviceEatNoArgs >> sendDfltPrompt mq i
@@ -1089,16 +1006,12 @@ eat p@(Lower   i mq cols [amt, target]) = getState >>= \ms ->
                        | otherwise       -> eatInv
 eat p = advise p ["eat"] adviceEatExcessArgs
 
-
 -----
-
 
 elvish :: HasCallStack => ActionFun
 elvish = sayHelper ElfLang
 
-
 -----
-
 
 emote :: HasCallStack => ActionFun
 emote p@AdviseNoArgs                                                       = advise p ["emote"] adviceEmoteNoArgs
@@ -1166,9 +1079,7 @@ emote   (WithArgs i mq cols as) = getState >>= \ms ->
     sorry t              = Left . quoteWith' (t, sorryEmoteTargetRmOnly) $ " "
 emote p = pmf "emote" p
 
-
 -----
-
 
 emptyAction :: HasCallStack => ActionFun
 emptyAction p@AdviseNoArgs            = advise p ["empty"] adviceEmptyNoArgs
@@ -1208,9 +1119,7 @@ emptyAction   (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs
               _          -> a' & _2 <>~ pure (sorryEmptyType s)
 emptyAction p = pmf "emptyAction" p
 
-
 -----
-
 
 equip :: HasCallStack => ActionFun
 equip   (NoArgs   i mq cols   ) = getState >>= \ms -> send mq . nl . mkEqDesc i cols ms i (getSing i ms) $ PlaType
@@ -1230,18 +1139,14 @@ equip p@(LowerNub i mq cols as) = checkDark p $ getState >>= \ms ->
     sorryInRm  = wrapUnlinesNl cols . sorryEquipInvLook EquipCmd $ LookCmd
 equip p = pmf "equip" p
 
-
 -----
-
 
 exits :: HasCallStack => ActionFun
 exits p@(NoArgs i mq cols) = checkDark p $ do logPlaExec "exits" i
                                               send mq . nl . mkExitsSummary cols . getMobRm i =<< getState
 exits p                    = withoutArgs exits p
 
-
 -----
-
 
 expCmdList :: HasCallStack => ActionFun
 expCmdList (NoArgs i mq cols) = do
@@ -1250,7 +1155,6 @@ expCmdList (NoArgs i mq cols) = do
 expCmdList (LowerNub i mq cols as) = do logPlaExecArgs "expressive" as i
                                         dispMatches i mq cols cmdNamePadding Isn'tRegex as . mkExpCmdListTxt i =<< getState
 expCmdList p                       = pmf "expCmdList" p
-
 
 mkExpCmdListTxt :: HasCallStack => Id -> MudState -> [Text]
 mkExpCmdListTxt i ms =
@@ -1279,9 +1183,7 @@ mkExpCmdListTxt i ms =
           (Just "" ) -> (indent <>) . parensQuote $ ecn' <> " clears room description."
           (Just txt) -> (indent <>) . parensQuote $ T.concat [ ecn', " sets room description to ", dblQuote txt, "." ]
 
-
 -----
-
 
 extinguish :: HasCallStack => ActionFun
 extinguish p@(LowerNub' i as) = getState >>= \ms ->
@@ -1311,9 +1213,7 @@ extinguish p@(LowerNub' i as) = getState >>= \ms ->
                                                Just i' | getLightIsLit i' ms -> Just i' | otherwise -> Nothing
 extinguish p = pmf "extinguish" p
 
-
 -----
-
 
 feeling :: HasCallStack => ActionFun
 feeling (NoArgs i mq cols) = spiritHelper i a b
@@ -1328,22 +1228,17 @@ feeling (NoArgs i mq cols) = spiritHelper i a b
                \detached from your body. The whole experience is quite surreal."
 feeling p = withoutArgs feeling p
 
-
 mkFeelingDescs :: HasCallStack => Id -> MudState -> [Text]
 mkFeelingDescs i ms = M.foldrWithKey helper [] . getFeelingMap i $ ms
   where
     helper tag (Feeling fv _ _) = (getFeelingFun tag ms fv :)
 
-
 -----
-
 
 felinoidean :: HasCallStack => ActionFun
 felinoidean = sayHelper FelinoidLang
 
-
 -----
-
 
 fill :: HasCallStack => RmActionFun
 fill p@AdviseNoArgs  = advise p [] adviceFillNoArgs
@@ -1384,9 +1279,7 @@ fill p@(Lower' i as) = getState >>= \ms ->
                     a -> pmf "fill helper" a
 fill p = pmf "fill" p
 
-
 -----
-
 
 getAction :: HasCallStack => ActionFun
 getAction p@AdviseNoArgs         = advise p ["get"] adviceGetNoArgs
@@ -1425,9 +1318,7 @@ getAction p@(Lower i mq cols as) = getState >>= \ms -> case reverse as of
         in (ms'', (toSelfs', bs', logMsgs'))
 getAction p = pmf "getAction" p
 
-
 -----
-
 
 give :: HasCallStack => ActionFun
 give p@AdviseNoArgs  = advise p ["give"] adviceGiveNoArgs
@@ -1447,16 +1338,13 @@ give p@(Lower' i as) = genericAction p helper "give"
         , ()# rmInvCoins  |?| Just sorryNoOneHere ) |&| uncurry mplus
 give p = pmf "give" p
 
-
 -----
-
 
 go :: HasCallStack => Text -> ActionFun
 go dir p@(NoArgs i mq cols) = getState >>= \ms ->
     let f = bool (wrapSend mq cols exhaustedMsg) (tryMove i mq cols dir) . (> 0) . fst . getFps i $ ms
     in checkActing p ms (Right "move") (pure Sacrificing) f
 go dir p = withoutArgs (go dir) p
-
 
 tryMove :: HasCallStack => Id -> MsgQueue -> Cols -> Text -> MudStack ()
 tryMove i mq cols dir = helper |&| modifyState >=> \case Left  msg          -> wrapSend mq cols msg
@@ -1496,7 +1384,6 @@ tryMove i mq cols dir = helper |&| modifyState >=> \case Left  msg          -> w
               | otherwise               = "enters"
     showRm ri = ((|<>|) <$> showTxt . fst <*> views rmName parensQuote . snd) . (ri, )
 
-
 findExit :: HasCallStack => Rm -> LinkName -> Maybe (Text, Id, MoveCost, Maybe Text, Maybe Text)
 findExit rm ln = case views rmLinks (filter isValid) rm of
   []     -> Nothing
@@ -1515,24 +1402,19 @@ findExit rm ln = case views rmLinks (filter isValid) rm of
     getDestMsg   NonStdLink { .. } = Just _nslDestMsg
     getDestMsg   _                 = Nothing
 
-
 -- The following 3 functions are in this module because they reference "go" (which references "look")...
 mkNonStdRmLinkCmds :: HasCallStack => Rm -> [Cmd]
 mkNonStdRmLinkCmds (view rmLinks -> rls) = [ mkCmdForRmLink rl | rl <- rls, isNonStdLink rl ]
-
 
 mkCmdForRmLink :: HasCallStack => RmLink -> Cmd
 mkCmdForRmLink (T.toLower . mkCmdNameForRmLink -> cn) =
     Cmd { cmdName = cn, cmdPriorityAbbrev = Nothing, cmdFullName = cn, cmdAction = Action (go cn) True, cmdDesc = "" }
 
-
 mkCmdNameForRmLink :: HasCallStack => RmLink -> Text
 mkCmdNameForRmLink rl = T.toLower $ case rl of StdLink    { .. } -> linkDirToCmdName _slDir
                                                NonStdLink { .. } -> _nslName
 
-
 -----
-
 
 help :: HasCallStack => ActionFun
 help (NoArgs i mq cols) = liftIO (T.readFile =<< mkMudFilePath rootHeplFileFun) |&| try >=> either handler helper
@@ -1563,10 +1445,8 @@ help (LowerNub i mq cols as) = ((,) <$> getState <*> getServerSettings) >>= \(ms
     pager i mq Nothing . intercalateDivider cols $ helpTxts
 help p = pmf "help" p
 
-
 mkHelpTriple :: HasCallStack => Id -> MudState -> (Bool, Bool, [Lang])
 mkHelpTriple i ms = (isSpiritId i ms, isAdminId i ms, getKnownLangs i ms)
-
 
 mkHelpData :: HasCallStack => [Lang] -> Bool -> Bool -> IO [Help]
 mkHelpData ls is ia = do
@@ -1611,7 +1491,6 @@ mkHelpData ls is ia = do
           | otherwise = otherwise
     filterSpiritCmds cns = [ cn | cn <- cns, let scns = map cmdName spiritCmds, T.pack cn `elem` scns ]
 
-
 parseHelpTxt :: HasCallStack => ServerSettings -> [Cmd] -> Cols -> Text -> [Text]
 parseHelpTxt s cmds cols txt = [ procCmdTokens . xformLeadingSpaceChars . expandDividers cols $ t | t <- parseWrap s cols txt ]
   where
@@ -1624,7 +1503,6 @@ parseHelpTxt s cmds cols txt = [ procCmdTokens . xformLeadingSpaceChars . expand
                                 in (cn, ) . uncurry (<>) . first (colorWith abbrevColor) . maybe (cn, "") (cpa, ) $ a
     procCmdTokens l = l
 
-
 getHelpByName :: HasCallStack => Cols -> [Help] -> HelpName -> MudStack (Text, Text)
 getHelpByName cols hs name = findFullNameForAbbrev name [ (id &&& helpName) h | h <- hs ] |&| maybe sorry found
   where
@@ -1636,23 +1514,17 @@ getHelpByName cols hs name = findFullNameForAbbrev name [ (id &&& helpName) h | 
             fileIOExHandler "getHelpByName readHelpFile" e
             return . wrapUnlines cols . helpFileErrorMsg $ hn
 
-
 -----
-
 
 hobbitish :: HasCallStack => ActionFun
 hobbitish = sayHelper HobbitLang
 
-
 -----
-
 
 hominal :: HasCallStack => ActionFun
 hominal = sayHelper HumanLang
 
-
 -----
-
 
 -- The "intro" cmd uses the "ClassifiedBcast" data type to achieve the following effect: when a player introduces himself
 -- to more than one target with a single execution of the cmd, it will appear to each target as if they were the first
@@ -1719,9 +1591,7 @@ intro p@(LowerNub i mq cols as) = getStateTime >>= \(ms, ct) ->
     fromClassifiedBcast (NonTargetBcast b) = b
 intro p = pmf "intro" p
 
-
 -----
-
 
 inv :: HasCallStack => ActionFun
 inv   (NoArgs   i mq cols   ) = getState >>= \ms@(getSing i -> s) -> send mq . nl . mkInvCoinsDesc i cols ms i $ s
@@ -1743,16 +1613,12 @@ inv p@(LowerNub i mq cols as) = checkDark p $ getState >>= \ms ->
     sorryInRm                       = wrapUnlinesNl cols . sorryEquipInvLook InvCmd $ LookCmd
 inv p = pmf "inv" p
 
-
 -----
-
 
 lagomorphean :: HasCallStack => ActionFun
 lagomorphean = sayHelper LagomorphLang
 
-
 -----
-
 
 leave :: HasCallStack => ActionFun
 leave p@AdviseNoArgs                     = advise p ["leave"] adviceLeaveNoArgs
@@ -1801,16 +1667,13 @@ leave p@(WithArgs i mq cols (nub -> as)) =
                  , isPlur ? (nl "following channels:" <> commas ns) :? (head ns <> " channel"), "." ]
 leave p = pmf "leave" p
 
-
 -----
-
 
 light :: HasCallStack => ActionFun
 light p@AdviseNoArgs            = advise p ["light"] adviceLightNoArgs
 light p@(OneArgLower' _ a     ) = lightUp p a Nothing
 light p@(WithArgs _ _ _ [a, b]) = lightUp p a . Just $ b
 light p                         = advise p ["light"] adviceLightExcessArgs
-
 
 lightUp :: HasCallStack => ActionParams -> Text -> Maybe Text -> MudStack ()
 lightUp p@ActionParams { myId } lightArg fireArg = getState >>= \ms ->
@@ -1875,9 +1738,7 @@ lightUp p@ActionParams { myId } lightArg fireArg = getState >>= \ms ->
                                                                          ([],    eis:_) -> h eis
                                                                          _              -> sorry sorryLightCoins
 
-
 -----
-
 
 link :: HasCallStack => ActionFun
 link (NoArgs i mq cols) = do
@@ -1969,9 +1830,7 @@ link p@(LowerNub i mq cols as) = getState >>= \ms -> if
     helperLinkEitherCoins a Right {}    = let b = (nlnl sorryLinkCoin, pure i) in first (`appendIfUnique` b) a
 link p = pmf "link" p
 
-
 -----
-
 
 listen :: HasCallStack => ActionFun
 listen (NoArgs i mq cols) = getState >>= \ms -> let humMsgs = mkHumMsgs ms
@@ -1986,9 +1845,7 @@ listen (NoArgs i mq cols) = getState >>= \ms -> let humMsgs = mkHumMsgs ms
     helper ms (f, g) = foldr (\i' acc -> maybe acc (: acc) . mkMaybeHumMsg i ms i' $ g) [] . uncurry f $ (i, ms)
 listen p = withoutArgs listen p
 
-
 -----
-
 
 look :: HasCallStack => ActionFun
 look p@(NoArgs i mq cols) = checkDark p $ getState >>= \ms ->
@@ -2061,9 +1918,7 @@ look p@(LowerNub i mq cols as) = checkDark p $ mkRndmVector >>= \v ->
                                                          & _2._4 %~ slashes
 look p = pmf "look" p
 
-
 -----
-
 
 lookSelf :: HasCallStack => ActionFun
 lookSelf (NoArgs i mq cols) = spiritHelper i a b
@@ -2072,14 +1927,11 @@ lookSelf (NoArgs i mq cols) = spiritHelper i a b
     b    = const . wrapSend mq cols $ "You are an invisible spirit, detached from your body and floating."
 lookSelf p = withoutArgs lookSelf p
 
-
 -----
-
 
 motd :: HasCallStack => ActionFun
 motd (NoArgs i mq cols) = logPlaExec "motd" i >> showMotd mq cols
 motd p                  = withoutArgs motd p
-
 
 showMotd :: HasCallStack => MsgQueue -> Cols -> MudStack ()
 showMotd mq cols = send mq =<< helper
@@ -2090,16 +1942,12 @@ showMotd mq cols = send mq =<< helper
                 , cont <- T.readFile file ]
     handler e = fileIOExHandler "showMotd" e >> return (wrapUnlinesNl cols motdErrorMsg)
 
-
 -----
-
 
 naelyni :: HasCallStack => ActionFun
 naelyni = sayHelper NymphLang
 
-
 -----
-
 
 newChan :: HasCallStack => ActionFun
 newChan p@AdviseNoArgs                     = advise p ["newchannel"] adviceNewChanNoArgs
@@ -2150,13 +1998,10 @@ newChan p@(WithArgs i mq cols (nub -> as)) = getState >>= \ms ->
                  , isPlur ? nl "s:" <> commas ns :? spcL (head ns), "." ]
 newChan p = pmf "newChan" p
 
-
 -----
-
 
 npcAsSelf :: HasCallStack => ActionFun
 npcAsSelf p = execIfPossessed p "." npcAsSelfHelper
-
 
 npcAsSelfHelper :: HasCallStack => Id -> ActionFun
 npcAsSelfHelper _ p@(NoArgs'  i mq     ) = advise p [] adviceAsSelfNoArgs >> sendDfltPrompt mq i
@@ -2164,21 +2009,16 @@ npcAsSelfHelper _   (WithArgs i mq _ as) = do logPlaExecArgs "." as i
                                               writeMsg mq . AsSelf . nl . T.unwords $ as
 npcAsSelfHelper _ p                      = pmf "npcAsSelfHelper" p
 
-
 -----
-
 
 npcDispCmdList :: HasCallStack => ActionFun
 npcDispCmdList p@(LowerNub' i as) = sequence_ [ logPlaExecArgs "?" as i, flip dispCmdList p . mkNpcCmds i =<< getState ]
 npcDispCmdList p                  = pmf "npcDispCmdList" p
 
-
 -----
-
 
 npcExorcise :: HasCallStack => ActionFun
 npcExorcise p = execIfPossessed p "exorcise" npcExorciseHelper
-
 
 npcExorciseHelper :: HasCallStack => Id -> ActionFun
 npcExorciseHelper pi (NoArgs i mq cols) = getState >>= \ms -> do
@@ -2189,17 +2029,13 @@ npcExorciseHelper pi (NoArgs i mq cols) = getState >>= \ms -> do
     sendGmcpRmInfo Nothing pi ms
 npcExorciseHelper pi p = withoutArgs (npcExorciseHelper pi) p
 
-
 -----
-
 
 plaDispCmdList :: HasCallStack => ActionFun
 plaDispCmdList p@(LowerNub' i as) = sequence_ [ logPlaExecArgs "?" as i, flip dispCmdList p . mkPlaCmds i =<< getState ]
 plaDispCmdList p                  = pmf "plaDispCmdList" p
 
-
 -----
-
 
 putAction :: HasCallStack => ActionFun
 putAction p@AdviseNoArgs  = advise p ["put"] advicePutNoArgs
@@ -2233,16 +2069,13 @@ putAction p@(Lower' i as) = getState >>= \ms ->
             in (ms', (toSelfs, bs, logMsgs, fs))
 putAction p = pmf "putAction" p
 
-
 -----
-
 
 password :: HasCallStack => ActionFun
 password (NoArgs i mq _) = do
     sendPrompt mq $ telnetHideInput <> "Current password:"
     setInterp i . Just $ interpCurrPW
 password p = withoutArgs password p
-
 
 interpCurrPW :: HasCallStack => Interp
 interpCurrPW cn (ActionParams i mq cols as)
@@ -2256,7 +2089,6 @@ interpCurrPW cn (ActionParams i mq cols as)
               setInterp i . Just . interpNewPW $ pw
       else pwSorryHelper i mq cols sorryInterpPW
 
-
 pwSorryHelper :: HasCallStack => Id -> MsgQueue -> Cols -> Text -> MudStack ()
 pwSorryHelper i mq cols msg = do
     send mq telnetShowInput
@@ -2264,7 +2096,6 @@ pwSorryHelper i mq cols msg = do
     wrapSend mq cols msg
     sendDfltPrompt mq i
     resetInterp i
-
 
 interpNewPW :: HasCallStack => Text -> Interp
 interpNewPW oldPW cn (NoArgs i mq cols)
@@ -2279,7 +2110,6 @@ interpNewPW oldPW cn (NoArgs i mq cols)
     helper f = ()# T.filter f cn
 interpNewPW _ _ ActionParams { .. } = pwSorryHelper myId plaMsgQueue plaCols sorryInterpNewPwExcessArgs
 
-
 interpVerifyNewPW :: HasCallStack => Text -> Text -> Interp
 interpVerifyNewPW oldPW pass cn (NoArgs i mq cols)
   | cn == pass = getSing i <$> getState >>= \s -> do
@@ -2293,9 +2123,7 @@ interpVerifyNewPW oldPW pass cn (NoArgs i mq cols)
   | otherwise = pwSorryHelper i mq cols sorryInterpNewPwMatch
 interpVerifyNewPW _ _ _ p = pmf "interpVerifyNewPW" p
 
-
 -----
-
 
 question :: HasCallStack => ActionFun
 question (NoArgs' i mq) = getState >>= \ms ->
@@ -2343,9 +2171,7 @@ question (Msg i mq cols msg) = getState >>= \ms -> if
                 Right (bs, logMsg) -> ioHelper logMsg =<< g bs
 question p = pmf "question" p
 
-
 -----
-
 
 quit :: HasCallStack => ActionFun -- TODO: Can you quit while attacking?
 quit (NoArgs i mq cols) = logPlaExec "quit" i >> mIf (isSpiritId i <$> getState)
@@ -2353,17 +2179,13 @@ quit (NoArgs i mq cols) = logPlaExec "quit" i >> mIf (isSpiritId i <$> getState)
     (wrapSend mq cols sleepMsg >> writeMsg mq Quit)
 quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceQuitExcessArgs
 
-
 -----
-
 
 quitCan'tAbbrev :: HasCallStack => ActionFun
 quitCan'tAbbrev (NoArgs _ mq cols) = wrapSend mq cols sorryQuitCan'tAbbrev
 quitCan'tAbbrev p                  = withoutArgs quitCan'tAbbrev p
 
-
 -----
-
 
 razzle :: HasCallStack => ActionFun
 razzle p@(ActionParams i mq cols [ "dazzle", "root", "beer" ]) = mIf (hasRazzledId i <$> getState)
@@ -2379,9 +2201,7 @@ razzle p@(ActionParams i mq cols [ "dazzle", "root", "beer" ]) = mIf (hasRazzled
                        , bcastOtherAdmins i . prd $ s <> " has executed " <> dblQuote "razzle dazzle root beer" ] ))
 razzle p = cmdNotFoundAction p
 
-
 -----
-
 
 readAction :: HasCallStack => ActionFun
 readAction p@AdviseNoArgs            = advise p ["read"] adviceReadNoArgs
@@ -2429,9 +2249,7 @@ readAction p@(LowerNub i mq cols as) = checkDark p $ (,) <$> getState <*> mkRndm
     wrapper = T.unlines . map (multiWrap cols . T.lines)
 readAction p = pmf "readAction" p
 
-
 -----
-
 
 ready :: HasCallStack => ActionFun
 ready p@AdviseNoArgs     = advise p ["ready"] adviceReadyNoArgs
@@ -2455,7 +2273,6 @@ ready p@(LowerNub' i as) = genericAction p helper "ready"
           else genericSorry ms dudeYourHandsAreEmpty
 ready p = pmf "ready" p
 
-
 helperReady :: HasCallStack => Id
                             -> MudState
                             -> Desig
@@ -2464,7 +2281,6 @@ helperReady :: HasCallStack => Id
                             -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
 helperReady _ _  _ a (Left  msg,       _   ) = a & _3 <>~ pure msg
 helperReady i ms d a (Right targetIds, mrol) = foldl' (readyDispatcher i ms d mrol) a targetIds
-
 
 readyDispatcher :: HasCallStack => Id
                                 -> MudState
@@ -2488,9 +2304,7 @@ readyDispatcher i ms d mrol a targetId =
     sorry      = Left . sorryReadyType $ targetSing
     targetSing = getSing targetId ms
 
-
 -- Readying clothing:
-
 
 readyCloth :: HasCallStack => Id
                            -> MudState
@@ -2519,7 +2333,6 @@ readyCloth i ms d mrol a@(et, _, _, _, _) clothId clothSing | em <- et IM.! i, c
                     , (T.concat [ serialize d, " ", v, "s ", vo, " on ", poss, " ", slot, "." ], desigOtherIds d) )
         vo        = mkSerVerbObj . aOrAn $ clothSing
         poss      = mkPossPro . getSex i $ ms
-
 
 getAvailClothSlot :: HasCallStack => Id -> MudState -> Cloth -> EqMap -> Either Text Slot
 getAvailClothSlot i ms cloth em | sexy <- getSex i ms, h <- getHand i ms =
@@ -2554,12 +2367,10 @@ getAvailClothSlot i ms cloth em | sexy <- getSex i ms, h <- getHand i ms =
           | cloth `elem` [ Skirt, Dress, Backpack, Cloak ]     = sorryReadyAlreadyWearing . pp $ cloth
           | ci <- em M.! clothToSlot cloth, s <- getSing ci ms = sorryReadyAlreadyWearing s
 
-
 otherSex :: Sex -> Sex
 otherSex Male   = Female
 otherSex Female = Male
 otherSex NoSex  = Female
-
 
 rEarringSlots, lEarringSlots, noseRingSlots, necklaceSlots, rBraceletSlots, lBraceletSlots :: [Slot]
 rEarringSlots  = [ EarringR1S, EarringR2S ]
@@ -2568,7 +2379,6 @@ noseRingSlots  = [ NoseRing1S, NoseRing2S ]
 necklaceSlots  = Necklace1S  `enumFromTo` Necklace2S
 rBraceletSlots = BraceletR1S `enumFromTo` BraceletR3S
 lBraceletSlots = BraceletL1S `enumFromTo` BraceletL3S
-
 
 getDesigClothSlot :: HasCallStack => MudState -> Sing -> Cloth -> EqMap -> RightOrLeft -> Either Text Slot
 getDesigClothSlot ms clothSing cloth em rol
@@ -2595,9 +2405,7 @@ getDesigClothSlot ms clothSing cloth em rol
     sorryBracelet    = sorryReadyClothFullOneSide cloth . getSlotFromList rBraceletSlots $ lBraceletSlots
     slotFromRol      = fromRol @Slot rol
 
-
 -- Readying weapons:
-
 
 readyWpn :: HasCallStack => Id
                          -> MudState
@@ -2628,7 +2436,6 @@ readyWpn i ms d mrol a@(et, _, _, _, _) wpnId wpnSing | em <- et IM.! i, wpn <- 
     vo        = mkSerVerbObj . aOrAn $ wpnSing
     poss      = mkPossPro . getSex i $ ms
 
-
 getAvailHandSlot :: HasCallStack => MudState -> Id -> Sing -> EqMap -> Either Text Slot
 getAvailHandSlot ms i s em = let h@(otherHand -> oh) = getHand i ms in
     (findAvailSlot em . map getSlotForHand $ [ h, oh ]) |&| maybe (Left . sorryReadyHandsFull $ s) Right
@@ -2636,7 +2443,6 @@ getAvailHandSlot ms i s em = let h@(otherHand -> oh) = getHand i ms in
     getSlotForHand h = case h of RHand  -> RHandS
                                  LHand  -> LHandS
                                  NoHand -> RHandS
-
 
 getDesigHandSlot :: HasCallStack => MudState -> Sing -> EqMap -> RightOrLeft -> Either Text Slot
 getDesigHandSlot ms wpnSing em rol
@@ -2648,9 +2454,7 @@ getDesigHandSlot ms wpnSing em rol
                             _ -> pmf "getDesigHandSlot desigSlot" rol
     sorry i   = sorryReadyHand (getSing i ms) desigSlot
 
-
 -- Readying armor:
-
 
 readyArm :: HasCallStack => Id
                          -> MudState
@@ -2673,15 +2477,12 @@ readyArm i ms d mrol a@(et, _, _, _, _) armId armSing | em <- et IM.! i, sub <- 
       Shield -> mkReadyMsgs "ready" "readies"
       _      -> donMsgs
 
-
 getAvailArmSlot :: HasCallStack => MudState -> ArmSub -> EqMap -> Either Text Slot
 getAvailArmSlot ms (armSubToSlot -> slot) em = maybeSingleSlot em slot |&| maybe (Left sorry) Right
   where
     sorry | i <- em M.! slot = sorryReadyAlreadyWearing . getSing i $ ms
 
-
 -- Readying light sources:
-
 
 readyLight :: HasCallStack => Id
                            -> MudState
@@ -2703,9 +2504,7 @@ readyLight i ms d mrol a@(et, _, _, _, _) lightId lightSing | em <- et IM.! i = 
   where
     sorry msg = a & _3 <>~ pure msg
 
-
 -----
-
 
 refuel :: HasCallStack => RmActionFun
 refuel p@AdviseNoArgs                     = advise p [] adviceRefuelNoArgs
@@ -2775,9 +2574,7 @@ refuel p@(Lower i mq cols [lamp, vessel]) = getState >>= \ms ->
         in [ wrapSend mq cols toSelf, bcastIfNotIncogNl i bs, logPla "refuel helper refuelerHelper" i logMsg ]
 refuel p = advise p ["refuel"] adviceRefuelExcessArgs
 
-
 -----
-
 
 remove :: HasCallStack => ActionFun
 remove p@AdviseNoArgs  = advise p ["remove"] adviceRemoveNoArgs
@@ -2795,9 +2592,7 @@ remove p@(Lower' i as) = genericAction p helper "remove"
           in genericCheckActing i ms (Right "remove an item from a container") [ Drinking, Sacrificing ] f
 remove p = pmf "remove" p
 
-
 -----
-
 
 roomDesc :: HasCallStack => ActionFun
 roomDesc (NoArgs i mq cols) = do logPla "roomDesc" i "clearing room description."
@@ -2810,15 +2605,12 @@ roomDesc (WithArgs i mq cols (T.unwords -> desc@(dblQuote -> desc'))) = if T.len
           wrapSend mq cols . prd $ "Your room description has been set to " <> desc'
 roomDesc p = pmf "roomDesc" p
 
-
 -----
-
 
 sacrifice :: HasCallStack => ActionFun
 sacrifice p@ActionParams { .. } = getState >>= \ms -> if isIncognitoId myId ms
   then wrapSend plaMsgQueue plaCols . sorryIncog $ "sacrifice"
   else sacrificer ms p
-
 
 sacrificer :: HasCallStack => MudState -> ActionFun
 sacrificer ms p@(NoArgs i mq cols) = case (findHolySymbolGodName `fanUncurry` findCorpseIdInMobRm) (i, ms) of
@@ -2838,15 +2630,12 @@ sacrificer ms p@(Lower i mq cols [a, b]) = case sacrificeHolySymbol i mq cols a 
   Right gn -> either id (flip (sacrificeHelper p) gn) . sacrificeCorpse i mq cols b $ ms
 sacrificer _ p = advise p ["sacrifice"] adviceSacrificeExcessArgs
 
-
 findHolySymbolGodName :: HasCallStack => Id -> MudState -> Maybe GodName
 findHolySymbolGodName i ms =
     (`getHolySymbolGodName` ms) <$> (listToMaybe . filter (`isHolySymbol` ms) . getInv i $ ms)
 
-
 findCorpseIdInMobRm :: HasCallStack => Id -> MudState -> Maybe Id
 findCorpseIdInMobRm i ms = listToMaybe . filter ((== CorpseType) . (`getType` ms)) . getMobRmInv i $ ms
-
 
 sacrificeHolySymbol :: HasCallStack => Id -> MsgQueue -> Cols -> Text -> MudState -> Either Fun GodName
 sacrificeHolySymbol i mq cols a ms =
@@ -2867,7 +2656,6 @@ sacrificeHolySymbol i mq cols a ms =
                                         (InRm,  _     ) -> sorry sorrySacrificeHolySymbolInRm
   where
     sorry msg = Left $ wrapSend mq cols msg >> sendDfltPrompt mq i
-
 
 sacrificeCorpse :: HasCallStack => Id -> MsgQueue -> Cols -> Text -> MudState -> Either Fun Id
 sacrificeCorpse i mq cols a ms =
@@ -2890,13 +2678,10 @@ sacrificeCorpse i mq cols a ms =
   where
     sorry msg = Left $ wrapSend mq cols msg >> sendDfltPrompt mq i
 
-
 -----
-
 
 say :: HasCallStack => ActionFun
 say = sayHelper CommonLang
-
 
 sayHelper :: HasCallStack => Lang -> ActionFun
 sayHelper l p@AdviseNoArgs                    = advise p [ mkCmdNameForLang l ] . adviceSayNoArgs $ l
@@ -2988,14 +2773,11 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms ->
                  in (pure toSelfMsg, toOthersBcasts, toSelfMsg)
 sayHelper _ p = pmf "sayHelper" p
 
-
 firstMobSay :: HasCallStack => Id -> PlaTbl -> (PlaTbl, [Text])
 firstMobSay i pt | pt^.ind i.to isNotFirstMobSay = (pt, [])
                  | otherwise                     = (pt & ind i %~ setPlaFlag IsNotFirstMobSay True, [ "", hintSay ])
 
-
 -----
-
 
 security :: HasCallStack => ActionFun
 security (NoArgs i mq cols) = getSing i <$> getState >>= \s ->
@@ -3010,12 +2792,10 @@ security (NoArgs i mq cols) = getSing i <$> getState >>= \s ->
            setInterp i . Just $ interpConfirmSecurityChange
 security p = withoutArgs security p
 
-
 securityHelper :: HasCallStack => Id -> MsgQueue -> Cols -> MudStack ()
 securityHelper i mq cols = do multiWrapSend mq cols $ securityWarn ++ mMempty ++ securityQs
                               promptSecurity mq
                               setInterp i . Just $ interpSecurityNum
-
 
 securityWarn :: [Text]
 securityWarn = [ "IMPORTANT: Resetting your password will require the assistance of a CurryMUD administrator. The \
@@ -3024,7 +2804,6 @@ securityWarn = [ "IMPORTANT: Resetting your password will require the assistance
                  \any personal information you do not want an administrator to know!"
                , "If you choose to provide your email address (option #4 below), a new password can simply be emailed \
                  \to you." ]
-
 
 securityQs :: [Text]
 securityQs = [ "Please choose your security question from the following options:"
@@ -3035,10 +2814,8 @@ securityQs = [ "Please choose your security question from the following options:
              , "5) Create your own question."
              , "6) Cancel." ]
 
-
 promptSecurity :: HasCallStack => MsgQueue -> MudStack ()
 promptSecurity = flip sendPrompt "Which will you choose? [1-6]"
-
 
 interpSecurityNum :: HasCallStack => Interp
 interpSecurityNum cn (NoArgs i mq cols) = case cn of
@@ -3054,22 +2831,18 @@ interpSecurityNum cn (NoArgs i mq cols) = case cn of
     helper q = sequence_ [ promptAnswer mq, setInterp i . Just . interpSecurityA $ q ]
 interpSecurityNum _ ActionParams { .. } = retrySecurityNum plaMsgQueue plaCols
 
-
 promptAnswer :: HasCallStack => MsgQueue -> MudStack ()
 promptAnswer = flip sendPrompt "Answer:"
-
 
 retrySecurityNum :: HasCallStack => MsgQueue -> Cols -> MudStack ()
 retrySecurityNum mq cols = do multiWrapSend mq cols $ "Invalid choice." : "" : securityQs
                               promptSecurity mq
-
 
 interpSecurityA :: HasCallStack => Text -> Interp
 interpSecurityA q "" (NoArgs _ mq cols     ) = do wrapSend mq cols $ "Please answer the question, " <> dblQuote q
                                                   promptAnswer mq
 interpSecurityA q cn (WithArgs i mq cols as) = securitySetHelper i mq cols q . T.unwords $ cn : as
 interpSecurityA _ _  p                       = pmf "interpSecurityA" p
-
 
 securitySetHelper :: HasCallStack => Id -> MsgQueue -> Cols -> Text -> Text -> MudStack ()
 securitySetHelper i mq cols q a = getSing i <$> getState >>= \s -> do
@@ -3079,14 +2852,12 @@ securitySetHelper i mq cols q a = getSing i <$> getState >>= \s -> do
     sendDfltPrompt mq i
     resetInterp i
 
-
 interpConfirmSecurityChange :: HasCallStack => Interp
 interpConfirmSecurityChange cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True  -> blankLine mq >> securityHelper i mq cols
   Just False -> neverMind i mq
   Nothing    -> promptRetryYesNo mq cols
 interpConfirmSecurityChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
-
 
 securityCreateQHelper :: HasCallStack => Id -> MsgQueue -> Cols -> MudStack ()
 securityCreateQHelper i mq cols = do send mq . nlPrefix . nl . T.unlines $ info
@@ -3099,7 +2870,6 @@ securityCreateQHelper i mq cols = do send mq . nlPrefix . nl . T.unlines $ info
            , "* Safe. Your answer should not be easily guessed or researched by your friends and acquaintances who \
              \play CurryMUD." ]
 
-
 interpSecurityCreateQ :: HasCallStack => Interp
 interpSecurityCreateQ "" (NoArgs'  i mq     ) = neverMind i mq
 interpSecurityCreateQ cn (WithArgs i mq _ as) = do
@@ -3107,15 +2877,12 @@ interpSecurityCreateQ cn (WithArgs i mq _ as) = do
     setInterp i . Just . interpSecurityCreateA $ T.unwords $ cn : as
 interpSecurityCreateQ _ p = pmf "interpSecurityCreateQ" p
 
-
 interpSecurityCreateA :: HasCallStack => Text -> Interp
 interpSecurityCreateA _ "" (NoArgs'  i mq        ) = neverMind i mq
 interpSecurityCreateA q cn (WithArgs i mq cols as) = securitySetHelper i mq cols q . T.unwords $ cn : as
 interpSecurityCreateA _ _  p                       = pmf "interpSecurityCreateA" p
 
-
 -----
-
 
 setAction :: HasCallStack => ActionFun
 setAction (NoArgs i mq cols) = getState >>= \ms ->
@@ -3128,9 +2895,7 @@ setAction (Lower i mq cols as) = helper |&| modifyState >=> \(msgs, logMsgs) ->
                 in (ms & plaTbl.ind i .~ p, (msgs, logMsgs))
 setAction p = pmf "setAction" p
 
-
 -----
-
 
 showAction :: HasCallStack => ActionFun
 showAction p@AdviseNoArgs         = advise p ["show"] adviceShowNoArgs
@@ -3254,9 +3019,7 @@ showAction p@(Lower i mq cols as) = checkDark p $ getState >>= \ms ->
       | otherwise = (pure dudeYou'reNaked, , ) mempty mempty
 showAction p = pmf "showAction" p
 
-
 -----
-
 
 smell :: HasCallStack => ActionFun
 smell (NoArgs i mq cols) = getState >>= \ms ->
@@ -3393,7 +3156,6 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
     ioHelper = smellTasteIOHelper "smell" i mq cols
 smell p = advise p ["smell"] adviceSmellExcessArgs
 
-
 smellTasteIOHelper :: HasCallStack => Text
                                    -> Id
                                    -> MsgQueue
@@ -3404,17 +3166,13 @@ smellTasteIOHelper :: HasCallStack => Text
                                    -> MudStack ()
 smellTasteIOHelper fn i mq cols msg bs logMsg = logPla fn i logMsg >> wrapSend mq cols msg >> bcastIfNotIncogNl i bs
 
-
 -----
-
 
 spiritDispCmdList :: HasCallStack => ActionFun
 spiritDispCmdList p@(LowerNub' i as) = logPlaExecArgs "?" as i >> dispCmdList spiritCmds p
 spiritDispCmdList p                  = pmf "spiritDispCmdList" p
 
-
 -----
-
 
 stats :: HasCallStack => ActionFun
 stats (NoArgs i mq cols) = getState >>= \ms ->
@@ -3443,9 +3201,7 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
     in logPlaExec "stats" i >> multiWrapSend mq cols mkStats
 stats p = withoutArgs stats p
 
-
 -----
-
 
 stop :: HasCallStack => ActionFun
 stop p@(NoArgs i mq cols) = getState >>= \ms -> case filter (view _3) . mkStopTuples p $ ms of
@@ -3460,11 +3216,9 @@ stop p@(OneArgLower i mq cols a) = getState >>= \ms ->
         ((_, actType, b, f):_) -> b ? (stopLogHelper i (pure actType) >> f) :? wrapSend mq cols (sorryStopNotDoing actType)
 stop p = advise p ["stop"] adviceStopExcessArgs
 
-
 stopLogHelper :: HasCallStack => Id -> [ActType] -> MudStack ()
 stopLogHelper i [actType] = logPla "stop" i . prd $ "stopped " <> pp actType
 stopLogHelper i actTypes  = logPla "stop" i . prd $ "stopped " <> T.intercalate (spaced "and") (map pp actTypes)
-
 
 mkStopTuples :: HasCallStack => ActionParams -> MudState -> [(Text, ActType, Bool, MudStack ())]
 mkStopTuples p@ActionParams { myId } ms = map (\(a, b, c) -> (pp a, a, uncurry b (myId, ms), uncurry c (p, ms))) xs
@@ -3474,9 +3228,7 @@ mkStopTuples p@ActionParams { myId } ms = map (\(a, b, c) -> (pp a, a, uncurry b
          , (Eating,      isEating,      stopEating     )
          , (Attacking,   isAttacking,   stopAttacking  ) ]
 
-
 -----
-
 
 taste :: HasCallStack => ActionFun
 taste p@AdviseNoArgs              = advise p ["taste"] adviceTasteNoArgs
@@ -3542,9 +3294,7 @@ taste p@(OneArgLower i mq cols a) = getState >>= \ms ->
     ioHelper = smellTasteIOHelper "taste" i mq cols
 taste p = advise p ["taste"] adviceTasteExcessArgs
 
-
 -----
-
 
 tele :: HasCallStack => ActionFun
 tele p@AdviseNoArgs                         = advise p ["telepathy"] adviceTeleNoArgs
@@ -3579,9 +3329,7 @@ tele   (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
            in findFullNameForAbbrev strippedTarget awakes |&| maybe notFound found
 tele p = pmf "tele" p
 
-
 -----
-
 
 tempDescAction :: HasCallStack => ActionFun
 tempDescAction (NoArgs i mq cols) = do
@@ -3597,9 +3345,7 @@ tempDescAction (Msg i mq cols desc@(dblQuote -> desc')) = if T.length desc > max
     wrapSend mq cols $ "Your temporary character description has been set to " <> desc'
 tempDescAction p = pmf "tempDescAction" p
 
-
 -----
-
 
 time :: HasCallStack => ActionFun
 time (NoArgs i mq cols) = mIf (isOutside i <$> getState)
@@ -3607,9 +3353,7 @@ time (NoArgs i mq cols) = mIf (isOutside i <$> getState)
   (logPlaExec "time" i >> wrapSend mq cols sorryTimeNotOutside)
 time p = withoutArgs time p
 
-
 -----
-
 
 tune :: HasCallStack => ActionFun
 tune (NoArgs i mq cols) = getState >>= \ms ->
@@ -3638,17 +3382,13 @@ tune (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) -> logMsgs |#| lo
                    , (mkBcast i . T.unlines $ msgs, logMsgs) )
 tune p = pmf "tune" p
 
-
 -----
-
 
 typo :: HasCallStack => ActionFun
 typo p@AdviseNoArgs = advise p ["typo"] adviceTypoNoArgs
 typo p              = bugTypoLogger p TypoLog
 
-
 -----
-
 
 unlink :: HasCallStack => ActionFun
 unlink p@AdviseNoArgs            = advise p ["unlink"] adviceUnlinkNoArgs
@@ -3694,9 +3434,7 @@ unlink p@(LowerNub i mq cols as) = getState >>= \ms ->
                 bcast . onFalse (()# guessWhat) ((guessWhat, pure i) :) $ bs
 unlink p = pmf "unlink" p
 
-
 -----
-
 
 unready :: HasCallStack => ActionFun
 unready p@AdviseNoArgs     = advise p ["unready"] adviceUnreadyNoArgs
@@ -3719,18 +3457,14 @@ unready p@(LowerNub' i as) = genericAction p helper "unready"
           else genericSorry ms dudeYou'reNaked
 unready p = pmf "unready" p
 
-
 -----
-
 
 uptime :: HasCallStack => ActionFun
 uptime (NoArgs i mq cols) = sequence_ [ logPlaExec "uptime" i, wrapSend mq cols =<< uptimeHelper =<< getUptime ]
 uptime p                  = withoutArgs uptime p
 
-
 getUptime :: HasCallStack => MudStack Int64
 getUptime = ((-) `on` sec) <$> liftIO (getTime Monotonic) <*> asks (view startTime)
-
 
 uptimeHelper :: HasCallStack => Int64 -> MudStack Text
 uptimeHelper up = helper <$> getSum `fmap2` getRecordUptime
@@ -3742,7 +3476,6 @@ uptimeHelper up = helper <$> getSum `fmap2` getRecordUptime
     mkTxtHelper    = ("Up " <>) . (renderIt up <>)
     renderIt       = T.pack . renderSecs . fromIntegral
 
-
 getRecordUptime :: HasCallStack => MudStack (Maybe (Sum Int64))
 getRecordUptime = liftIO (mkMudFilePath uptimeFileFun) >>= \file ->
     let readUptime = Just . Sum . read <$> readFile file
@@ -3750,16 +3483,12 @@ getRecordUptime = liftIO (mkMudFilePath uptimeFileFun) >>= \file ->
            (liftIO readUptime `catch` (emptied . fileIOExHandler "getRecordUptime"))
            mMempty
 
-
 -----
-
 
 vulpenoidean :: HasCallStack => ActionFun
 vulpenoidean = sayHelper VulpenoidLang
 
-
 -----
-
 
 whisper :: HasCallStack => ActionFun
 whisper p@AdviseNoArgs                                      = advise p ["whisper"] adviceWhisperNoArgs
@@ -3806,9 +3535,7 @@ whisper p@(WithArgs i mq cols (target:(T.unwords -> rest))) = getState >>= \ms -
     ioHelper _ triple               = pmf "whisper ioHelper" triple
 whisper p = pmf "whisper" p
 
-
 -----
-
 
 who :: HasCallStack => ActionFun
 who (NoArgs i mq cols) = getState >>= \ms ->
@@ -3817,9 +3544,7 @@ who (LowerNub i mq cols as) = do logPlaExecArgs "who" as i
                                  dispMatches i mq cols namePadding Isn'tRegex as . mkWhoTxt i =<< getState
 who p                       = pmf "who" p
 
-
 -----
-
 
 whoAmI :: HasCallStack => ActionFun
 whoAmI (NoArgs i mq cols) = sequence_ [ logPlaExec "whoami" i, wrapSend mq cols =<< helper =<< getState ]
@@ -3832,9 +3557,7 @@ whoAmI (NoArgs i mq cols) = sequence_ [ logPlaExec "whoami" i, wrapSend mq cols 
         else "a " <> (uncurry (|<>|) . mkPrettySexRace i $ ms) ]
 whoAmI p = withoutArgs whoAmI p
 
-
 -----
-
 
 zoom :: HasCallStack => ActionFun
 zoom (NoArgs i mq cols  ) = zoomHelper i mq cols dfltZoom
@@ -3844,7 +3567,6 @@ zoom (OneArg i mq cols a) = case reads . T.unpack $ a of [(x, "")] | x <= 0    -
   where
     sorry = wrapSend mq cols . sorryParseZoom $ a
 zoom p = advise p ["zoom"] adviceZoomExcessArgs
-
 
 zoomHelper :: HasCallStack => Id -> MsgQueue -> Cols -> Int -> MudStack ()
 zoomHelper i mq cols x = do sendGmcpRmInfo (Just x) i =<< getState

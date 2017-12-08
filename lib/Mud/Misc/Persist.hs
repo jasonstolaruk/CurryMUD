@@ -35,23 +35,18 @@ import           GHC.Stack (HasCallStack)
 import           System.Directory (createDirectory, doesDirectoryExist, getDirectoryContents, removeDirectoryRecursive)
 import           System.FilePath ((</>))
 
-
 logExMsg :: Text -> Text -> SomeException -> MudStack ()
 logExMsg = L.logExMsg "Mud.Misc.Persist"
-
 
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Misc.Persist"
 
-
 -- ==================================================
-
 
 persist :: HasCallStack => MudStack ()
 persist = do logNotice "persist" "persisting the world."
              pair <- (,) <$> getLock persistLock <*> getState
              liftIO (uncurry persistHelper pair) `catch` persistExHandler
-
 
 persistHelper :: HasCallStack => Lock -> MudState -> IO ()
 persistHelper l ms = withLock l $ do
@@ -94,7 +89,6 @@ persistHelper l ms = withLock l $ do
                                   (return path)
     write tbl file          = yield (toJSON tbl) $$ CL.map (LB.toStrict . encode) =$ CB.sinkFile file
     eqTblHelper             = views eqTbl (IM.map (IM.fromList . map swap . M.toList)) ms
-
 
 persistExHandler :: HasCallStack => SomeException -> MudStack ()
 persistExHandler e = do logExMsg "persistExHandler" (rethrowExMsg "while persisting the world") e

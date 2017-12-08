@@ -50,21 +50,16 @@ import           Data.Text (Text)
 import qualified Data.Map.Strict as M (empty, fromList, singleton)
 import qualified Data.Text as T
 
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.TheWorld.Zones.AdminZone"
 
-
 -----
-
 
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.TheWorld.Zones.AdminZone"
 
-
 -- ==================================================
 -- Hooks:
-
 
 -- TODO: Consider visibility (here and in other zones).
 adminZoneHooks :: [(HookName, HookFun)]
@@ -81,17 +76,13 @@ adminZoneHooks = [ (drinkPoolHookName,                    drinkPoolHookFun      
                  , (readLookSign_iTutEntranceHookName,    readLookSign_iTutEntranceHookFun   )
                  , (smellFlowerbedHookName,               smellFlowerbedHookFun              ) ]
 
-
 -----
-
 
 drinkPoolHook :: Hook
 drinkPoolHook = Hook drinkPoolHookName . pure $ "pool"
 
-
 drinkPoolHookName :: HookName
 drinkPoolHookName = "AdminZone_iAtrium_drinkPool"
-
 
 drinkPoolHookFun :: HookFun
 drinkPoolHookFun i _ _ a@(as, (ms, _, _, _), _) | fst (calcStomachAvailSize i ms) <= 0 = a & _2._2 <>~ pure sorryFull
@@ -105,17 +96,13 @@ drinkPoolHookFun i _ _ a@(as, (ms, _, _, _), _) | fst (calcStomachAvailSize i ms
                                                 = a & _1 .~ []
                                                     & _3 .~ (pure . startAct i Drinking . drinkAct $ db)
 
-
 -----
-
 
 fillPoolHook :: Hook
 fillPoolHook = Hook fillPoolHookName . pure $ "pool"
 
-
 fillPoolHookName :: HookName
 fillPoolHookName = "AdminZone_iAtrium_fillPool"
-
 
 fillPoolHookFun :: HookFun
 fillPoolHookFun i Hook { .. } _ a@(as, (ms, _, _, _), _) =
@@ -131,7 +118,6 @@ fillPoolHookFun i Hook { .. } _ a@(as, (ms, _, _, _), _) =
          & _2._2 .~ dropBlanks ([ sorryInEq, sorryInRm, sorryCoins ] ++ toSelfs)
          & _2._3 .~ bs
          & _2._4 .~ logMsgs
-
 
 helperFillWaterRmEitherInv :: Id
                            -> Desig
@@ -182,17 +168,13 @@ helperFillWaterRmEitherInv i srcDesig (eis:eiss) a = next $ case eis of
         bcastHelper        = pure ( T.concat [ serialize srcDesig, " fills ", aOrAn vs, " with water from the pool." ]
                                   , desigOtherIds srcDesig )
 
-
 -----
-
 
 getFlowerHook :: Hook
 getFlowerHook = Hook getFlowerHookName [ "flower", "flowers" ]
 
-
 getFlowerHookName :: HookName
 getFlowerHookName = "AdminZone_iAtrium_getFlower"
-
 
 getFlowerHookFun :: HookFun
 getFlowerHookFun i Hook { .. } v a@(_, (ms, _, _, _), _) = if calcWeight i ms + flowerWeight > calcMaxEnc i ms
@@ -206,7 +188,6 @@ getFlowerHookFun i Hook { .. } v a@(_, (ms, _, _, _), _) = if calcWeight i ms + 
   where
     msg  = "You pick " <> rest
     rest = "a flower from the flowerbed."
-
 
 mkFlower :: Id -> V.Vector Int -> MudStack ()
 mkFlower i v = modifyStateSeq $ \ms -> let et = EntTemplate (Just "flower")
@@ -237,17 +218,13 @@ mkFlower i v = modifyStateSeq $ \ms -> let et = EntTemplate (Just "flower")
                , "Sure to attract a variety of loyal pollinators, the lily is markedly fragrant."
                , "The petals taste a bit like nutmeg." ) ]
 
-
 -----
-
 
 lookCeilingHook :: Hook
 lookCeilingHook = Hook lookCeilingHookName [ "ceiling", "up" ]
 
-
 lookCeilingHookName :: HookName
 lookCeilingHookName = "AdminZone_iEmpty_lookCeiling"
-
 
 lookCeilingHookFun :: HookFun
 lookCeilingHookFun = mkGenericHookFun ceilingDesc "looks up at the ceiling." "looked at ceiling"
@@ -255,17 +232,13 @@ lookCeilingHookFun = mkGenericHookFun ceilingDesc "looks up at the ceiling." "lo
     ceilingDesc = thrice prd "The tall ceiling looks identical to the walls: plain and white. Even if there was a \
                              \means of exit up there, you can't imagine how you'd reach it"
 
-
 -----
-
 
 lookFlowerbedHook :: Hook
 lookFlowerbedHook = Hook lookFlowerbedHookName [ "flowerbed", "flower", "flowers" ]
 
-
 lookFlowerbedHookName :: HookName
 lookFlowerbedHookName = "AdminZone_iAtrium_lookFlowerbed"
-
 
 lookFlowerbedHookFun :: HookFun
 lookFlowerbedHookFun = mkGenericHookFun flowerbedDesc "looks at the flowerbed." "looked at flowerbed"
@@ -273,34 +246,26 @@ lookFlowerbedHookFun = mkGenericHookFun flowerbedDesc "looks at the flowerbed." 
     flowerbedDesc = "The tasteful flowerbed prominently features daffodils, hibiscuses, chrysanthemums, and lilies, \
                     \all in a pleasing array of colors."
 
-
 -----
-
 
 lookWallsHook :: Hook
 lookWallsHook = Hook lookWallsHookName [ "walls", "wall" ]
 
-
 lookWallsHookName :: HookName
 lookWallsHookName = "AdminZone_iEmpty_lookWalls"
-
 
 lookWallsHookFun :: HookFun
 lookWallsHookFun = mkGenericHookFun wallsDesc "looks at the walls." "looked at walls"
   where
     wallsDesc = "You are enclosed by four stark, while walls, with no apparent means of exit."
 
-
 -----
-
 
 readLookPaperHook :: Hook
 readLookPaperHook = Hook readLookPaperHookName . pure $ "paper"
 
-
 readLookPaperHookName :: HookName
 readLookPaperHookName = "AdminZone_iTutEntrance_readLookPaper"
-
 
 readLookPaperHookFun :: HookFun
 readLookPaperHookFun i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _), _) =
@@ -314,17 +279,13 @@ readLookPaperHookFun i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _), _) =
     signDesc = dblQuote . prd $ "Your lucky number is " <> x
     x        = showTxt . rndmIntToPer $ r
 
-
 -----
-
 
 readLookPosterHook :: Hook
 readLookPosterHook = Hook readLookPosterHookName . pure $ "poster"
 
-
 readLookPosterHookName :: HookName
 readLookPosterHookName = "AdminZone_iCentral_readLookPoster"
-
 
 readLookPosterHookFun :: HookFun
 readLookPosterHookFun = mkGenericHookFun posterDesc "reads the poster on the wall." "read poster"
@@ -334,17 +295,13 @@ readLookPosterHookFun = mkGenericHookFun posterDesc "reads the poster on the wal
         \WELCOME TO THE ADMIN ZONE\n\
         \This is a restricted area where admins can hang out."
 
-
 -----
-
 
 readLookSign_iEmptyHook :: Hook
 readLookSign_iEmptyHook = Hook readLookSign_iEmptyHookName . pure $ "sign"
 
-
 readLookSign_iEmptyHookName :: HookName
 readLookSign_iEmptyHookName = "AdminZone_iEmpty_readLookSign"
-
 
 readLookSign_iEmptyHookFun :: HookFun
 readLookSign_iEmptyHookFun = mkGenericHookFun signDesc "reads the sign on the wall." "read sign"
@@ -354,34 +311,26 @@ readLookSign_iEmptyHookFun = mkGenericHookFun signDesc "reads the sign on the wa
                \speak with you in private. As there are no exits, you will need the assistance of an administrator \
                \when the time comes for you to leave. We hope you enjoy your stay!\""
 
-
 -----
-
 
 readLookSign_iLoungeEntranceHook :: Hook
 readLookSign_iLoungeEntranceHook = Hook readLookSign_iLoungeEntranceHookName . pure $ "sign"
 
-
 readLookSign_iLoungeEntranceHookName :: HookName
 readLookSign_iLoungeEntranceHookName = "AdminZone_iLoungeEntrance_readLookSign"
-
 
 readLookSign_iLoungeEntranceHookFun :: HookFun
 readLookSign_iLoungeEntranceHookFun = mkGenericHookFun signDesc "reads the sign affixed to the door." "read sign"
   where
     signDesc = "The small sign reads, \"Admin Lounge.\""
 
-
 -----
-
 
 readLookSign_iTutEntranceHook :: Hook
 readLookSign_iTutEntranceHook = Hook readLookSign_iTutEntranceHookName . pure $ "sign"
 
-
 readLookSign_iTutEntranceHookName :: HookName
 readLookSign_iTutEntranceHookName = "AdminZone_iTutEntrance_readLookSign"
-
 
 readLookSign_iTutEntranceHookFun :: HookFun
 readLookSign_iTutEntranceHookFun = mkGenericHookFun signDesc "reads the sign floating above the portal." "read sign"
@@ -390,43 +339,33 @@ readLookSign_iTutEntranceHookFun = mkGenericHookFun signDesc "reads the sign flo
                \A small square piece of paper has been nailed to the bottom-right corner of the sign. There is a \
                \number written on it... and the number appears to be changing!"
 
-
 -----
-
 
 smellFlowerbedHook :: Hook
 smellFlowerbedHook = Hook smellFlowerbedHookName [ "flowerbed", "flower", "flowers" ]
 
-
 smellFlowerbedHookName :: HookName
 smellFlowerbedHookName = "AdminZone_iAtrium_smellFlowerbed"
-
 
 smellFlowerbedHookFun :: HookFun
 smellFlowerbedHookFun = mkGenericHookFun smellDesc "smells the flowerbed." "smelled flowerbed"
   where
     smellDesc = "You are greeted by the gentle organic scents of florets and soil."
 
-
 -- ==================================================
 -- Room action functions:
-
 
 -- TODO: Consider visibility (here and in other zones).
 adminZoneRmActionFuns :: [(FunName, RmActionFun)]
 adminZoneRmActionFuns = pure (pickRmActionFunName, pick)
 
-
 -----
-
 
 pickRmAction :: RmAction
 pickRmAction = RmAction "pick" pickRmActionFunName
 
-
 pickRmActionFunName :: FunName
 pickRmActionFunName = "AdminZone_iAtrium_pick"
-
 
 pick :: RmActionFun
 pick p@AdviseNoArgs     = advise p [] advicePickNoArgs
@@ -445,45 +384,35 @@ pick p@(LowerNub' i as) = genericActionWithFuns p helper "pick"
         in (ms', (sorrys ++ map mkMsgForArg inRms', bs, logMsgs, fs))
 pick p = pmf "pick" p
 
-
 -- ==================================================
 -- Room functions:
-
 
 adminZoneRmFuns :: [(FunName, Fun)]
 adminZoneRmFuns = [ (beepRmFunName,    beepRmFun   )
                   , (beeBuzzRmFunName, beeBuzzRmFun) ]
 
-
 -----
-
 
 beepRmFunName :: FunName
 beepRmFunName = "AdminZone_iCentral_beep"
-
 
 beepRmFun :: Fun
 beepRmFun = mkRndmBcastRmFun iCentral "iCentral" beepRmFunName 25 45 beepMsg
   where
     beepMsg = "A series of blips and beeps can be heard, originating from one of the control panels."
 
-
 -----
-
 
 beeBuzzRmFunName :: FunName
 beeBuzzRmFunName = "AdminZone_iAtrium_beeBuzz"
-
 
 beeBuzzRmFun :: Fun
 beeBuzzRmFun = mkRndmBcastRmFun iAtrium "iAtrium" beeBuzzRmFunName 25 oneMinInSecs beeBuzzMsg
   where
     beeBuzzMsg = "A plump bumblebee buzzes happily around the flowerbed."
 
-
 -- ==================================================
 -- Zone definition:
-
 
 adminFlags :: Flags
 adminFlags = foldl setBit zeroBits . map fromEnum $ [ IsAdmin
@@ -491,7 +420,6 @@ adminFlags = foldl setBit zeroBits . map fromEnum $ [ IsAdmin
                                                     , IsNotFirstMobSay
                                                     , IsTunedAdmin
                                                     , IsTunedQuestion ]
-
 
 createAdminZone :: MudStack ()
 createAdminZone = do

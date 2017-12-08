@@ -50,124 +50,92 @@ import qualified Data.IntMap.Strict as IM (member)
 import qualified Data.Text as T
 import           System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionError)
 
-
 blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Threads.Misc"
 
-
 -----
-
 
 logExMsg :: Text -> Text -> SomeException -> MudStack ()
 logExMsg = L.logExMsg "Mud.Threads.Misc"
 
-
 logIOEx :: Text -> IOException -> MudStack ()
 logIOEx = L.logIOEx "Mud.Threads.Misc"
-
 
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.Misc"
 
-
 logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Threads.Misc"
 
-
 -- ==================================================
-
 
 data PlsDie = PlsDie deriving (Show, Typeable)
 
-
 instance Exception PlsDie
 
-
 -----
-
 
 concurrentTree :: HasCallStack => [IO a] -> IO [a]
 concurrentTree = foldr (\a -> fmap (uncurry (:)) . concurrently a) mMempty
 
-
 -----
-
 
 dbExHandler :: HasCallStack => Text -> SomeException -> MudStack ()
 dbExHandler fn e =
     logExMsg "dbExHandler" (rethrowExMsg $ "during a database operation in " <> dblQuote fn) e >> throwToListenThread e
 
-
 -----
-
 
 die :: HasCallStack => Maybe Id -> Text -> PlsDie -> MudStack () -- The "Maybe Id" parameter is used to determine logging.
 die mi threadName = const . maybe (logNotice "die") (logPla "die") mi $ the threadName <> " thread is dying."
 
-
 dieSilently :: HasCallStack => PlsDie -> MudStack ()
 dieSilently = const unit
 
-
 -----
-
 
 fileIOExHandler :: HasCallStack => Text -> IOException -> MudStack ()
 fileIOExHandler fn e = do logIOEx fn e
                           let rethrow = throwToListenThread . toException $ e
                           unless (any (e |&|) [ isAlreadyInUseError, isDoesNotExistError, isPermissionError ]) rethrow
 
-
 -----
-
 
 onNewThread :: HasCallStack => Fun -> MudStack () -- Generally speaking, if you do anything on a new thread requiring a
                                                   -- player to be logged in, you should first check that the player is
                                                   -- in fact still logged in.
 onNewThread f = liftIO . void . forkIO . runReaderT f =<< ask
 
-
 -----
-
 
 plaThreadExHandler :: HasCallStack => Id -> Text -> SomeException -> MudStack ()
 plaThreadExHandler i threadName e | Just ThreadKilled <- fromException e = closePlaLog i
                                   | otherwise                            = threadExHandler (Just i) threadName e
 
-
 -----
-
 
 racer :: HasCallStack => MudData -> Fun -> Fun -> MudStack ()
 racer md a b = liftIO . race_ (runReaderT a md) . runReaderT b $ md
 
-
 -----
-
 
 runAsync :: HasCallStack => Fun -> MudStack (Async ())
 runAsync f = liftIO . async . runReaderT f =<< ask
 
-
 -----
-
 
 runEffectFun :: HasCallStack => FunName -> Id -> Seconds -> MudStack ()
 runEffectFun n i secs = views (effectFunTbl.at n) (maybe oops (\f -> onNewThread . f i $ secs)) =<< getState
   where
     oops = blowUp "runEffectFun" "function name not found in effect function table" n
 
-
 -----
-
 
 setThreadType :: HasCallStack => ThreadType -> MudStack ()
 setThreadType threadType = do ti <- liftIO $ myThreadId >>= \ti -> labelThread ti (show threadType) >> return ti
                               tweak $ threadTbl.at ti ?~ threadType
 
-
 -----
-
 
 threadExHandler :: HasCallStack => Maybe Id -> Text -> SomeException -> MudStack () -- The "Maybe Id" parameter is used to decorate the thread name.
 threadExHandler mi threadName e = f >>= \threadName' -> do
@@ -179,9 +147,7 @@ threadExHandler mi threadName e = f >>= \threadName' -> do
                                                         | otherwise                       = showTxt i
                                                   in return $ threadName |<>| t
 
-
 -----
-
 
 threadStarterExHandler :: HasCallStack => Id -> FunName -> Maybe Text -> SomeException -> MudStack ()
 threadStarterExHandler i fn maybeName e = case fromException e of
@@ -192,31 +158,23 @@ threadStarterExHandler i fn maybeName e = case fromException e of
   where
     name = maybeEmp dblQuote maybeName
 
-
 -----
-
 
 throwDeath :: HasCallStack => Async () -> MudStack ()
 throwDeath a = throwTo (asyncThreadId a) PlsDie
 
-
 maybeThrowDeath :: HasCallStack => Maybe (Async ()) -> MudStack ()
 maybeThrowDeath = maybeVoid throwDeath
 
-
 -----
-
 
 throwDeathWait :: HasCallStack => Async () -> MudStack ()
 throwDeathWait a = sequence_ [ throwDeath a, liftIO . void . wait $ a ]
 
-
 maybeThrowDeathWait :: HasCallStack => Maybe (Async ()) -> MudStack ()
 maybeThrowDeathWait = maybeVoid throwDeathWait
 
-
 -----
-
 
 throwToListenThread :: HasCallStack => SomeException -> MudStack ()
 throwToListenThread e = maybeVoid (`throwTo` e) . getListenThreadId =<< getState

@@ -49,17 +49,13 @@ import qualified Data.IntMap.Strict as IM (delete, filterWithKey, keys, mapWithK
 import qualified Data.Map.Strict as M (delete, elems, filter, filterWithKey, keys, size)
 import qualified Data.Text as T
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Data.State.Util.Death"
-
 
 logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Data.State.Util.Death"
 
-
 -- ==================================================
-
 
 {-
 When Taro (a PC) dies:
@@ -78,7 +74,6 @@ A spirit can move freely about with no FP cost.
 A spirit retains a certain number of two-way links, depending on PS. A spirit may continue to communicate telepathically over its retained links, with no cost to PP.
 Those links with the greatest volume of messages are retained. If the deceased PC's top links are all asleep, the spirit gets to retain a bonus link with a PC who is presently awake.
 -}
-
 
 handleDeath :: HasCallStack => Id -> MudStack ()
 handleDeath i = isNpc i <$> getState >>= \npc -> do
@@ -113,7 +108,6 @@ handleDeath i = isNpc i <$> getState >>= \npc -> do
                                & eqTbl .ind i  %~ M.filter (`notElem` lightIds)
                           , foldr g mempty lightIds )
 
-
 possessHelper :: HasCallStack => Id -> MudStack ()
 possessHelper i = modifyStateSeq $ \ms -> case getPossessor i ms of
   Nothing -> (ms, [])
@@ -124,7 +118,6 @@ possessHelper i = modifyStateSeq $ \ms -> case getPossessor i ms of
                in [ logPla "possessHelper" pi . prd $ "stopped possessing " <> t
                   , wrapSend mq cols . prd $ "You stop possessing " <> aOrAnOnLower (getSing i ms)
                   , sendDfltPrompt mq pi ] )
-
 
 leaveChans :: HasCallStack => Id -> MudStack ()
 leaveChans i = liftIO mkTimestamp >>= \ts -> do logPla "leaveChans" i "leaving channels."
@@ -141,7 +134,6 @@ leaveChans i = liftIO mkTimestamp >>= \ts -> do logPla "leaveChans" i "leaving c
       where
         s = getSing i ms
 
-
 deleteNpc :: HasCallStack => Id -> MudStack ()
 deleteNpc i = getState >>= \ms -> let ri = getRmId i ms
                                   in do logNotice "deleteNpc" $ "NPC " <> descSingId i ms <> " has died."
@@ -155,7 +147,6 @@ deleteNpc i = getState >>= \ms -> let ri = getRmId i ms
                                                , pausedEffectTbl    .at  i  .~ Nothing
                                                , typeTbl            .at  i  .~ Nothing ]
                                         stopWaitNpcServer i -- This removes the NPC from the "NpcTbl".
-
 
 mkCorpse :: HasCallStack => Id -> MudState -> (MudState, Funs)
 mkCorpse i ms =
@@ -193,9 +184,7 @@ mkCorpse i ms =
               = (("corpse of " <>) *** ("corpses of " <>)) . first aOrAnOnLower $ bgns & _2 .~ mkPlurFromBoth bgns
     (sexy, r) = first pp . getSexRace i $ ms
 
-
 -----
-
 
 spiritize :: HasCallStack => Id -> MudStack ()
 spiritize i = do
@@ -233,14 +222,12 @@ spiritize i = do
   where
     procOnlySings xs = map snd . sortBy (flip compare `on` fst) $ [ (length g, s) | g@(s:_) <- sortGroup xs ]
 
-
 pcTblHelper :: HasCallStack => Id -> Sing -> Inv -> [Sing] -> PCTbl -> PCTbl
 pcTblHelper i s retainedIds retainedSings = IM.mapWithKey helper
   where
     helper pcId | pcId == i               = linked .~ retainedSings
                 | pcId `elem` retainedIds = id
                 | otherwise               = linked %~ (s `delete`)
-
 
 teleLinkMstrTblHelper :: HasCallStack => Id -> Sing -> Inv -> [Sing] -> TeleLinkMstrTbl -> TeleLinkMstrTbl
 teleLinkMstrTblHelper i s retainedIds retainedSings = IM.mapWithKey helper
@@ -249,10 +236,8 @@ teleLinkMstrTblHelper i s retainedIds retainedSings = IM.mapWithKey helper
                     | targetId `elem` retainedIds = id
                     | otherwise                   = M.delete s
 
-
 setCurrXps :: HasCallStack => Mob -> Mob
 setCurrXps m = (curHp .~ (m^.maxHp)) . (curMp .~ (m^.maxMp)) . (curPp .~ (m^.maxPp)) . (curFp .~ (m^.maxFp)) $ m
-
 
 mkLinkBcasts :: HasCallStack => Id -> MudState -> Sing -> [(Id, Bool)] -> ([Broadcast], Funs)
 mkLinkBcasts i ms s retainedPairs = let (toLinkRetainers, fs) = toLinkRetainersHelper

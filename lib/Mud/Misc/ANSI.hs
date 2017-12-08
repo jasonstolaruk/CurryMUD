@@ -88,42 +88,32 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import           System.Console.ANSI (BlinkSpeed(..), Color(..), ColorIntensity(..), ConsoleLayer(..), SGR(..), Underlining(..), setSGRCode)
 
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Misc.ANSI"
-
 
 -- ==================================================
 -- Misc. definitions and helpers:
 
-
 ansiCSI :: Text
 ansiCSI = T.pack [ ansiEsc, ansiBracket ]
-
 
 resetANSI :: Text
 resetANSI = T.pack . setSGRCode . pure $ Reset
 
-
 colors :: [Color]
 colors = [Black .. White]
-
 
 intensities :: [ColorIntensity]
 intensities = [ Dull, Vivid ]
 
-
 mkFgColorANSI :: (ColorIntensity, Color) -> Text
 mkFgColorANSI fg = T.pack . setSGRCode $ [ uncurry (SetColor Foreground) fg ]
-
 
 mkBgColorANSI :: (ColorIntensity, Color) -> Text
 mkBgColorANSI bg = T.pack . setSGRCode $ [ uncurry (SetColor Background) bg ]
 
-
 mkColorANSI :: (ColorIntensity, Color) -> (ColorIntensity, Color) -> Text
 mkColorANSI fg bg = T.pack . setSGRCode $ [ uncurry (SetColor Foreground) fg, uncurry (SetColor Background) bg ]
-
 
 mkColorTxtForXps :: (Int, Int) -> Text
 mkColorTxtForXps (x, y) = if | x == y    -> green
@@ -134,22 +124,17 @@ mkColorTxtForXps (x, y) = if | x == y    -> green
   where
     per = x `percent` y
 
-
 colorWith :: Text -> Text -> Text
 colorWith = quoteWith' . (, dfltColor)
-
 
 blink :: Text -> Text
 blink = quoteWith' (blinkANSI, noBlinkANSI)
 
-
 underline :: Text -> Text
 underline = quoteWith' (underlineANSI, noUnderlineANSI)
 
-
 -- ==================================================
 -- ANSI color codes by color name:
-
 
 black, blue, cyan, green, magenta, red, white, yellow :: Text
 black   = mkFgColorANSI (Dull, Black  )
@@ -161,234 +146,176 @@ red     = mkFgColorANSI (Dull, Red    )
 white   = mkFgColorANSI (Dull, White  )
 yellow  = mkFgColorANSI (Dull, Yellow )
 
-
 -- ==================================================
 -- ANSI color codes by usage:
-
 
 abbrevColor :: Text
 abbrevColor = cyan
 
-
 adminBcastColor :: Text
 adminBcastColor = yellow
-
 
 adminKillColor :: Text
 adminKillColor = red
 
-
 adminSetColor :: Text
 adminSetColor = magenta
-
 
 adminTagColor :: Text
 adminTagColor = magenta
 
-
 announceColor :: Text
 announceColor = magenta
-
 
 arrowColor :: Text
 arrowColor = magenta
 
-
 asteriskColor :: Text
 asteriskColor = magenta
-
 
 blinkANSI :: Text
 blinkANSI = T.pack . setSGRCode $ [ SetBlinkSpeed SlowBlink ]
 
-
 bonusColor :: Text
 bonusColor = magenta
-
 
 bootMsgColor :: Text
 bootMsgColor = red
 
-
 dfltColor :: Text
 dfltColor = resetANSI
-
 
 dfltColor' :: Text
 dfltColor' = ansiEsc `T.cons` ansiBracket `T.cons` "39;49" `T.snoc` ansiSGRDelimiter
 
-
 emoteTargetColor :: Text
 emoteTargetColor = green
-
 
 emphasisColor :: Text
 emphasisColor = yellow
 
-
 exitsColor :: Text
 exitsColor = magenta
-
 
 fromPeepedColor :: Text
 fromPeepedColor = mkColorANSI (Dull, White) (Dull, Blue)
 
-
 greenBarColor :: Text
 greenBarColor = mkColorANSI (Dull, White) (Dull, Green)
-
 
 headerColor :: Text
 headerColor = mkColorANSI (Dull, White) (Dull, Red)
 
-
 hintANSI :: Text
 hintANSI = blinkANSI <> underlineANSI
-
 
 knownNameColor :: Text
 knownNameColor = green
 
-
 loggedInColor :: Text
 loggedInColor = yellow
-
 
 lvlUpColor :: Text
 lvlUpColor = mkColorANSI (Dull, White) (Dull, Red)
 
-
 motdColor :: Text
 motdColor = yellow
-
 
 newRecordColor :: Text
 newRecordColor = magenta
 
-
 nlColor :: Text
 nlColor = yellow
-
 
 noBlinkANSI :: Text
 noBlinkANSI = T.pack . setSGRCode $ [ SetBlinkSpeed NoBlink ]
 
-
 noHintANSI :: Text
 noHintANSI = noUnderlineANSI <> noBlinkANSI
-
 
 noUnderlineANSI :: Text
 noUnderlineANSI = T.pack . setSGRCode $ [ SetUnderlining NoUnderline ]
 
-
 pagerPromptColor :: Text
 pagerPromptColor = mkColorANSI (Dull, Black) (Dull, White)
-
 
 prefixColor :: Text
 prefixColor = red
 
-
 printConsoleColor :: Text
 printConsoleColor = magenta
-
 
 promoteDemoteColor :: Text
 promoteDemoteColor = mkColorANSI (Dull, White) (Dull, Red)
 
-
 promptIndentColor :: Text
 promptIndentColor = mkColorANSI (Dull, White) (Dull, White)
-
 
 questionArrivalColor :: Text
 questionArrivalColor = yellow
 
-
 quoteColor :: Text
 quoteColor = green
-
 
 redBarColor :: Text
 redBarColor = mkColorANSI (Dull, White) (Dull, Red)
 
-
 regexMatchColor :: Text
 regexMatchColor = cyan
-
 
 selectorColor :: Text
 selectorColor = yellow
 
-
 shutdownMsgColor :: Text
 shutdownMsgColor = red
-
 
 spiritMsgColor :: Text
 spiritMsgColor = red
 
-
 syntaxSymbolColor :: Text
 syntaxSymbolColor = yellow
-
 
 tempDescColor :: Text
 tempDescColor = cyan
 
-
 timeNotificationColor :: Text
 timeNotificationColor = yellow
-
 
 toNpcColor :: Text
 toNpcColor = mkColorANSI (Dull, Cyan) (Dull, Cyan)
 
-
 toPeepedColor :: Text
 toPeepedColor = mkColorANSI (Dull, White) (Dull, Green)
-
 
 tunedInColor :: Text
 tunedInColor = loggedInColor
 
-
 underlineANSI :: Text
 underlineANSI = T.pack . setSGRCode $ [ SetUnderlining SingleUnderline ]
-
 
 unknownNameColor :: Text
 unknownNameColor = yellow
 
-
 unlinkColor :: Text
 unlinkColor = magenta
-
 
 wiretapColor :: Text
 wiretapColor = mkColorANSI (Dull, White) (Dull, Yellow)
 
-
 wtfColor :: Text
 wtfColor = magenta
-
 
 zingColor :: Text
 zingColor = red
 
-
 -- ==================================================
 -- Helpers for working with embedded ANSI codes:
-
 
 colorizeFileTxt :: Text -> Text -> Text
 colorizeFileTxt c t | T.last t == '\n' = nl . colorWith c . T.init $ t
                     | otherwise        = colorWith c t
 
-
 -----
-
 
 dropANSI :: Text -> Text
 dropANSI t | ansiCSI `notInfixOf` t = t
@@ -396,12 +323,9 @@ dropANSI t | ansiCSI `notInfixOf` t = t
                                           (T.tail -> right) = T.dropWhile (/= ansiSGRDelimiter) rest
                                       in ()# right ? left :? left <> dropANSI right
 
-
 -----
 
-
 type EscSeq = Text
-
 
 extractANSI :: Text -> [(Text, EscSeq)]
 extractANSI t | (T.length -> l, rest) <- T.span (== ' ') t
@@ -414,15 +338,12 @@ extractANSI t | (T.length -> l, rest) <- T.span (== ' ') t
       , ((`T.snoc` ansiSGRDelimiter) -> escSeq, T.tail -> rest') <- T.breakOn (T.singleton ansiSGRDelimiter) rest
       = ()# rest' ? [(txt', escSeq)] :? (txt', escSeq) : helper rest'
 
-
 -----
-
 
 insertANSI :: [(Text, EscSeq)] -> [Text] -> [Text]
 insertANSI [(_, "")] wrapped                                        = wrapped
 insertANSI extracted (T.intercalate (T.singleton breakMarker) -> t) =
     T.split (== breakMarker) . loopOverExtractedList extracted $ t
-
 
 loopOverExtractedList :: [(Text, EscSeq)] -> Text -> Text
 loopOverExtractedList []                  ys = ys
@@ -432,7 +353,6 @@ loopOverExtractedList ((xs, escSeq):rest) ys
   | left         <- loopOverExtractedTxt xs ys
   , (Just right) <- left `T.stripPrefix` ys = left <> escSeq <> loopOverExtractedList rest right
 loopOverExtractedList xs _ = pmf "loopOverExtractedList" xs
-
 
 loopOverExtractedTxt :: Text -> Text -> Text
 loopOverExtractedTxt a@(T.uncons -> Just (x, xs)) (T.uncons -> Just (y, ys))

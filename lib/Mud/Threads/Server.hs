@@ -54,13 +54,10 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (hPutStr, hPutStrLn, readFile)
 import           System.IO (Handle, hFlush, hShow)
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.Server"
 
-
 -- ==================================================
-
 
 {-
 CurryMUD doesn't send GA or EOR. Furthermore, prompts always end with a newline character.
@@ -68,7 +65,6 @@ This, along with the handle-flushing scheme implemented below, produces an exper
 and TinTin+++. Other options were tried (such as one-line prompts with GA), but the approach used here produces the most
 consistency.
 -}
-
 
 threadServer :: HasCallStack => Handle -> Id -> MsgQueue -> InacTimerQueue -> MudStack ()
 threadServer h i mq itq = handle (threadExHandler (Just i) "server") $ setThreadType (Server i) >> loop False
@@ -98,10 +94,8 @@ threadServer h i mq itq = handle (threadExHandler (Just i) "server") $ setThread
         stopInacTimer itq
         ((>>) <$> handleEgress i mq <*> unless iah . loop) isDropped
 
-
 handleBlankLine :: HasCallStack => Handle -> MudStack ()
 handleBlankLine h = liftIO $ T.hPutStr h nlTxt >> hFlush h
-
 
 handleFromClient :: HasCallStack => Id -> MsgQueue -> InacTimerQueue -> Bool -> Text -> MudStack ()
 handleFromClient i mq itq isAsSelf = go
@@ -120,7 +114,6 @@ handleFromClient i mq itq isAsSelf = go
                                          liftIO . atomically . writeTMQueue itq $ ResetInacTimer
                                          f cn . WithArgs asId mq (p^.columns) $ as
 
-
 forwardToPeepers :: HasCallStack => Id -> Inv -> ToOrFromThePeeped -> Text -> MudStack ()
 forwardToPeepers i peeperIds toOrFrom msg = liftIO . atomically . helper =<< getState
   where
@@ -131,43 +124,34 @@ forwardToPeepers i peeperIds toOrFrom msg = liftIO . atomically . helper =<< get
       where
         rest = [ spaced . bracketQuote $ s, dfltColor, " ", msg ]
 
-
 handleFromServer :: HasCallStack => Id -> Handle -> ToWhom -> Text -> MudStack ()
 handleFromServer _ h Npcに msg = fromServerHelper h $ colorWith toNpcColor " " |<>| msg
 handleFromServer i h Plaに msg = getState >>= \ms ->
     forwardToPeepers i (getPeepers i ms) ToThePeeped msg >> fromServerHelper h msg
 
-
 fromServerHelper :: HasCallStack => Handle -> Text -> MudStack ()
 fromServerHelper h t = liftIO $ T.hPutStr h t >> hFlush h
-
 
 sendInacBootMsg :: HasCallStack => Handle -> MudStack ()
 sendInacBootMsg h = liftIO . T.hPutStrLn h . nl . colorWith bootMsgColor $ inacBootMsg
 
-
 setInacSecs :: HasCallStack => InacTimerQueue -> Seconds -> MudStack ()
 setInacSecs itq = liftIO . atomically . writeTMQueue itq . SetInacTimerDur
-
 
 sendBootMsg :: HasCallStack => Handle -> Text -> MudStack ()
 sendBootMsg h = liftIO . T.hPutStrLn h . nl . colorWith bootMsgColor
 
-
 promptHelper :: HasCallStack => Id -> Handle -> Text -> MudStack ()
 promptHelper i h t = sequence_ [ handleFromServer i h Plaに . nl $ t, liftIO . hFlush $ h ]
-
 
 handleShowHandle :: HasCallStack => Id -> Handle -> MudStack ()
 handleShowHandle i h = getMsgQueueColumns i <$> getState >>= \pair ->
     uncurry wrapSend1Nl pair . T.pack =<< liftIO (hShow h)
 
-
 cowbye :: HasCallStack => Handle -> MudStack ()
 cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
   where
     takeADump = T.hPutStrLn h =<< T.readFile =<< mkMudFilePath cowbyeFileFun
-
 
 shutDown :: HasCallStack => MudStack ()
 shutDown = massMsg SilentBoot >> onNewThread commitSuicide

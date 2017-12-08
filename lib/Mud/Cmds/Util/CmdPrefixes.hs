@@ -6,14 +6,11 @@ import           Mud.TopLvlDefs.Chars
 import           Data.Text (Text)
 import qualified Data.Text as T
 
-
 prefixAdminCmd :: Text -> CmdName
 prefixAdminCmd = prefixCmd adminCmdChar
 
-
 prefixDebugCmd :: Text -> CmdName
 prefixDebugCmd = prefixCmd debugCmdChar
-
 
 prefixCmd :: Char -> CmdName -> Text
 prefixCmd = T.cons

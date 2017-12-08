@@ -13,21 +13,16 @@ import           Data.Char (isLetter)
 import           Data.Text (Text)
 import qualified Data.Text as T
 
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Data.State.ActionParams.Misc"
 
-
 -- ==================================================
 
-
 type Args = [Text]
-
 
 formatMsgArgs :: Args -> Text
 formatMsgArgs [] = ""
 formatMsgArgs as = capitalizeMsg . punctuateMsg . T.unwords $ as
-
 
 capitalizeMsg :: Text -> Text
 capitalizeMsg x@(T.uncons         -> Just (_,  "")) = T.toUpper  x
@@ -39,7 +34,6 @@ capitalizeMsg x@(T.break isLetter -> (T.uncons -> Just (c, ""), y)) | c `elem` p
     punc = "('\"" :: String
 capitalizeMsg x = x
 
-
 punctuateMsg :: Text -> Text
 punctuateMsg = \case "" -> ""
                      x@(T.uncons -> Just (c, "")) | isPunc c  -> x
@@ -48,7 +42,6 @@ punctuateMsg = \case "" -> ""
                                                   | otherwise -> prd x
   where
     isPunc = flip (elem @[]) ".?!"
-
 
 formatMsgWithTargetArgs :: Args -> (Text, Text)
 formatMsgWithTargetArgs ((capitalize . T.toLower -> target):(formatMsgArgs -> msg)) = (target, msg)

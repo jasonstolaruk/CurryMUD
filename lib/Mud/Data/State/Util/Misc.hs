@@ -113,91 +113,67 @@ import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as V (Vector)
 import           Text.Regex.PCRE ((=~))
 
-
 blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Data.State.Util.Misc"
-
 
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Data.State.Util.Misc"
 
-
 -- ==================================================
-
 
 addToInv :: HasCallStack => MudState -> Inv -> Inv -> Inv
 addToInv ms addThese toThese = sortInv ms $ toThese ++ addThese
 
-
 -----
-
 
 descSingId :: HasCallStack => Id -> MudState -> Text
 descSingId i ms = quoteWith' (((`getSing` ms) &&& parensQuote . showTxt) i) " "
 
-
 descMaybeId :: HasCallStack => MudState -> Maybe Id -> Text
 descMaybeId ms = maybe none (`descSingId` ms)
-
 
 descMaybeSingId :: HasCallStack => Maybe Id -> MudState -> Text
 descMaybeSingId Nothing  _  = none
 descMaybeSingId (Just x) ms = descSingId x ms
 
-
 -----
-
 
 expandCorpseTxt :: Text -> Text -> Text
 expandCorpseTxt = T.replace (T.singleton corpseNameMarker)
 
-
 -----
-
 
 findBiodegradableIds :: MudState -> Inv
 findBiodegradableIds = views objTbl (IM.keys . IM.filter isBiodegradable)
 
-
 -----
-
 
 findInvContaining :: HasCallStack => Id -> MudState -> Maybe Id
 findInvContaining i ms = let matches = views invTbl (IM.keys . IM.filter (i `elem`)) ms
                          in ()# matches ? Nothing :? Just (head matches)
 
-
 -----
-
 
 findMobIds :: HasCallStack => MudState -> Inv -> Inv
 findMobIds ms haystack = [ i | i <- haystack, (||) <$> (PlaType ==) <*> (NpcType ==) $ getType i ms ]
 
-
 -----
-
 
 findNpcIds :: MudState -> Inv
 findNpcIds = views typeTbl (IM.keys . IM.filter (== NpcType))
 
-
 -----
-
 
 getAdminIds :: HasCallStack => MudState -> Inv
 getAdminIds = getAdminIdsHelper (const True)
 
-
 getAdminIdsHelper :: HasCallStack => (Pla -> Bool) -> MudState -> Inv
 getAdminIdsHelper f = views plaTbl (IM.keys . IM.filter ((&&) <$> isAdmin <*> f))
 
-
 -----
-
 
 getBothGramNos :: HasCallStack => Id -> MudState -> BothGramNos
 getBothGramNos i = (sing `fanView` plur) . getEnt i
-
 
 getEffBothGramNos :: HasCallStack => Id -> MudState -> Id -> BothGramNos
 getEffBothGramNos i ms targetId =
@@ -213,24 +189,19 @@ getEffBothGramNos i ms targetId =
               , isPCCorpse . getCorpse targetId $ ms -> pair & _1 .~ mkCorpseAppellation i ms targetId
               | otherwise                            -> pair
 
-
 plurRace :: Race -> Text
 plurRace Dwarf = "dwarves"
 plurRace Elf   = "elves"
 plurRace r     = pp r <> "s"
 
-
 -----
-
 
 getCorpseDesc :: HasCallStack => Id -> MudState -> Text
 getCorpseDesc i ms = let c    = getCorpse i ms
                          lens = bool npcCorpseDesc pcCorpseDesc . isPCCorpse $ c
                      in c^.lens
 
-
 -----
-
 
 getEffName :: HasCallStack => Id -> MudState -> Id -> Text
 getEffName i ms targetId = let targetEnt = getEnt targetId ms
@@ -240,58 +211,45 @@ getEffName i ms targetId = let targetEnt = getEnt targetId ms
       | isNpc i ms || views (pcTbl.ind i.introduced) (targetSing `notElem`) ms = mkUnknownPCEntName targetId ms
       | otherwise                                                              = uncapitalize targetSing
 
-
 mkUnknownPCEntName :: HasCallStack => Id -> MudState -> Text
 mkUnknownPCEntName i ms = views entName (fromMaybe helper) . getEnt i $ ms
   where
     helper = uncurry T.cons . first T.head . mkPrettySexRace i $ ms
 
-
 -----
-
 
 getFeelingFun :: HasCallStack => FeelingTag -> MudState -> FeelingFun
 getFeelingFun tag = views (feelingFunTbl.at tag) (fromMaybe oops)
   where
     oops = blowUp "getFeelingFun" "feeling tag not found in function table" tag
 
-
 -----
-
 
 getFun :: HasCallStack => FunName -> MudState -> Fun
 getFun n = views (funTbl.at n) (fromMaybe oops)
   where
     oops = blowUp "getFun" "function name not found in function table" n
 
-
 -----
-
 
 getHookFun :: HasCallStack => HookName -> MudState -> HookFun
 getHookFun n = views (hookFunTbl.at n) (fromMaybe oops)
   where
     oops = blowUp "getHookFun" "hook name not found in hook function table" n
 
-
 -----
-
 
 getInstaEffectFun :: HasCallStack => FunName -> MudState -> InstaEffectFun
 getInstaEffectFun n = views (instaEffectFunTbl.at n) (fromMaybe oops)
   where
     oops = blowUp "getInstaEffectFun" "function name not found in instantaneous effect function table" n
 
-
 -----
-
 
 getListenThreadId :: HasCallStack => MudState -> Maybe ThreadId
 getListenThreadId = lookupMapValue Listen . view threadTbl
 
-
 -----
-
 
 getLocation :: HasCallStack => Id -> MudState -> Id
 getLocation i ms = fromMaybe oops $ searchInvs `mplus` searchEqs
@@ -300,9 +258,7 @@ getLocation i ms = fromMaybe oops $ searchInvs `mplus` searchEqs
     searchEqs  = views eqTbl  (listToMaybe . IM.keys . IM.filter ((i `elem`) . M.elems)) ms
     oops       = blowUp "getLocation" "ID is in limbo" . showTxt $ i
 
-
 -----
-
 
 getLogAsyncs :: HasCallStack => MudData -> Maybe (LogAsync, LogAsync)
 getLogAsyncs = helper . (noticeLog `fanView` errorLog)
@@ -310,84 +266,62 @@ getLogAsyncs = helper . (noticeLog `fanView` errorLog)
     helper = \case (Just (noticeAsync, _), Just (errorAsync, _)) -> Just (noticeAsync, errorAsync)
                    _                                             -> Nothing
 
-
 -----
-
 
 getLogThreadIds :: HasCallStack => MudStack [ThreadId]
 getLogThreadIds = asks getLogAsyncs >>= \case Nothing     -> mMempty
                                               Just (a, b) -> return . map asyncThreadId $ [ a, b ]
 
-
 -----
-
 
 getLoggedInAdminIds :: HasCallStack => MudState -> Inv
 getLoggedInAdminIds = getAdminIdsHelper isLoggedIn
 
-
 getLoggedInPlaIds :: HasCallStack => MudState ->  Inv
 getLoggedInPlaIds = views plaTbl (IM.keys . IM.filter ((&&) <$> isLoggedIn <*> not . isAdmin))
 
-
 -----
-
 
 getMobRmVisibleInvCoins :: HasCallStack => Id -> MudState -> (Inv, Coins)
 getMobRmVisibleInvCoins i ms = let ri = getRmId i ms in getVisibleInvCoins ri ms
 
-
 -----
-
 
 getNonIncogLoggedInAdminIds :: HasCallStack => MudState -> Inv
 getNonIncogLoggedInAdminIds ms = let adminIds = getLoggedInAdminIds ms
                                  in [ adminId | adminId <- adminIds, not . isIncognitoId adminId $ ms ]
 
-
 -----
-
 
 getNpcIds :: MudState -> Inv
 getNpcIds = views npcTbl IM.keys
 
-
 -----
-
 
 getRmActionFun :: HasCallStack => FunName -> MudState -> RmActionFun
 getRmActionFun n = views (rmActionFunTbl.at n) (fromMaybe oops)
   where
     oops = blowUp "getRmActionFun" "function name not found in room action function table" n
 
-
 -----
-
 
 getServerSettings :: HasCallStack => MudStack ServerSettings
 getServerSettings = asks (view serverSettings)
 
-
 -----
-
 
 getState :: HasCallStack => MudStack MudState
 getState = liftIO . readIORef =<< asks (view mudStateIORef)
 
-
 getStateTime :: HasCallStack => MudStack (MudState, CurryTime)
 getStateTime = (,) <$> getState <*> liftIO getCurryTime
 
-
 -----
-
 
 getUnusedId :: HasCallStack => MudState -> Id
 getUnusedId = views typeTbl (head . (enumFrom 0 \\) . IM.keys)
 
-
 -----
-
 
 getVisibleInv :: HasCallStack => Id -> MudState -> Inv
 getVisibleInv i ms = filter isVisible . getInv i $ ms
@@ -397,64 +331,47 @@ getVisibleInv i ms = filter isVisible . getInv i $ ms
                        | not . isIncognitoId targetId $ ms = True
                        | otherwise                         = False
 
-
 -----
-
 
 getVisibleInvCoins :: HasCallStack => Id -> MudState -> (Inv, Coins)
 getVisibleInvCoins i = getVisibleInv i &&& getCoins i
 
-
 -----
-
 
 isAdHoc :: HasCallStack => Id -> MudState -> Bool
 isAdHoc i = (== iWelcome) . getRmId i
 
-
 -----
-
 
 isAwake :: HasCallStack => Id -> MudState -> Bool
 isAwake = onPla ((&&) <$> isLoggedIn <*> not . isIncognito) True
 
-
 isLoggedIn :: HasCallStack => Pla -> Bool
 isLoggedIn = views logoutRmId ((()#) . (Sum <$>))
 
-
 -----
-
 
 isDead :: HasCallStack => Id -> MudState -> Bool
 isDead i = (== iNecropolis) . getRmId i
 
-
 -----
-
 
 isKnownLang :: HasCallStack => Id -> MudState -> Lang -> Bool
 isKnownLang i ms lang | lang == CommonLang = True
                       | otherwise          = lang `elem` getKnownLangs i ms
 
-
 -----
-
 
 isLitLight :: Id -> MudState -> Bool
 isLitLight i = ((&&) <$> ((== LightType) . uncurry getType) <*> uncurry getLightIsLit) . (i, )
 
-
 -----
-
 
 isPCCorpse :: Corpse -> Bool
 isPCCorpse PCCorpse  {} = True
 isPCCorpse NpcCorpse {} = False
 
-
 -----
-
 
 isRmLit :: HasCallStack => CurryTime -> Id -> MudState -> Bool
 isRmLit ct i ms = let env    = view rmEnv . getRm i $ ms
@@ -467,13 +384,10 @@ isRmLit ct i ms = let env    = view rmEnv . getRm i $ ms
                                             | otherwise              -> b
                                  _                                   -> True
 
-
 isMobRmLit :: HasCallStack => CurryTime -> Id -> MudState -> Bool
 isMobRmLit ct i ms = isRmLit ct (getRmId i ms) ms
 
-
 -----
-
 
 leaveParty :: HasCallStack => Id -> MudState -> MudState
 leaveParty i ms = let helper p = memberOfHelper . myGroupHelper . followersHelper . followingHelper $ ms
@@ -492,9 +406,7 @@ leaveParty i ms = let helper p = memberOfHelper . myGroupHelper . followersHelpe
                                                      , mobTbl.ind memberOfId.party.myGroup  %~ delete i ]
                   in helper . getParty i $ ms
 
-
 -----
-
 
 linkDirToCmdName :: LinkDir -> CmdName
 linkDirToCmdName North     = "n"
@@ -508,36 +420,27 @@ linkDirToCmdName Northwest = "nw"
 linkDirToCmdName Up        = "u"
 linkDirToCmdName Down      = "d"
 
-
 -----
-
 
 lookupHooks :: HasCallStack => Id -> MudState -> CmdName -> Maybe [Hook]
 lookupHooks i ms cn = views rmHookMap (M.lookup cn) . getMobRm i $ ms
 
-
 -----
-
 
 mkAdminIdSingList :: HasCallStack => MudState -> [(Id, Sing)]
 mkAdminIdSingList = mkIdSingListHelper id
-
 
 mkIdSingListHelper :: HasCallStack => (Bool -> Bool) -> MudState -> [(Id, Sing)]
 mkIdSingListHelper f ms@(view plaTbl -> pt) =
     [ (i, s) | i <- IM.keys pt , f . isAdmin $ pt IM.! i , let s = getSing i ms , then sortWith by s ]
 
-
 mkAdminPlaIdSingList :: HasCallStack => MudState -> [(Id, Sing)]
 mkAdminPlaIdSingList = mkIdSingListHelper (const True)
-
 
 mkPlaIdSingList :: HasCallStack => MudState -> [(Id, Sing)]
 mkPlaIdSingList = mkIdSingListHelper not
 
-
 -----
-
 
 mkCorpseAppellation :: HasCallStack => Id -> MudState -> Id -> Text
 mkCorpseAppellation i ms ci
@@ -547,23 +450,17 @@ mkCorpseAppellation i ms ci
     (c, s) = (getCorpse `fanUncurry` getSing) (ci, ms)
     cs     = c^.pcCorpseSing
 
-
 -----
-
 
 mkCorpseTxt :: (Text, Text) -> Text
 mkCorpseTxt = uncurry (middle (<>) . T.singleton $ corpseNameMarker)
 
-
 -----
-
 
 mkEntName :: Ent -> Text
 mkEntName = views entName (fromMaybe "unknown")
 
-
 -----
-
 
 mkNameCountBothList :: HasCallStack => Id -> MudState -> Inv -> [(Text, Int, BothGramNos)]
 mkNameCountBothList i ms targetIds =
@@ -571,21 +468,16 @@ mkNameCountBothList i ms targetIds =
         boths@(mkCountList -> counts) = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
     in nub . zip3 names counts $ boths
 
-
 -----
-
 
 mkPrettySexRace :: HasCallStack => Id -> MudState -> (Text, Text)
 mkPrettySexRace i = (pp *** pp) . getSexRace i
-
 
 mkPrettySexRaceLvl :: HasCallStack => Id -> MudState -> (Text, Text, Text)
 mkPrettySexRaceLvl i ms = let ((s, r), l) = (mkPrettySexRace `fanUncurry` getLvl) (i, ms)
                           in (s, r, showTxt l)
 
-
 -----
-
 
 mkSerNonStdDesig :: HasCallStack => Id -> MudState -> Sing -> AOrThe -> DoOrDon'tCap -> Text
 mkSerNonStdDesig i ms s aot cap = serialize NonStdDesig { dEntSing = s, dDesc = helper, dCap = cap }
@@ -594,16 +486,12 @@ mkSerNonStdDesig i ms s aot cap = serialize NonStdDesig { dEntSing = s, dDesc = 
            | otherwise  = onFalse (isCapital s) g s
     g                   = mkCapsFun cap . (pp aot <>) . spcL
 
-
 -----
-
 
 mkSerVerbObj :: HasCallStack => Text -> Text
 mkSerVerbObj t = serialize VerbObj { verbObjTxt = t, verbObjCap = Don'tCap }
 
-
 -----
-
 
 mkStdDesig :: HasCallStack => Id -> MudState -> DoOrDon'tCap -> Desig
 mkStdDesig i ms cap = StdDesig { desigEntName      = views entName (fromMaybe (mkUnknownPCEntName i ms)) . getEnt i $ ms
@@ -613,20 +501,15 @@ mkStdDesig i ms cap = StdDesig { desigEntName      = views entName (fromMaybe (m
                                , desigDoMaskInDark = True
                                , desigDoExpandSing = True }
 
-
 -----
-
 
 modifyState :: HasCallStack => (MudState -> (MudState, a)) -> MudStack a
 modifyState f = ask >>= \md -> liftIO .  atomicModifyIORef' (md^.mudStateIORef) $ f
 
-
 modifyStateSeq :: HasCallStack => (MudState -> (MudState, Funs)) -> MudStack ()
 modifyStateSeq = modifyState >=> sequence_
 
-
 -----
-
 
 procHooks :: HasCallStack => Id -> MudState -> V.Vector Int -> CmdName -> Args -> HookFunRes
 procHooks i ms v cn as | initAcc <- (as, (ms, [], [], []), []) = case lookupHooks i ms cn of
@@ -655,7 +538,6 @@ procHooks i ms v cn as | initAcc <- (as, (ms, [], [], []), []) = case lookupHook
                                   in f i h v a
              in foldl' hookHelper (initAcc & _1 .~ xformedArgs) . nub $ matches
 
-
 dropPrefixesForHooks :: HasCallStack => [Hook] -> Args -> Args
 dropPrefixesForHooks hs = let helper _     []     = []
                               helper trigs (a:as) | a' <- dropPrefixes a, a' `elem` trigs = a' : rest
@@ -663,7 +545,6 @@ dropPrefixesForHooks hs = let helper _     []     = []
                                 where
                                   rest = helper trigs as
                           in helper (concatMap hookTriggers hs)
-
 
 dropPrefixes :: HasCallStack => Text -> Text
 dropPrefixes     (T.uncons -> Just (x, xs)) | x == allChar, ()!# xs = xs
@@ -676,9 +557,7 @@ dropPrefixes arg@(T.unpack -> arg'        )
     isMatch (a, b, c) = and [ ()# a, ()!# b, ()!# c ]
     mkRegex c         = "^[0-9]+\\" ++ pure c :: String
 
-
 -----
-
 
 procQuoteChars :: HasCallStack => Args -> Maybe Args
 procQuoteChars []                                                = Just []
@@ -693,9 +572,7 @@ procQuoteChars as@(T.unwords -> txt) | not $ q `T.isInfixOf` txt = Just as
                                     in left <> spcsToFiller quoted <> helper right
               | otherwise         = t
 
-
 -----
-
 
 removeAdHoc :: HasCallStack => Id -> MudState -> MudState
 removeAdHoc i = flip upd [ coinsTbl           .at  i        .~ Nothing
@@ -713,16 +590,12 @@ removeAdHoc i = flip upd [ coinsTbl           .at  i        .~ Nothing
                          , teleLinkMstrTbl    .at  i        .~ Nothing
                          , typeTbl            .at  i        .~ Nothing ]
 
-
 -----
-
 
 setInterp :: HasCallStack => Id -> Maybe Interp -> MudStack ()
 setInterp i mi = tweak $ mobTbl.ind i.interp .~ mi
 
-
 -----
-
 
 sortInv :: HasCallStack => MudState -> Inv -> Inv
 sortInv ms is = let (foldr helper mempties -> (pcs, others)) = [ (i, getType i ms) | i <- is ]
@@ -734,20 +607,15 @@ sortInv ms is = let (foldr helper mempties -> (pcs, others)) = [ (i, getType i m
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
     zipped others                      = [ (i, mkEntName e, e^.sing) | i <- others, let e = getEnt i ms ]
 
-
 -----
-
 
 tweak :: HasCallStack => (MudState -> MudState) -> MudStack ()
 tweak f = modifyState $ (, ()) . f
 
-
 tweaks :: HasCallStack => [MudState -> MudState] -> MudStack ()
 tweaks fs = tweak $ \ms -> foldl' (&) ms fs
 
-
 -----
-
 
 upd :: MudState -> [MudState -> MudState] -> MudState
 upd = foldl' (|&|)

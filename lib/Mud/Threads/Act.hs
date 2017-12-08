@@ -47,17 +47,13 @@ import           Data.Time (UTCTime, diffUTCTime, getCurrentTime)
 import           GHC.Stack (HasCallStack)
 import           System.Time.Utils (renderSecs)
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.Act"
-
 
 logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Threads.Act"
 
-
 -- ==================================================
-
 
 startAct :: HasCallStack => Id -> ActType -> Fun -> MudStack ()
 startAct i actType f = handle (threadStarterExHandler i fn . Just . pp $ actType) $ do
@@ -67,18 +63,14 @@ startAct i actType f = handle (threadStarterExHandler i fn . Just . pp $ actType
   where
     fn = "startAct"
 
-
 stopAct :: HasCallStack => Id -> ActType -> MudStack ()
 stopAct i actType = views (at actType) maybeThrowDeath . getActMap i =<< getState
-
 
 stopActs :: HasCallStack => Id -> MudStack ()
 stopActs i = sequence_ [ logPla "stopActs" i "stopping all acts.", mapM_ throwDeathWait . M.elems . getActMap i =<< getState ]
 
-
 stopNpcActs :: HasCallStack => MudStack ()
 stopNpcActs = sequence_ [ logNotice "stopNpcActs" "stopping NPC acts.", mapM_ stopActs . getNpcIds =<< getState ]
-
 
 threadAct :: HasCallStack => Id -> ActType -> Fun -> MudStack ()
 threadAct i actType f = handle (threadExHandler (Just i) . pp $ actType) $ a `finally` b
@@ -93,9 +85,7 @@ threadAct i actType f = handle (threadExHandler (Just i) . pp $ actType) $ a `fi
               tweak $ mobTbl.ind i.actMap.at actType .~ Nothing
 
 
-
 -- ==================================================
-
 
 drinkAct :: HasCallStack => DrinkBundle -> MudStack ()
 drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drinkerId.nowDrinking .~ Nothing)
@@ -141,13 +131,10 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
                       wrapSend drinkerMq drinkerCols t
                       sendDfltPrompt drinkerMq drinkerId
 
-
 mkMouthfulTxt :: HasCallStack => Mouthfuls -> Text
 mkMouthfulTxt x | x <= 8 = showTxt x | otherwise = "many"
 
-
 -----
-
 
 eatAct :: HasCallStack => EatBundle -> MudStack ()
 eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.nowEating .~ Nothing)
@@ -189,9 +176,7 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
         wrapSend eaterMq eaterCols t
         sendDfltPrompt eaterMq eaterId
 
-
 -----
-
 
 sacrificeAct :: HasCallStack => Id -> MsgQueue -> Id -> GodName -> MudStack ()
 sacrificeAct i mq ci gn = handle (die (Just i) . pp $ Sacrificing) $ do
@@ -216,7 +201,6 @@ sacrificeAct i mq ci gn = handle (die (Just i) . pp $ Sacrificing) $ do
             Nothing    -> unit
           else (ms, [])
 
-
 sacrificeBonus :: HasCallStack => Id -> GodName -> MudStack ()
 sacrificeBonus i gn@(pp -> gn') = getSing i <$> getState >>= \s -> do
     now <- liftIO getCurrentTime
@@ -237,7 +221,6 @@ sacrificeBonus i gn@(pp -> gn') = getSing i <$> getState >>= \s -> do
     maybeVoid next =<< withDbExHandler "sacrifice" operation
   where
     logHelper = logPla "sacrificeBonus" i
-
 
 applyBonus :: HasCallStack => Id -> Sing -> GodName -> UTCTime -> MudStack ()
 applyBonus i s gn now = do

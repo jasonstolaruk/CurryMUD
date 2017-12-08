@@ -22,13 +22,10 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import           GHC.Stack (HasCallStack)
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.DbTblPurger"
 
-
 -- ==================================================
-
 
 mkTblPurgerMap :: HasCallStack => M.Map DbTblName (CountDbTblRecsFun, PurgeDbTblFun)
 mkTblPurgerMap = M.fromList [ ("admin_chan", (countDbTblRecsAdminChan, purgeDbTblAdminChan))
@@ -37,25 +34,19 @@ mkTblPurgerMap = M.fromList [ ("admin_chan", (countDbTblRecsAdminChan, purgeDbTb
                             , ("question",   (countDbTblRecsQuestion,  purgeDbTblQuestion ))
                             , ("tele",       (countDbTblRecsTele,      purgeDbTblTele     )) ]
 
-
 type DbTblPurger = DbTblName -> CountDbTblRecsFun -> PurgeDbTblFun -> MudStack ()
-
 
 mkPurger :: HasCallStack => DbTblPurger -> Funs
 mkPurger f = let g (tblName, pair) = uncurry (f tblName) pair
              in map g . M.toList $ mkTblPurgerMap
 
-
 mkDbTblPurgerFuns :: HasCallStack => Funs
 mkDbTblPurgerFuns = mkPurger dbTblPurger
-
 
 mkDbTblPurgerHelpers :: HasCallStack => Funs
 mkDbTblPurgerHelpers = mkPurger dbTblPurgerHelper
 
-
 -----
-
 
 dbTblPurger :: HasCallStack => DbTblPurger
 dbTblPurger tblName countFun purgeFun = handle (threadExHandler Nothing threadName) $ do
@@ -65,7 +56,6 @@ dbTblPurger tblName countFun purgeFun = handle (threadExHandler Nothing threadNa
     forever loop `catch` die Nothing threadName
   where
     threadName = "database table purger " <> parensQuote tblName
-
 
 dbTblPurgerHelper :: HasCallStack => DbTblPurger
 dbTblPurgerHelper tblName countFun purgeFun = let fn = "dbTblPurgerHelper" in withDbExHandler fn countFun >>= \case

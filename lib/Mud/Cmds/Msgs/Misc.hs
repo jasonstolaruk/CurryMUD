@@ -14,37 +14,28 @@ import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
 
-
 lSpcs :: Text
 lSpcs = T.replicate 2 . T.pack $ miscTokenDelimiter : "l"
 
-
 -----
-
 
 adminKillMsg :: Text -> Text
 adminKillMsg t = "There is a blinding yellow light and a deafening crack as " <> t <> " instantly struck dead!"
 
-
 asMsg :: Text
 asMsg = thrice prd "You suddenly feel as though someone else is in control"
-
 
 bannedMsg :: Text
 bannedMsg = "You have been banned from CurryMUD!"
 
-
 blankWritableMsg :: Sing -> Text
 blankWritableMsg s = prd $ "There isn't anything written on the " <> s
-
 
 bookFileErrorMsg :: Text -> Text
 bookFileErrorMsg n = "Unfortunately, the " <> n <> " book file could not be read."
 
-
 bookListErrorMsg :: Text
 bookListErrorMsg = "Unfortunately, the book list could not be retrieved."
-
 
 corpseSmellLvl1, corpseSmellLvl2, corpseSmellLvl3, corpseSmellLvl4 :: Text
 corpseSmellLvl1 = "Due to the lack of an offensive odor, it's clear that the deceased expired recently."
@@ -52,18 +43,14 @@ corpseSmellLvl2 = "There is an unpleasant scent akin to that of rotting fruit."
 corpseSmellLvl3 = "The multifaceted odor is truly putrid."
 corpseSmellLvl4 = ((<>) <$> ("Oh my" |&|) <*> (" so rank, so sickeningly sweet" |&|)) (thrice prd)
 
-
 darkMsg :: Text
 darkMsg = "It's too dark to make out much at all."
-
 
 dbEmptyMsg :: Text
 dbEmptyMsg = "The database is empty."
 
-
 dbErrorMsg :: Text
 dbErrorMsg = "There was an error while reading the database."
-
 
 descRulesMsg :: Text
 descRulesMsg =
@@ -76,7 +63,6 @@ descRulesMsg =
     \description.3`\n\
     \4) Keep your description short. The longer your description, the less likely people are to actually read it!3`"
 
-
 descRule5 :: Text
 descRule5 =
     "5) You may not make radical changes to your description without a plausible in-game explanation. This means that \
@@ -84,22 +70,17 @@ descRule5 =
     \etc.). If you would like to make such a change and feel there could be a plausible in-game explanation, get \
     \permission from an administrator first.3`"
 
-
 dfltBootMsg :: Text
 dfltBootMsg = "You have been booted from CurryMUD. Goodbye!"
-
 
 dfltShutdownMsg :: Text
 dfltShutdownMsg = "CurryMUD is shutting down. We apologize for the inconvenience. See you soon!"
 
-
 effortsBlockedMsg :: Text
 effortsBlockedMsg = "Your efforts are blocked; "
 
-
 egressMsg :: Text -> Text
 egressMsg n = n <> " slowly dissolves into nothingness."
-
 
 enterDescMsg :: Text
 enterDescMsg = T.unlines . map (lSpcs <>) $ ts
@@ -112,70 +93,53 @@ enterDescMsg = T.unlines . map (lSpcs <>) $ ts
          , "When you are finished, enter a " <> endCharTxt <> " on a new line." ]
     endCharTxt = dblQuote . T.singleton $ multiLineEndChar
 
-
 exhaustedMsg :: Text
 exhaustedMsg = "You are too exhausted to move."
-
 
 focusingInnateMsg :: Text
 focusingInnateMsg = "Focusing your innate psionic energy for a brief moment, "
 
-
 genericErrorMsg :: Text
 genericErrorMsg = "Unfortunately, an error occurred while executing your command."
-
 
 helloRulesMsg :: Text
 helloRulesMsg = asteriskQuote "By logging in you are expressing a commitment to follow the rules."
 
-
 helpRootErrorMsg :: Text
 helpRootErrorMsg = helpFileErrorMsg "root"
-
 
 helpFileErrorMsg :: Text -> Text
 helpFileErrorMsg n = "Unfortunately, the " <> n <> " help file could not be read."
 
-
 humMsg :: Text -> Text
 humMsg t = prd $ "A faint, steady hum is originating from the " <> t
-
 
 inacBootMsg :: Text
 inacBootMsg = "You are being disconnected from CurryMUD due to inactivity."
 
-
 leftChanMsg :: Text -> ChanName -> Text
 leftChanMsg n cn = T.concat [ "You sense that ", n, " has left the ", dblQuote cn, " channel." ]
-
 
 linkLostMsg :: Sing -> Text
 linkLostMsg s = "Your telepathic link with " <> s <> " fizzles away!"
 
-
 linkMissingMsg :: Sing -> Text
 linkMissingMsg s = thrice prd $ "You notice that your telepathic link with " <> s <> " is missing"
-
 
 linkRetainedMsg :: Sing -> Text
 linkRetainedMsg s = "There is a sudden surge of energy over your telepathic link with " <> s <> "!"
 
-
 loadTblErrorMsg :: FilePath -> Text -> Text
 loadTblErrorMsg fp msg = T.concat [ "error parsing ", dblQuote . T.pack $ fp, ": ", msg, "." ]
-
 
 loadWorldErrorMsg :: Text
 loadWorldErrorMsg = "There was an error loading the world. Check the error log for details."
 
-
 lvlUpMsg :: Text
 lvlUpMsg = "Congratulations! You gained a level."
 
-
 motdErrorMsg :: Text
 motdErrorMsg = "Unfortunately, the message of the day could not be retrieved."
-
 
 newPlaMsg :: Text
 newPlaMsg =
@@ -188,26 +152,20 @@ newPlaMsg =
     \* Words from the English dictionary.2`\n" <>
     lSpcs <> "If you have trouble coming up with a name, consider using one of the many fantasy name generators available on the web."
 
-
 noSmellMsg :: Text
 noSmellMsg = "You don't smell anything in particular."
-
 
 noSoundMsg :: Text
 noSoundMsg = "You don't hear anything in particular."
 
-
 noTasteMsg :: Text
 noTasteMsg = "You don't taste anything in particular."
-
 
 notifyArrivalMsg :: Text -> Text
 notifyArrivalMsg n = n <> " slowly materializes out of thin air."
 
-
 plusRelatedMsg :: Text
 plusRelatedMsg = prd . parensQuote $ "plus related functionality"
-
 
 pwMsg :: Text -> [Text]
 pwMsg t =
@@ -217,19 +175,15 @@ pwMsg t =
     , "* 1 or more digits"
     , "* 0 whitespace characters" ]
 
-
 pwWarningMsg :: Text -- Do not indent with leading spaces.
 pwWarningMsg = "Please make a note of your new password. If you lose your password, you may lose your character!"
-
 
 rethrowExMsg :: Text -> Text
 rethrowExMsg t = "exception caught " <> t <> "; rethrowing to listen thread"
 
-
 rulesIntroMsg :: Text
 rulesIntroMsg = "In order to preserve the integrity of the virtual world along with the enjoyment of all, the \
                 \following rules must be observed."
-
 
 rulesMsg :: Text
 rulesMsg =
@@ -272,49 +226,38 @@ rulesMsg =
     \\\uPRIVACY\\d\n" <>
     lSpcs <> "Please be aware that player activity is automatically logged by the system. Furthermore, administrators have the ability to actively monitor player activity with the express purpose of 1) ensuring that players are following the rules, and 2) tracking down bugs. Administrators promise to maintain player privacy as much as possible."
 
-
 sleepMsg :: Text
 sleepMsg = thrice prd "You go to sleep"
-
 
 smellCoinMsg :: Text -> Bool -> Text
 smellCoinMsg t isPlur = T.concat [ "The ", t, " smell", not isPlur |?| "s", " of metal, with just a hint of grime." ]
 
-
 spiritDetachMsg :: Text
 spiritDetachMsg = "Your spirit detaches from your dead body!"
 
-
 sudoMsg :: Text
 sudoMsg = thrice prd "HELLO, ROOT! We trust you have received the usual lecture from the local System Administrator"
-
 
 tasteCoinMsg :: Text -> Text
 tasteCoinMsg t = "You are first struck by an unmistakably metallic taste, followed soon by the salty essence of sweat \
                  \and waxy residue from the hands of the many people who handled the " <> t <> " before you."
 
-
 teleDescMsg :: Text
 teleDescMsg = "You are instantly transported in a blinding flash of white light. For a brief moment you are \
               \overwhelmed with vertigo accompanied by a confusing sensation of nostalgia."
 
-
 teleDestMsg :: Text -> Text
 teleDestMsg t = "There is a soft audible pop as " <> t <> " appears in a jarring flash of white light."
-
 
 teleOriginMsg :: Text -> Text
 teleOriginMsg t = "There is a soft audible pop as " <> t <> " vanishes in a jarring flash of white light."
 
-
 theBeyondMsg :: Text
 theBeyondMsg = thrice prd "Your spirit passes into the beyond. A hand reaches out to guide you, and pulls you in"
-
 
 unlinkMsg :: Text -> Sing -> Text
 unlinkMsg t s = T.concat [ "You suddenly feel a slight tingle ", t, "; you sense that your telepathic link with ", s
                          , " has been severed." ]
-
 
 violationMsg :: Text
 violationMsg = "Violation of these rules is grounds for discipline up to and including banishment from CurryMUD."

@@ -19,13 +19,10 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.Text (Text)
 import           GHC.Stack (HasCallStack)
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.TrashDumpPurger"
 
-
 -- ==================================================
-
 
 threadTrashDumpPurger :: HasCallStack => MudStack ()
 threadTrashDumpPurger = handle (threadExHandler Nothing "trash dump purger") $ do
@@ -33,7 +30,6 @@ threadTrashDumpPurger = handle (threadExHandler Nothing "trash dump purger") $ d
     logNotice "threadTrashDumpPurger" "trash dump purger started."
     let loop = sequence_ [ liftIO . delaySecs $ trashDumpPurgerDelay, purgeTrashDump ]
     forever loop `catch` die Nothing "trash dump purger"
-
 
 purgeTrashDump :: HasCallStack => MudStack ()
 purgeTrashDump = getState >>= \ms -> do logNotice "purgeTrashDump" "purging the trash dump."

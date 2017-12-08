@@ -50,17 +50,13 @@ import           System.Directory (getDirectoryContents)
 import           System.FilePath ((</>))
 import           System.Random.MWC (createSystemRandom)
 
-
 logErrorMsg :: Text -> Text -> MudStack ()
 logErrorMsg = L.logErrorMsg "Mud.TheWorld.TheWorld"
-
 
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 
-
 -- ==================================================
-
 
 initMudData :: HasCallStack => ServerSettings -> IO MudData
 initMudData s = do [ databaseLock, logLock, persLock ] <- mkLocks
@@ -122,7 +118,6 @@ initMudData s = do [ databaseLock, logLock, persLock ] <- mkLocks
   where
     loggingHelper = initLogging (settingLog s) . Just
 
-
 initWorld :: HasCallStack => MudStack Bool
 initWorld = dropIrrelevantFiles . sort <$> liftIO (getDirectoryContents =<< mkMudFilePath persistDirFun) >>= \cont -> do
     sequence_ [ initFunTbl
@@ -138,36 +133,30 @@ initWorld = dropIrrelevantFiles . sort <$> liftIO (getDirectoryContents =<< mkMu
       then go
       else loadWorld (last cont) >>= \b -> onTrue b (const go) . return $ b
 
-
 initFunTbl :: HasCallStack => MudStack ()
 initFunTbl = tweak $ funTbl .~ M.fromList list
   where
     list = adminZoneRmFuns
-
 
 initEffectFunTbl :: HasCallStack => MudStack ()
 initEffectFunTbl = tweak $ effectFunTbl .~ M.fromList list
   where
     list = effectFuns
 
-
 initInstaEffectFunTbl :: HasCallStack => MudStack ()
 initInstaEffectFunTbl = tweak $ instaEffectFunTbl .~ M.fromList list
   where
     list = instaEffectFuns
-
 
 initFeelingFunTbl :: HasCallStack => MudStack ()
 initFeelingFunTbl = tweak $ feelingFunTbl .~ M.fromList list
   where
     list = feelingFuns
 
-
 initHookFunTbl :: HasCallStack => MudStack ()
 initHookFunTbl = tweak $ hookFunTbl .~ M.fromList list
   where
     list = concat [ commonHooks, adminZoneHooks, loplenkoHooks, tutorialHooks ]
-
 
 initRmActionFunTbl :: HasCallStack => MudStack ()
 initRmActionFunTbl = tweak $ rmActionFunTbl .~ M.fromList list
@@ -177,14 +166,11 @@ initRmActionFunTbl = tweak $ rmActionFunTbl .~ M.fromList list
                   , loplenkoRmActionFuns
                   , tutorialRmActionFuns ]
 
-
 initDistinctFoodTbl :: HasCallStack => MudStack ()
 initDistinctFoodTbl = tweak $ distinctFoodTbl .~ IM.fromList (map dropThr foodList)
 
-
 initDistinctLiqTbl :: HasCallStack => MudStack ()
 initDistinctLiqTbl = tweak $ distinctLiqTbl .~ IM.fromList (map dropThr liqList)
-
 
 createWorld :: HasCallStack => MudStack ()
 createWorld = getState >>= \ms -> let pairs = [ (iWelcome,          createAdminZone)
@@ -193,7 +179,6 @@ createWorld = getState >>= \ms -> let pairs = [ (iWelcome,          createAdminZ
                                               , (iWarehouseWelcome, createWarehouse)]
                                   in do logNotice "createWorld" "creating the world."
                                         forM_ pairs $ \(i, f) -> unless (hasType i ms) f
-
 
 
 loadWorld :: HasCallStack => FilePath -> MudStack Bool
@@ -232,26 +217,21 @@ loadWorld dir = (</> dir) <$> liftIO (mkMudFilePath persistDirFun) >>= \path -> 
   where
     removeAdHocHelper ms = foldr removeAdHoc ms . getInv iWelcome $ ms
 
-
 loadEqTbl :: HasCallStack => FilePath -> MudStack Bool
 loadEqTbl ((</> eqTblFile) -> absolute) = eitherDecode <$> liftIO (LB.readFile absolute) >>= \case
   Left err                                                  -> sorry absolute err
   Right (IM.map (M.fromList . map swap . IM.toList) -> tbl) -> tweak (eqTbl .~ tbl) >> return True
 
-
 sorry :: HasCallStack => FilePath -> String -> MudStack Bool
 sorry absolute (T.pack -> err) = logErrorMsg "sorry" (loadTblErrorMsg absolute err) >> return False
-
 
 loadTbl :: (HasCallStack, FromJSON b) => FilePath -> ASetter MudState MudState a b -> FilePath -> MudStack Bool
 loadTbl tblFile lens path = let absolute = path </> tblFile in eitherDecode <$> liftIO (LB.readFile absolute) >>= \case
   Left  err -> sorry absolute err
   Right tbl -> tweak (lens .~ tbl) >> return True
 
-
 initDurEffectTbl :: HasCallStack => MudState -> MudState
 initDurEffectTbl ms = ms & durationalEffectTbl .~ IM.fromList [ (i, []) | i <- views entTbl IM.keys ms ]
-
 
 movePCs :: HasCallStack => MudState -> MudState
 movePCs ms = let idsWithRmIds   | f     <- \i mob -> onTrue (isPla i ms) ((i, mob^.rmId) :)

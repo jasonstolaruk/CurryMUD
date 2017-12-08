@@ -15,16 +15,13 @@ import Mud.Util.Text
 
 import Data.Maybe (fromMaybe)
 
-
 -- ==================================================
-
 
 pause :: Id -> MsgQueue -> Maybe Fun -> MudStack ()
 pause i mq mf = sequence_ [ promptPause, setInterp i . Just . interpPause $ mf ]
   where
     promptPause = sendPrompt mq . colorWith pagerPromptColor . spaced . bracketQuote . spaced $ txt
     txt         = thrice prd "Enter a blank line to continue"
-
 
 interpPause :: Maybe Fun -> Interp
 interpPause mf _ ActionParams { myId, plaMsgQueue } =

@@ -27,29 +27,22 @@ import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import           GHC.Stack (HasCallStack)
 
-
 logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Threads.SpiritTimer"
-
 
 logPlaOut :: Text -> Id -> [Text] -> MudStack ()
 logPlaOut = L.logPlaOut "Mud.Threads.SpiritTimer"
 
-
 -- ==================================================
-
 
 runSpiritTimerAsync :: HasCallStack => Id -> Seconds -> MudStack ()
 runSpiritTimerAsync i secs = runAsync (threadSpiritTimer i secs) >>= \a -> tweak $ plaTbl.ind i.spiritAsync ?~ a
-
 
 -- Note that "threadSpiritTimer" sets "spiritAsync" to "Nothing" when the timer finishes.
 throwWaitSpiritTimer :: HasCallStack => Id -> MudStack ()
 throwWaitSpiritTimer i = views (plaTbl.ind i.spiritAsync) maybeThrowDeathWait =<< getState
 
-
 -----
-
 
 threadSpiritTimer :: HasCallStack => Id -> Seconds -> MudStack ()
 threadSpiritTimer i secs = handle (threadExHandler (Just i) "spirit timer") $ do
@@ -64,7 +57,6 @@ threadSpiritTimer i secs = handle (threadExHandler (Just i) "spirit timer") $ do
                     tweak $ plaTbl.ind i.spiritAsync .~ Nothing
                     writeMsg mq FinishedSpirit
     handle (die (Just i) $ "spirit timer for " <> singId) $ go `finally` finish
-
 
 spiritTimer :: HasCallStack => Id -> MsgQueue -> Cols -> Seconds -> MudStack ()
 spiritTimer i _  _    0 = logPla "spiritTimer" i "spirit timer expired."

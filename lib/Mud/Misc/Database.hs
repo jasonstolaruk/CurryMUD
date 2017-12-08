@@ -93,7 +93,6 @@ import           Data.Time (UTCTime)
 import           Database.SQLite.Simple (Connection, FromRow, Only(..), Query(..), ToRow, execute, execute_, field, fromRow, query, query_, toRow, withConnection)
 import           GHC.Generics (Generic)
 
-
 data    AdminChanRec   = AdminChanRec   { dbTimestamp   :: Text
                                         , dbName        :: Text
                                         , dbMsg         :: Text }
@@ -173,191 +172,143 @@ data    UnPwRec        = UnPwRec        { dbUn          :: Text
                                         , dbPw          :: Text }
 newtype WordRec        = WordRec        { dbWord        :: Text } deriving Generic
 
-
 -----
-
 
 instance FromRow AdminChanRec where
   fromRow = AdminChanRec <$ field @Int <*> field <*> field <*> field
 
-
 instance FromRow AdminMsgRec where
   fromRow = AdminMsgRec <$ field @Int <*> field <*> field <*> field <*> field
-
 
 instance FromRow AlertExecRec where
   fromRow = AlertExecRec <$> field @(Maybe Int) <*> field <*> field <*> field <*> field <*> field
 
-
 instance FromRow AlertMsgRec where
   fromRow = AlertMsgRec <$> field @(Maybe Int) <*> field <*> field <*> field <*> field <*> field
-
 
 instance FromRow BanHostRec where
   fromRow = BanHostRec <$> field @(Maybe Int) <*> field <*> field <*> field <*> field
 
-
 instance FromRow BanPCRec where
   fromRow = BanPCRec <$> field @(Maybe Int) <*> field <*> field <*> field <*> field
-
 
 instance FromRow BonusRec where
   fromRow = BonusRec <$ field @Int <*> field <*> field <*> field <*> field
 
-
 instance FromRow BugRec where
   fromRow = BugRec <$ field @Int <*> field <*> field <*> field <*> field
-
 
 instance FromRow ChanRec where
   fromRow = ChanRec <$ field @Int <*> field <*> field <*> field <*> field <*> field
 
-
 instance FromRow DiscoverRec where
   fromRow = DiscoverRec <$ field @Int <*> field <*> field <*> field
-
 
 instance FromRow ProfRec where
   fromRow = ProfRec <$ field @Int <*> field <*> field <*> field
 
-
 instance FromRow PropNameRec where
   fromRow = PropNameRec <$ field @Int <*> field
-
 
 instance FromRow QuestionRec where
   fromRow = QuestionRec <$ field @Int <*> field <*> field <*> field
 
-
 instance FromRow SacBonusRec where
   fromRow = SacBonusRec <$ field @Int <*> field <*> field <*> field
-
 
 instance FromRow SacrificeRec where
   fromRow = SacrificeRec <$ field @Int <*> field <*> field <*> field
 
-
 instance FromRow SecRec where
   fromRow = SecRec <$ field @Int <*> field <*> field <*> field
-
 
 instance FromRow TeleRec where
   fromRow = TeleRec <$ field @Int <*> field <*> field <*> field <*> field
 
-
 instance FromRow TelnetCharsRec where
   fromRow = TelnetCharsRec <$ field @Int <*> field <*> field <*> field
-
 
 instance FromRow TTypeRec where
   fromRow = TTypeRec <$ field @Int <*> field <*> field <*> field
 
-
 instance FromRow TypoRec where
   fromRow = TypoRec <$ field @Int <*> field <*> field <*> field <*> field
-
 
 instance FromRow UnPwRec where
   fromRow = UnPwRec <$ field @Int <*> field <*> field
 
-
 instance FromRow WordRec where
   fromRow = WordRec <$ field @Int <*> field
 
-
 -----
-
 
 instance ToRow AdminChanRec where
   toRow (AdminChanRec a b c) = toRow (a, b, c)
 
-
 instance ToRow AdminMsgRec where
   toRow (AdminMsgRec a b c d) = toRow (a, b, c, d)
-
 
 instance ToRow AlertExecRec where
   toRow (AlertExecRec _ a b c d e) = toRow (a, b, c, d, e)
 
-
 instance ToRow AlertMsgRec where
   toRow (AlertMsgRec _ a b c d e) = toRow (a, b, c, d, e)
-
 
 instance ToRow BanHostRec where
   toRow (BanHostRec _ a b c d) = toRow (a, b, c, d)
 
-
 instance ToRow BanPCRec where
   toRow (BanPCRec _ a b c d) = toRow (a, b, c, d)
-
 
 instance ToRow BonusRec where
   toRow (BonusRec a b c d) = toRow (a, b, c, d)
 
-
 instance ToRow BugRec where
   toRow (BugRec a b c d) = toRow (a, b, c, d)
-
 
 instance ToRow ChanRec where
   toRow (ChanRec a b c d e) = toRow (a, b, c, d, e)
 
-
 instance ToRow DiscoverRec where
   toRow (DiscoverRec a b c) = toRow (a, b, c)
-
 
 instance ToRow ProfRec where
   toRow (ProfRec a b c) = toRow (a, b, c)
 
-
 instance ToRow PropNameRec where
   toRow (PropNameRec a) = toRow . Only $ a
-
 
 instance ToRow QuestionRec where
   toRow (QuestionRec a b c) = toRow (a, b, c)
 
-
 instance ToRow SacBonusRec where
   toRow (SacBonusRec a b c) = toRow (a, b, c)
-
 
 instance ToRow SacrificeRec where
   toRow (SacrificeRec a b c) = toRow (a, b, c)
 
-
 instance ToRow SecRec where
   toRow (SecRec a b c) = toRow (a, b, c)
-
 
 instance ToRow TeleRec where
   toRow (TeleRec a b c d) = toRow (a, b, c, d)
 
-
 instance ToRow TelnetCharsRec where
   toRow (TelnetCharsRec a b c) = toRow (a, b, c)
-
 
 instance ToRow TTypeRec where
   toRow (TTypeRec a b c) = toRow (a, b, c)
 
-
 instance ToRow TypoRec where
   toRow (TypoRec a b c d) = toRow (a, b, c, d)
-
 
 instance ToRow UnPwRec where
   toRow (UnPwRec a b) = toRow (a, b)
 
-
 instance ToRow WordRec where
   toRow (WordRec a) = toRow . Only $ a
 
-
 -----
-
 
 instance FromJSON AlertExecRec
 instance FromJSON AlertMsgRec
@@ -384,17 +335,13 @@ instance ToJSON   TTypeRec
 instance ToJSON   TypoRec
 instance ToJSON   WordRec
 
-
 -----
-
 
 dbOperation :: IO a -> MudStack a
 dbOperation f = liftIO . flip withLock f =<< getLock dbLock
 
-
 onDbFile :: (Connection -> IO a) -> IO a
 onDbFile f = flip withConnection f =<< mkMudFilePath dbFileFun
-
 
 createDbTbls :: IO ()
 createDbTbls = onDbFile $ \conn -> do
@@ -434,213 +381,161 @@ createDbTbls = onDbFile $ \conn -> do
          , "create table if not exists unpw         (id integer primary key, un text, pw text)"
          , "create table if not exists words        (id integer primary key, word text)" ]
 
-
 onlyIntsHelper :: [Only Int] -> Int
 onlyIntsHelper []         = 0
 onlyIntsHelper (Only x:_) = x
 
-
 hashPW :: String -> IO Text
 hashPW = maybeEmp TE.decodeUtf8 `fmap2` (hashPasswordUsingPolicy fastBcryptHashingPolicy . B.pack)
 
-
 -----
 
-
 type DbTblName = Text
-
 
 getDbTblRecs :: (FromRow a) => DbTblName -> IO [a]
 getDbTblRecs tblName = onDbFile (\conn -> query_ conn . Query $ "select * from " <> tblName)
 
-
 deleteDbTblRec :: DbTblName -> Int -> IO ()
 deleteDbTblRec tblName i = onDbFile $ \conn -> execute conn (Query $ "delete from " <> tblName <> " where id=?") . Only $ i
-
 
 deleteDbTblRecs :: DbTblName -> IO ()
 deleteDbTblRecs tblName = onDbFile (\conn -> execute_ conn . Query $ "delete from " <> tblName)
 
-
 -----
-
 
 insertDbTblHelper :: (ToRow a) => Query -> a -> IO ()
 insertDbTblHelper q x = onDbFile $ \conn -> execute conn q x
 
-
 insertDbTblAdminChan :: AdminChanRec -> IO ()
 insertDbTblAdminChan = insertDbTblHelper "insert into admin_chan (timestamp, name, msg) values (?, ?, ?)"
 
-
 insertDbTblAdminMsg :: AdminMsgRec -> IO ()
 insertDbTblAdminMsg = insertDbTblHelper "insert into admin_msg (timestamp, from_name, to_name, msg) values (?, ?, ?, ?)"
-
 
 insertDbTblAlertExec :: AlertExecRec -> IO ()
 insertDbTblAlertExec = insertDbTblHelper "insert into alert_exec (timestamp, name, cmd_name, target, args) values \
                                          \(?, ?, ?, ?, ?)"
 
-
 insertDbTblAlertMsg :: AlertMsgRec -> IO ()
 insertDbTblAlertMsg = insertDbTblHelper "insert into alert_msg (timestamp, name, cmd_name, trigger, msg) values \
                                         \(?, ?, ?, ?, ?)"
 
-
 insertDbTblBanHost :: BanHostRec -> IO ()
 insertDbTblBanHost = insertDbTblHelper "insert into ban_host (timestamp, host, is_banned, reason) values (?, ?, ?, ?)"
-
 
 insertDbTblBanPC :: BanPCRec -> IO ()
 insertDbTblBanPC = insertDbTblHelper "insert into ban_pc (timestamp, name, is_banned, reason) values (?, ?, ?, ?)"
 
-
 insertDbTblBonus :: BonusRec -> IO ()
 insertDbTblBonus = insertDbTblHelper "insert into bonus (timestamp, from_name, to_name, amt) values (?, ?, ?, ?)"
-
 
 insertDbTblBug :: BugRec -> IO ()
 insertDbTblBug = insertDbTblHelper "insert into bug (timestamp, name, loc, desc) values (?, ?, ?, ?)"
 
-
 insertDbTblChan :: ChanRec -> IO ()
 insertDbTblChan = insertDbTblHelper "insert into chan (timestamp, chan_id, chan_name, name, msg) values (?, ?, ?, ?, ?)"
-
 
 insertDbTblDiscover :: DiscoverRec -> IO ()
 insertDbTblDiscover = insertDbTblHelper "insert into discover (timestamp, host, msg) values (?, ?, ?)"
 
-
 insertDbTblProf :: ProfRec -> IO ()
 insertDbTblProf = insertDbTblHelper "insert into profanity (timestamp, host, prof) values (?, ?, ?)"
-
 
 insertDbTblQuestion :: QuestionRec -> IO ()
 insertDbTblQuestion = insertDbTblHelper "insert into question (timestamp, name, msg) values (?, ?, ?)"
 
-
 insertDbTblSacBonus :: SacBonusRec -> IO ()
 insertDbTblSacBonus = insertDbTblHelper "insert into sac_bonus (utc_time, name, god_name) values (?, ?, ?)"
-
 
 insertDbTblSacrifice :: SacrificeRec -> IO ()
 insertDbTblSacrifice = insertDbTblHelper "insert into sacrifice (utc_time, name, god_name) values (?, ?, ?)"
 
-
 insertDbTblSec :: SecRec -> IO ()
 insertDbTblSec = insertDbTblHelper "insert into sec (name, question, answer) values (?, ?, ?)"
-
 
 insertDbTblTele :: TeleRec -> IO ()
 insertDbTblTele = insertDbTblHelper "insert into tele (timestamp, from_name, to_name, msg) values (?, ?, ?, ?)"
 
-
 insertDbTblTelnetChars :: TelnetCharsRec -> IO ()
 insertDbTblTelnetChars = insertDbTblHelper "insert into telnet_chars (timestamp, host, telnet_chars) values (?, ?, ?)"
-
 
 insertDbTblTType :: TTypeRec -> IO ()
 insertDbTblTType = insertDbTblHelper "insert into ttype (timestamp, host, ttype) values (?, ?, ?)"
 
-
 insertDbTblTypo :: TypoRec -> IO ()
 insertDbTblTypo = insertDbTblHelper "insert into typo (timestamp, name, loc, desc) values (?, ?, ?, ?)"
-
 
 insertDbTblUnPw :: UnPwRec -> IO ()
 insertDbTblUnPw rec@UnPwRec { .. } = hashPW (T.unpack dbPw) >>= \pw -> onDbFile $ \conn -> do
     execute conn "delete from unpw where un=?" . Only $ dbUn
     execute conn "insert into unpw (un, pw) values (?, ?)" rec { dbPw = pw }
 
-
 -----
 
-
 type CountDbTblRecsFun = IO Int
-
 
 countDbTblRecsAdminChan :: CountDbTblRecsFun
 countDbTblRecsAdminChan = countHelper "admin_chan"
 
-
 countDbTblRecsAdminMsg :: CountDbTblRecsFun
 countDbTblRecsAdminMsg = countHelper "admin_msg"
-
 
 countDbTblRecsChan :: CountDbTblRecsFun
 countDbTblRecsChan = countHelper "chan"
 
-
 countDbTblRecsQuestion :: CountDbTblRecsFun
 countDbTblRecsQuestion = countHelper "question"
 
-
 countDbTblRecsTele :: CountDbTblRecsFun
 countDbTblRecsTele = countHelper "tele"
-
 
 countHelper :: DbTblName -> IO Int
 countHelper tblName = let q = Query $ "select count(*) from " <> tblName
                       in onDbFile $ \conn -> onlyIntsHelper <$> query_ conn q
 
-
 -----
 
-
 type PurgeDbTblFun = IO ()
-
 
 purgeDbTblAdminChan :: PurgeDbTblFun
 purgeDbTblAdminChan = purgeHelper "admin_chan"
 
-
 purgeDbTblAdminMsg :: PurgeDbTblFun
 purgeDbTblAdminMsg = purgeHelper "admin_msg"
-
 
 purgeDbTblChan :: PurgeDbTblFun
 purgeDbTblChan = purgeHelper "chan"
 
-
 purgeDbTblQuestion :: PurgeDbTblFun
 purgeDbTblQuestion = purgeHelper "question"
 
-
 purgeDbTblTele :: PurgeDbTblFun
 purgeDbTblTele = purgeHelper "tele"
-
 
 purgeHelper :: DbTblName -> IO ()
 purgeHelper tblName = onDbFile $ \conn -> execute conn q (Only noOfDbTblRecsToPurge)
   where
     q = Query . T.concat $ [ "delete from ", tblName, " where id in (select id from ", tblName, " limit ?)" ]
 
-
 -----
-
 
 lookupPropName :: Text -> IO (Maybe Text)
 lookupPropName t = let q = Query "select prop_name from prop_names where prop_name = ?"
                    in onDbFile $ \conn -> onlyTxtsHelper <$> query conn q (Only t)
 
-
 onlyTxtsHelper :: [Only Text] -> Maybe Text
 onlyTxtsHelper = listToMaybe . map fromOnly
-
 
 lookupBonuses :: Sing -> IO [BonusRec]
 lookupBonuses s = let q = Query "select * from bonus where from_name = ? or to_name = ?"
                   in onDbFile $ \conn -> query conn q . dup $ s
 
-
 lookupBonusesFromTo :: Sing -> Sing -> IO Int
 lookupBonusesFromTo fromSing toSing = let q = Query "select count(*) from bonus where from_name = ? and to_name = ?"
                                       in onDbFile $ \conn -> onlyIntsHelper <$> query conn q (fromSing, toSing)
 
-
 lookupPW :: Sing -> IO (Maybe Text)
 lookupPW s = onDbFile $ \conn -> onlyTxtsHelper <$> query conn (Query "select pw from unpw where un = ?") (Only s)
-
 
 lookupSacBonusTime :: Sing -> Text -> IO (Maybe UTCTime) -- When was the last sacrifice bonus given?
 lookupSacBonusTime s gn = let q = Query "select utc_time from sac_bonus where name = ? and god_name = ?"
@@ -650,15 +545,12 @@ lookupSacBonusTime s gn = let q = Query "select utc_time from sac_bonus where na
                                                 _            -> Nothing
     f _                       = Nothing
 
-
 lookupSacrifices :: Sing -> Text -> IO Int -- How many sacrifices have been made?
 lookupSacrifices s gn = let q = Query "select count(*) from sacrifice where name = ? and god_name = ?"
                         in onDbFile $ \conn -> onlyIntsHelper <$> query conn q (s, gn)
 
-
 lookupSec :: Sing -> IO [SecRec]
 lookupSec s = onDbFile $ \conn -> query conn (Query "select * from sec where name = ?") (Only s)
-
 
 lookupTeleNames :: Sing -> IO [Text]
 lookupTeleNames s = onDbFile $ \conn -> map fromOnly <$> query conn (Query t) (dup4 s)
@@ -669,24 +561,19 @@ lookupTeleNames s = onDbFile $ \conn -> map fromOnly <$> query conn (Query t) (d
         \  end as name \
         \from (select from_name, to_name from tele where from_name = ? or to_name = ?)"
 
-
 lookupWord :: Text -> IO (Maybe Text)
 lookupWord t = onDbFile $ \conn -> onlyTxtsHelper <$> query conn (Query "select word from words where word = ?") (Only t)
 
-
 -----
-
 
 insertPropNames :: Text -> IO ()
 insertPropNames = procSrcFileTxt "prop_names" "prop_name"
-
 
 procSrcFileTxt :: Text -> Text -> Text -> IO ()
 procSrcFileTxt tblName colName = onDbFile . flip execute_ . buildQuery
   where
     buildQuery = Query . (T.concat [ "insert into ", tblName, " ", parensQuote colName, " values " ] <>) . buildVals
     buildVals  = commas . map (parensQuote . dblQuote) . T.lines . T.toLower
-
 
 insertWords :: Text -> IO ()
 insertWords = procSrcFileTxt "words" "word"

@@ -62,17 +62,13 @@ import           System.Log.Handler.Simple (fileHandler)
 import           System.Log.Logger (errorM, infoM, noticeM, removeAllHandlers, removeHandler, rootLoggerName, setHandlers, setLevel, updateGlobalLogger)
 import           System.Posix.Files (fileSize, getFileStatus)
 
-
 blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Misc.Logging"
-
 
 -- ==================================================
 -- Starting logs:
 
-
 type DoOrDon'tLog = Bool
-
 
 initLogging :: HasCallStack => DoOrDon'tLog -> Maybe Lock -> IO (Maybe LogService, Maybe LogService)
 initLogging False _                = return (Nothing, Nothing)
@@ -87,10 +83,8 @@ initLogging True  (Just logExLock) = do
     return ((,) (ea, eq) (na, nq) & both %~ Just)
 initLogging True Nothing = blowUp "initLogging" "missing lock" ""
 
-
 type LogName    = Text
 type LoggingFun = String -> String -> IO ()
-
 
 spawnLogger :: HasCallStack => FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> Lock -> IO LogAsync
 spawnLogger fn p (T.unpack -> ln) f q logExLock =
@@ -119,7 +113,6 @@ spawnLogger fn p (T.unpack -> ln) f q logExLock =
             when (length matches >= noOfLogFiles) . removeFile . (dir </>) . head $ matches
             loop =<< initLog
 
-
 loggingThreadExHandler :: HasCallStack => Lock -> Text -> SomeException -> IO ()
 loggingThreadExHandler logExLock n e = guard (fromException e /= Just ThreadKilled) >> mkTimestamp >>= \ts ->
     let txt = "Mud.Logging loggingThreadExHandler: exception caught on logging thread"
@@ -132,10 +125,8 @@ loggingThreadExHandler logExLock n e = guard (fromException e /= Just ThreadKill
                                                                | isPermissionError   ex -> showIt
                                                                | otherwise              -> throwIO ex
 
-
 logRotationFlagger :: HasCallStack => LogQueue -> IO ()
 logRotationFlagger q = forever . sequence_ $ [ delaySecs logRotationDelay, atomically . writeTQueue q $ RotateLog ]
-
 
 initPlaLog :: HasCallStack => Id -> Sing -> MudStack ()
 initPlaLog i n@(T.unpack -> n') = do
@@ -145,18 +136,14 @@ initPlaLog i n@(T.unpack -> n') = do
     a         <- liftIO . spawnLogger (dir </> n' <.> "log") INFO ("currymud." <> n) infoM q $ logExLock
     tweak $ plaLogTbl.ind i .~ (a, q)
 
-
 -- ==================================================
 -- Stopping/closing logs:
-
 
 stopLog :: HasCallStack => LogQueue -> MudStack ()
 stopLog = flip writeLog StopLog
 
-
 closePlaLog :: HasCallStack => Id -> MudStack ()
 closePlaLog = flip doIfLogging stopLog
-
 
 doIfLogging :: HasCallStack => Id -> (LogQueue -> MudStack ()) -> MudStack ()
 doIfLogging i f = getState >>= \ms ->
@@ -164,7 +151,6 @@ doIfLogging i f = getState >>= \ms ->
                        NpcType -> maybeVoid (`doIfLogging` f) . getPossessor i $ ms
                        _       -> unit
     in views typeTbl (maybeVoid helper . (i `IM.lookup`)) ms
-
 
 closeLogs :: HasCallStack => MudStack () -- Close the rest service log first (this "closeLogs" function removes the log handlers).
 closeLogs = asks (errorLog `fanView` noticeLog) >>= \case
@@ -177,55 +163,43 @@ closeLogs = asks (errorLog `fanView` noticeLog) >>= \case
                     mapM_ wait $ asyncs ++ as
                     removeAllHandlers
 
-
 -- ==================================================
 -- Logging messages:
 
-
 registerMsg :: HasCallStack => Text -> LogQueue -> MudStack ()
 registerMsg msg = flip writeLog (LogMsg msg)
-
 
 logNotice :: HasCallStack => Text -> Text -> Text -> MudStack ()
 logNotice modName (dblQuote -> funName) msg = maybeVoid (helper . snd) =<< asks (view noticeLog)
   where
     helper = registerMsg (T.concat [ modName, " ", funName, ": ", msg ])
 
-
 logError :: HasCallStack => Text -> MudStack ()
 logError msg = maybeVoid (registerMsg msg . snd) =<< asks (view errorLog)
 
-
 logErrorMsg :: HasCallStack => Text -> Text -> Text -> MudStack ()
 logErrorMsg modName (dblQuote -> funName) msg = logError . T.concat $ [ modName, " ", funName, ": ", msg ]
-
 
 logExMsg :: HasCallStack => Text -> Text -> Text -> SomeException -> MudStack ()
 logExMsg modName (dblQuote -> funName) msg (dblQuote . showTxt -> e) =
     logError . T.concat $ [ modName, " ", funName, ": ", msg, ". ", e ]
 
-
 logImpossible :: HasCallStack => Text -> Text -> Text -> MudStack ()
 logImpossible modName funName msg = logErrorMsg modName funName $ panicMsg |<>| msg
-
 
 logIOEx :: HasCallStack => Text -> Text -> IOException -> MudStack ()
 logIOEx modName (dblQuote -> funName) (dblQuote . showTxt -> e) =
     logError . T.concat $ [ modName, " ", funName, ": ", e ]
 
-
 logAndDispIOEx :: HasCallStack => MsgQueue -> Cols -> Text -> Text -> IOException -> MudStack ()
 logAndDispIOEx mq cols modName (dblQuote -> funName) (dblQuote . showTxt -> e) =
     let msg = T.concat [ modName, " ", funName, ": ", e ] in logError msg >> wrapSend mq cols msg
 
-
 logPla :: HasCallStack => Text -> Text -> Id -> Text -> MudStack ()
 logPla modName (dblQuote -> funName) i msg = doIfLogging i . registerMsg . T.concat $ [ modName, " ", funName, ": ", msg ]
 
-
 logPlaExec :: HasCallStack => Text -> CmdName -> Id -> MudStack ()
 logPlaExec modName cn i = logPla modName cn i . prd $ "executing " <> dblQuote cn
-
 
 logPlaExecArgs :: HasCallStack => Text -> CmdName -> Args -> Id -> MudStack ()
 logPlaExecArgs modName cn as i = logPla modName cn i . prd $ "executing " <> helper
@@ -233,17 +207,14 @@ logPlaExecArgs modName cn as i = logPla modName cn i . prd $ "executing " <> hel
     helper | ()# as    = dblQuote cn <> " with no arguments"
            | otherwise = dblQuote . T.unwords $ cn : as
 
-
 logPlaOut :: HasCallStack => Text -> CmdName -> Id -> [Text] -> MudStack ()
 logPlaOut modName cn i (slashes -> msgs) = logPla modName cn i $ parensQuote "output" |<>| msgs
-
 
 massLogPla :: HasCallStack => Text -> Text -> Text -> MudStack ()
 massLogPla modName (dblQuote -> funName) msg = helper =<< getState
   where
     helper (views plaLogTbl (map snd . IM.elems) -> qs) =
         forM_ qs (`writeLog` (LogMsg . T.concat $ [ modName, " ", funName, ": ", msg ]))
-
 
 writeLog :: HasCallStack => LogQueue -> LogCmd -> MudStack ()
 writeLog lq = liftIO . atomically . writeTQueue lq

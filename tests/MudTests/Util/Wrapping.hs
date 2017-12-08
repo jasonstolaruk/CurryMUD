@@ -17,26 +17,21 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import           Test.Tasty.QuickCheck ((==>), Property, choose, forAll)
 
-
 pmf :: PatternMatchFail
 pmf = U.pmf "MudTests.Util.Wrapping"
 
-
 -- ==================================================
-
 
 prop_wrap :: Property
 prop_wrap = forAll genCols              $ \c ->
             forAll (genTxtLongerThan c) $ \t ->
     all ((<= c) . T.length) . wrap c $ t
 
-
 prop_wrapIndent_wraps :: Property
 prop_wrapIndent_wraps = forAll (choose (0, maxCols + 10)) $ \n ->
                         forAll genCols                    $ \c ->
                         forAll (genTxtLongerThan c)       $ \t ->
     all ((<= c) . T.length) . wrapIndent n c $ t
-
 
 prop_wrapIndent_indents :: Property
 prop_wrapIndent_indents = forAll (choose (0, maxCols + 10)) $ \n ->
@@ -45,13 +40,11 @@ prop_wrapIndent_indents = forAll (choose (0, maxCols + 10)) $ \n ->
     let res = wrapIndent n c t
     in resIsIndented (adjustIndent n c) res
 
-
 resIsIndented :: Int -> [Text] -> Bool
 resIsIndented n (t:wrapped) = ()!# t && all lineIsIndented wrapped
   where
     lineIsIndented (T.splitAt n -> (indent, rest)) = T.all isSpace indent && ()!# rest
 resIsIndented _ xs = pmf "resIsIndented" . showTxt $ xs
-
 
 prop_xformLeading :: Char -> Char -> Property
 prop_xformLeading a b = forAll (choose (0, 10))          $ \noOfLeading ->
@@ -65,7 +58,6 @@ prop_xformLeading a b = forAll (choose (0, 10))          $ \noOfLeading ->
            , T.all (== b) resLeading
            , T.drop noOfLeading res == rest ]
 
-
 prop_wrapLineWithIndentTag :: Property
 prop_wrapLineWithIndentTag = forAll genCols                      $ \c ->
                              forAll (genTxtOfRndmLen (0, c * 2)) $ \t ->
@@ -75,7 +67,6 @@ prop_wrapLineWithIndentTag = forAll genCols                      $ \c ->
     in if T.length t <= c
       then res == pure t
       else resIsIndented (adjustIndent n c) res
-
 
 prop_calcIndent :: Property
 prop_calcIndent = forAll (genTxtOfRndmLen (0, 10)) $ \firstWord         ->

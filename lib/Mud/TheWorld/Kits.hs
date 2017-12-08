@@ -19,13 +19,10 @@ import           Data.Maybe (catMaybes, mapMaybe)
 import qualified Data.Vector.Unboxed as V (Vector, toList)
 import           GHC.Stack (HasCallStack)
 
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.TheWorld.Kits"
 
-
 -- ==================================================
-
 
 kit :: HasCallStack => Id -> V.Vector Int -> MudStack () -- TODO: Kits are incomplete. Some items such as weapons should be chosen based on PC skills.
 kit i (V.toList -> [ va, vb, vc, vd, ve, vf, vg, vh, vi, vj ]) = modifyStateSeq helper

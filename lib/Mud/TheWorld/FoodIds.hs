@@ -4,7 +4,6 @@ module Mud.TheWorld.FoodIds where
 
 import Mud.Data.State.MudData (Id)
 
-
 iFoodApple = 0 :: Id
 
 iFoodBanana = 1 :: Id

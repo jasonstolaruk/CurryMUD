@@ -14,10 +14,8 @@ import           Mud.Util.Operators
 import           GHC.Stack (HasCallStack)
 import qualified Data.Text as T
 
-
 centralDispatch :: HasCallStack => Interp
 centralDispatch = dispatch findAction
-
 
 findAction :: HasCallStack => FindActionFun
 findAction i ms (T.toLower -> cn) = findActionHelper i ms cn . mkCmds =<< getServerSettings

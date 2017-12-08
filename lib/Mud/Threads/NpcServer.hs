@@ -32,29 +32,23 @@ import           GHC.Stack (HasCallStack)
 import           Prelude hiding (pi)
 import qualified Data.Text as T
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.NpcServer"
 
-
 -- ==================================================
-
 
 runNpcServerAsync :: HasCallStack => Id -> MudStack ()
 runNpcServerAsync i = do mq <- liftIO newTQueueIO
                          a  <- runAsync . threadNpcServer i $ mq
                          tweak $ npcTbl.ind i .~ Npc mq a Nothing
 
-
 startNpcServers :: HasCallStack => MudStack ()
 startNpcServers =
     logNotice "startNpcServers" "starting NPC server threads." >> (mapM_ runNpcServerAsync  . findNpcIds =<< getState)
 
-
 stopNpcServers :: HasCallStack => MudStack ()
 stopNpcServers =
     logNotice "stopNpcServers"  "stopping NPC server threads." >> (mapM_ stopWaitNpcServer  . findNpcIds =<< getState)
-
 
 stopWaitNpcServer :: HasCallStack => Id -> MudStack ()
 stopWaitNpcServer i = helper |&| modifyState >=> \npc -> do
@@ -64,9 +58,7 @@ stopWaitNpcServer i = helper |&| modifyState >=> \npc -> do
     helper ms = let npc = ms^.npcTbl.ind i
                 in (ms & npcTbl.at i .~ Nothing, npc)
 
-
 -----
-
 
 threadNpcServer :: HasCallStack => Id -> NpcMsgQueue -> MudStack ()
 threadNpcServer i npcMq = handle (threadExHandler (Just i) "NPC server") $ setThreadType (NpcServer i) >> loop
@@ -74,7 +66,6 @@ threadNpcServer i npcMq = handle (threadExHandler (Just i) "NPC server") $ setTh
     loop = npcMq |&| liftIO . atomically . readTQueue >=> \case
       ExternCmd mq cols msg -> handleExternCmd i mq cols msg >> loop
       StopNpcServer         -> unit
-
 
 handleExternCmd :: HasCallStack => Id -> MsgQueue -> Cols -> Text -> MudStack ()
 handleExternCmd i mq cols msg = getState >>= \ms ->

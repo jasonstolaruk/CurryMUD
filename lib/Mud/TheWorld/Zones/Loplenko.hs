@@ -40,14 +40,11 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.TheWorld.Zones.Loplenko"
 
-
 -- ==================================================
 -- Hooks:
-
 
 loplenkoHooks :: [(HookName, HookFun)]
 loplenkoHooks = [ (lookBookshelvesHookName,     lookBookshelvesHookFun    )
@@ -69,17 +66,13 @@ loplenkoHooks = [ (lookBookshelvesHookName,     lookBookshelvesHookFun    )
                 , (readBookVulpenoidHookName,   readBookVulpenoidHookFun  )
                 , (readSundialHookName,         readSundialHookFun        ) ]
 
-
 -----
-
 
 lookBookshelvesHook :: Hook
 lookBookshelvesHook = Hook lookBookshelvesHookName [ "book", "books", "bookshelf", "bookshelves", "shelf", "shelves" ]
 
-
 lookBookshelvesHookName :: HookName
 lookBookshelvesHookName = "Loplenko_iLibrary_lookBookshelves"
-
 
 lookBookshelvesHookFun :: HookFun
 lookBookshelvesHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
@@ -96,17 +89,13 @@ lookBookshelvesHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
     handler e    = fileIOExHandler "lookBookshelvesHookFun" e >> return (wrap cols bookListErrorMsg)
     (mq, cols)   = getMsgQueueColumns i ms
 
-
 -----
-
 
 lookSundialHook :: Hook
 lookSundialHook = Hook lookSundialHookName [ "sundial", "dial", "sun" ]
 
-
 lookSundialHookName :: HookName
 lookSundialHookName = "Loplenko_iLoplenkoWelcome_lookSundial"
-
 
 lookSundialHookFun :: HookFun
 lookSundialHookFun = mkGenericHookFun t "looks at the sundial." "looked at sundial"
@@ -116,9 +105,7 @@ lookSundialHookFun = mkGenericHookFun t "looks at the sundial." "looked at sundi
                    \be determined based on where that shadow falls on the plate."
                  , nlTxt, "You can ", dblQuote "read", " the sundial to tell the time." ]
 
-
 -----
-
 
 readBookHelper :: Book -> HookFun
 readBookHelper b i Hook { .. } _ a@(_, (ms, _, _, _), _) =
@@ -127,7 +114,6 @@ readBookHelper b i Hook { .. } _ a@(_, (ms, _, _, _), _) =
                     in pure (serialize selfDesig <> " reads a book.", desigOtherIds selfDesig) )
       & _2._4 <>~ pure (T.concat [ bracketQuote hookName, " ", dblQuote . pp $ b, " book" ])
       & _3    <>~ pure (readABook i b)
-
 
 readABook :: Id -> Book -> MudStack ()
 readABook i b = ((,) <$> getState <*> getServerSettings) >>= \(ms, s) ->
@@ -139,10 +125,8 @@ readABook i b = ((,) <$> getState <*> getServerSettings) >>= \(ms, s) ->
     in do rmDescHelper . Just $ "reading a book"
           pager i mq (Just next) =<< parseBookTxt s cols <$> getBookTxt b cols
 
-
 parseBookTxt :: ServerSettings -> Cols -> Text -> [Text]
 parseBookTxt s cols = map (xformLeadingSpaceChars . expandDividers cols) . parseWrap s cols
-
 
 getBookTxt :: Book -> Cols -> MudStack Text
 getBookTxt b cols = liftIO (T.readFile =<< mkFilePath) |&| try >=> eitherRet handler
@@ -165,242 +149,178 @@ getBookTxt b cols = liftIO (T.readFile =<< mkFilePath) |&| try >=> eitherRet han
     handler e = do fileIOExHandler "getBookTxt" e
                    return . wrapUnlines cols . bookFileErrorMsg . dblQuote . pp $ b
 
-
 -----
-
 
 readBookCreationHook :: Hook
 readBookCreationHook = Hook readBookCreationHookName . pure $ "creation"
 
-
 readBookCreationHookName :: HookName
 readBookCreationHookName = "Loplenko_iLibrary_readBookCreation"
-
 
 readBookCreationHookFun :: HookFun
 readBookCreationHookFun = readBookHelper BookCreation
 
-
 -----
-
 
 readBookDwarfHook :: Hook
 readBookDwarfHook = Hook readBookDwarfHookName . pure $ "dwarf"
 
-
 readBookDwarfHookName :: HookName
 readBookDwarfHookName = "Loplenko_iLibrary_readBookDwarf"
-
 
 readBookDwarfHookFun :: HookFun
 readBookDwarfHookFun = readBookHelper BookDwarf
 
-
 -----
-
 
 readBookElfHook :: Hook
 readBookElfHook = Hook readBookElfHookName . pure $ "elf"
 
-
 readBookElfHookName :: HookName
 readBookElfHookName = "Loplenko_iLibrary_readBookElf"
-
 
 readBookElfHookFun :: HookFun
 readBookElfHookFun = readBookHelper BookElf
 
-
 -----
-
 
 readBookFelinoidHook :: Hook
 readBookFelinoidHook = Hook readBookFelinoidHookName . pure $ "felinoid"
 
-
 readBookFelinoidHookName :: HookName
 readBookFelinoidHookName = "Loplenko_iLibrary_readBookFelinoid"
-
 
 readBookFelinoidHookFun :: HookFun
 readBookFelinoidHookFun = readBookHelper BookFelinoid
 
-
 -----
-
 
 readBookHistoryHook :: Hook
 readBookHistoryHook = Hook readBookHistoryHookName . pure $ "history"
 
-
 readBookHistoryHookName :: HookName
 readBookHistoryHookName = "Loplenko_iLibrary_readBookHistory"
-
 
 readBookHistoryHookFun :: HookFun
 readBookHistoryHookFun = readBookHelper BookHistory
 
-
 -----
-
 
 readBookHobbitHook :: Hook
 readBookHobbitHook = Hook readBookHobbitHookName . pure $ "hobbit"
 
-
 readBookHobbitHookName :: HookName
 readBookHobbitHookName = "Loplenko_iLibrary_readBookHobbit"
-
 
 readBookHobbitHookFun :: HookFun
 readBookHobbitHookFun = readBookHelper BookHobbit
 
-
 -----
-
 
 readBookHolyHook :: Hook
 readBookHolyHook = Hook readBookHolyHookName . pure $ "holy"
 
-
 readBookHolyHookName :: HookName
 readBookHolyHookName = "Loplenko_iLibrary_readBookHoly"
-
 
 readBookHolyHookFun :: HookFun
 readBookHolyHookFun = readBookHelper BookHoly
 
-
 -----
-
 
 readBookHumanHook :: Hook
 readBookHumanHook = Hook readBookHumanHookName . pure $ "human"
 
-
 readBookHumanHookName :: HookName
 readBookHumanHookName = "Loplenko_iLibrary_readBookHuman"
-
 
 readBookHumanHookFun :: HookFun
 readBookHumanHookFun = readBookHelper BookHuman
 
-
 -----
-
 
 readBookLagomorphHook :: Hook
 readBookLagomorphHook = Hook readBookLagomorphHookName . pure $ "lagomorph"
 
-
 readBookLagomorphHookName :: HookName
 readBookLagomorphHookName = "Loplenko_iLibrary_readBookLagomorph"
-
 
 readBookLagomorphHookFun :: HookFun
 readBookLagomorphHookFun = readBookHelper BookLagomorph
 
-
 -----
-
 
 readBookLopolwanmiHook :: Hook
 readBookLopolwanmiHook = Hook readBookLopolwanmiHookName . pure $ "lopolwanmi"
 
-
 readBookLopolwanmiHookName :: HookName
 readBookLopolwanmiHookName = "Loplenko_iLibrary_readBookLopolwanmi"
-
 
 readBookLopolwanmiHookFun :: HookFun
 readBookLopolwanmiHookFun = readBookHelper BookLopolwanmi
 
-
 -----
-
 
 readBookMapsHook :: Hook
 readBookMapsHook = Hook readBookMapsHookName . pure $ "maps"
 
-
 readBookMapsHookName :: HookName
 readBookMapsHookName = "Loplenko_iLibrary_readBookMaps"
-
 
 readBookMapsHookFun :: HookFun
 readBookMapsHookFun = readBookHelper BookMaps
 
-
 -----
-
 
 readBookNymphHook :: Hook
 readBookNymphHook = Hook readBookNymphHookName . pure $ "nymph"
 
-
 readBookNymphHookName :: HookName
 readBookNymphHookName = "Loplenko_iLibrary_readBookNymph"
-
 
 readBookNymphHookFun :: HookFun
 readBookNymphHookFun = readBookHelper BookNymph
 
-
 -----
-
 
 readBookRacesHook :: Hook
 readBookRacesHook = Hook readBookRacesHookName . pure $ "races"
 
-
 readBookRacesHookName :: HookName
 readBookRacesHookName = "Loplenko_iLibrary_readBookRaces"
-
 
 readBookRacesHookFun :: HookFun
 readBookRacesHookFun = readBookHelper BookRaces
 
-
 -----
-
 
 readBookShunfalipmiHook :: Hook
 readBookShunfalipmiHook = Hook readBookShunfalipmiHookName . pure $ "shunfalipmi"
 
-
 readBookShunfalipmiHookName :: HookName
 readBookShunfalipmiHookName = "Loplenko_iLibrary_readBookShunfalipmi"
-
 
 readBookShunfalipmiHookFun :: HookFun
 readBookShunfalipmiHookFun = readBookHelper BookShunfalipmi
 
-
 -----
-
 
 readBookVulpenoidHook :: Hook
 readBookVulpenoidHook = Hook readBookVulpenoidHookName . pure $ "vulpenoid"
 
-
 readBookVulpenoidHookName :: HookName
 readBookVulpenoidHookName = "Loplenko_iLibrary_readBookVulpenoid"
-
 
 readBookVulpenoidHookFun :: HookFun
 readBookVulpenoidHookFun = readBookHelper BookVulpenoid
 
-
 -----
-
 
 readSundialHook :: Hook
 readSundialHook = Hook readSundialHookName [ "sundial", "dial", "sun" ]
 
-
 readSundialHookName :: HookName
 readSundialHookName = "Loplenko_iLoplenkoWelcome_readSundial"
-
 
 readSundialHookFun :: HookFun
 readSundialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
@@ -414,18 +334,14 @@ readSundialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
       then T.concat [ "The sundial reads ", showTxt curryHour, ":", padTwoDigits $ (curryMin `div` 5) * 5, "." ]
       else "Alas, you'll have to wait for the sun to come out."
 
-
 -- ==================================================
 -- Room action functions:
-
 
 loplenkoRmActionFuns :: [(FunName, RmActionFun)]
 loplenkoRmActionFuns = []
 
-
 -- ==================================================
 -- Zone definition:
-
 
 createLoplenko :: MudStack ()
 createLoplenko = do

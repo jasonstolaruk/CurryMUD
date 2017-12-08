@@ -26,17 +26,13 @@ import           GHC.Stack (HasCallStack)
 import qualified Data.Map.Strict as M (delete, elems, empty, insert, lookup)
 import qualified Data.Text as T
 
-
 logExMsg :: Text -> Text -> SomeException -> MudStack ()
 logExMsg = L.logExMsg "Mud.Threads.FeelingTimer"
-
 
 logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Threads.FeelingTimer"
 
-
 -- ==================================================
-
 
 startFeeling :: HasCallStack => Id -> EffectFeeling -> FeelingVal -> MudStack ()
 startFeeling i (EffectFeeling tag dur) val = handle (threadStarterExHandler i fn . Just $ tag) $ do
@@ -47,7 +43,6 @@ startFeeling i (EffectFeeling tag dur) val = handle (threadStarterExHandler i fn
     logPla fn i . T.concat $ [ "started feeling with tag ", dblQuote tag, ": ", pp feel, "." ]
   where
     fn = "startFeeling"
-
 
 threadFeelingTimer :: HasCallStack => Id -> FeelingTag -> Seconds -> MudStack ()
 threadFeelingTimer i tag dur = sequence_ [ setThreadType . FeelingTimer $ i, loop 0 ] `catch` exHandler
@@ -63,9 +58,7 @@ threadFeelingTimer i tag dur = sequence_ [ setThreadType . FeelingTimer $ i, loo
     fn            = "threadFeelingTimer"
     name          = "feeling timer " <> dblQuote tag
 
-
 -----
-
 
 -- To stop a single feeling, cancel the async and remove the entry in the mob's feeling map. See "stopFeeling" in
 -- module "Mud.Threads.Effect".

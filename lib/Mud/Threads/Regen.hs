@@ -25,32 +25,25 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.Text (Text)
 import           GHC.Stack (HasCallStack)
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.Regen"
-
 
 logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Threads.Regen"
 
-
 -- ==================================================
-
 
 runRegenAsync :: HasCallStack => Id -> MudStack ()
 runRegenAsync i = liftIO newTQueueIO >>= \tq -> do tweak $ mobTbl.ind i.regenQueue ?~ tq
                                                    onNewThread . threadRegen i $ tq
 
-
 startNpcRegens :: HasCallStack => MudStack ()
 startNpcRegens =
     sequence_ [ logNotice "startNpcRegens" "starting NPC regens.", mapM_ runRegenAsync . findNpcIds =<< getState ]
 
-
 stopNpcRegens :: HasCallStack => MudStack ()
 stopNpcRegens =
     sequence_ [ logNotice "stopNpcRegens"  "stopping NPC regens.", mapM_ stopRegen     . findNpcIds =<< getState ]
-
 
 stopRegen :: HasCallStack => Id -> MudStack ()
 stopRegen i = do logPla "stopRegen" i "stopping regen."
@@ -59,9 +52,7 @@ stopRegen i = do logPla "stopRegen" i "stopping regen."
     helper ms = let tq = ms^.mobTbl.ind i.regenQueue
                 in (ms & mobTbl.ind i.regenQueue .~ Nothing, tq)
 
-
 -----
-
 
 threadRegen :: HasCallStack => Id -> RegenQueue -> MudStack ()
 threadRegen i tq = helper `catch` threadStarterExHandler i fn Nothing

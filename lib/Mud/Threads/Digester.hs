@@ -28,31 +28,24 @@ import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import           GHC.Stack (HasCallStack)
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.Digester"
-
 
 logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Threads.Digester"
 
-
 -- ==================================================
-
 
 runDigesterAsync :: HasCallStack => Id -> MudStack ()
 runDigesterAsync i = runAsync (threadDigester i) >>= \a -> tweak $ mobTbl.ind i.digesterAsync ?~ a
-
 
 startNpcDigesters :: HasCallStack => MudStack ()
 startNpcDigesters =
     sequence_ [ logNotice "startNpcDigesters" "starting NPC digesters.", mapM_ runDigesterAsync  . findNpcIds =<< getState ]
 
-
 stopNpcDigesters :: HasCallStack => MudStack ()
 stopNpcDigesters =
     sequence_ [ logNotice "stopNpcDigesters"  "stopping NPC digesters.", mapM_ throwWaitDigester . findNpcIds =<< getState ]
-
 
 throwWaitDigester :: HasCallStack => Id -> MudStack ()
 throwWaitDigester i = helper |&| modifyState >=> maybeThrowDeathWait
@@ -60,9 +53,7 @@ throwWaitDigester i = helper |&| modifyState >=> maybeThrowDeathWait
     helper ms = let a = ms^.mobTbl.ind i.digesterAsync
                 in (ms & mobTbl.ind i.digesterAsync .~ Nothing, a)
 
-
 -----
-
 
 threadDigester :: HasCallStack => Id -> MudStack ()
 threadDigester i = handle (threadExHandler (Just i) "digester") $ getState >>= \ms -> do
@@ -72,7 +63,6 @@ threadDigester i = handle (threadExHandler (Just i) "digester") $ getState >>= \
         loop                = sequence_ [ liftIO . delaySecs $ delay, digest i ]
         singId              = descSingId i ms
     handle (die (Just i) $ "digester for " <> singId) $ logPla "threadDigester" i "digester started." >> forever loop
-
 
 digest :: HasCallStack => Id -> MudStack ()
 digest i = getState >>= \ms -> case getStomach i ms of []  -> unit

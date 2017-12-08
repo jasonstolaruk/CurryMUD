@@ -17,27 +17,21 @@ import           Control.Monad (when)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 
-
 logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Misc.EffectFuns"
 
-
 -- ==================================================
-
 
 -- Effect functions are run on a new thread every second.
 effectFuns :: [(FunName, EffectFun)]
 effectFuns = [ (oilTag,         oilEffectFun     )
              , (potTinnitusTag, tinnitusEffectFun) ]
 
-
 -- Instantaneous effect functions are run once.
 instaEffectFuns :: [(FunName, InstaEffectFun)]
 instaEffectFuns = pure (potTinnitusTag, tinnitusInstaEffectFun)
 
-
 -----
-
 
 oilEffectFun :: EffectFun
 oilEffectFun i secs = let f = getState >>= \ms -> when (isLoggedIn . getPla i $ ms) . rndmDo_ 25 . helper $ ms
@@ -50,12 +44,10 @@ oilEffectFun i secs = let f = getState >>= \ms -> when (isLoggedIn . getPla i $ 
                       wrapSend mq cols "Your stomach rumbles loudly."
                       bcastIfNotIncogNl i bs
 
-
 tinnitusEffectFun :: EffectFun -- Potion of instant tinnitus.
 tinnitusEffectFun i secs = when (isZero $ secs `mod` 5) $ getState >>= \ms ->
     let (mq, cols) = getMsgQueueColumns i ms
     in when (isLoggedIn . getPla i $ ms) . rndmDo_ 25 . wrapSend mq cols $ "There is an awful ringing in your ears."
-
 
 tinnitusInstaEffectFun :: InstaEffectFun -- Potion of tinnitus.
 tinnitusInstaEffectFun i = getMsgQueueColumns i <$> getState >>= \(mq, cols) ->

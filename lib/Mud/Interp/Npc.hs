@@ -8,10 +8,8 @@ import           Mud.Interp.Dispatch
 
 import qualified Data.Text as T
 
-
 npcInterp :: Interp
 npcInterp = dispatch findAction
-
 
 findAction :: FindActionFun
 findAction i ms (T.toLower -> cn) = findActionHelper i ms cn npcCmds

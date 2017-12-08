@@ -33,24 +33,18 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import           GHC.Stack (HasCallStack)
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.LightTimer"
-
 
 logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Threads.LightTimer"
 
-
 -- ==================================================
-
 
 startLightTimer :: HasCallStack => Id -> MudStack () -- The caller is responsible for setting "lightIsLit" to "True" when applicable.
 startLightTimer i = runAsync (threadLightTimer i) >>= \a -> tweak $ lightAsyncTbl.ind i .~ a
 
-
 -----
-
 
 threadLightTimer :: HasCallStack => Id -> MudStack ()
 threadLightTimer i = descSingId i <$> getState >>= \singId ->
@@ -94,15 +88,12 @@ threadLightTimer i = descSingId i <$> getState >>= \singId ->
     setNotLit = tweak $ lightTbl     .ind i.lightIsLit .~ False
     cleanUp   = tweak $ lightAsyncTbl.at  i            .~ Nothing
 
-
 -----
-
 
 stopLightTimers :: HasCallStack => Id -> MudStack () -- When a player logs out. The caller is responsible for setting "lightIsLit" to "False" when applicable.
 stopLightTimers i = getState >>= \ms -> let is        = getMob'sLights i ms
                                             f lightId = views (lightAsyncTbl.at lightId) maybeThrowDeath ms
                                         in logPla "stopLightTimers" i "stopping light timers." >> mapM_ f is
-
 
 getMob'sLights :: HasCallStack => Id -> MudState -> Inv
 getMob'sLights i ms = lightsInEq ++ lightsInInv
@@ -112,9 +103,7 @@ getMob'sLights i ms = lightsInEq ++ lightsInInv
     lightsInInv = filter isLight . getInv i $ ms
     isLight     = (== LightType) . (`getType` ms)
 
-
 -----
-
 
 restartLightTimers :: HasCallStack => Id -> MudStack () -- When a player logs in.
 restartLightTimers i = getState >>= \ms ->
@@ -122,13 +111,10 @@ restartLightTimers i = getState >>= \ms ->
                   | otherwise                      = unit
     in logPla "restartLightTimers" i "restarting light timers." >> mapM_ f (getMob'sLights i ms)
 
-
 getLightIsLitHelper :: HasCallStack => Id -> MudState -> Bool
 getLightIsLitHelper i = ((&&) <$> uncurry getLightIsLit <*> ((> 0) . uncurry getLightSecs)) . (i , )
 
-
 -----
-
 
 massRestartNpcLightTimers :: HasCallStack => MudStack () -- At server startup.
 massRestartNpcLightTimers = getState >>= \ms ->
@@ -137,9 +123,7 @@ massRestartNpcLightTimers = getState >>= \ms ->
     in do logNotice "massRestartNpcLightTimers" "mass restarting NPC light timers."
           views (npcTbl.to IM.keys) helper ms
 
-
 -----
-
 
 massStopLightTimers :: HasCallStack => MudStack () -- At server shutdown, after everyone has been disconnected.
 massStopLightTimers = do logNotice "massStopLightTimers" "mass stopping light timers."

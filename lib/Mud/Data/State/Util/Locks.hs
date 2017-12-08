@@ -16,18 +16,14 @@ import Control.Monad (replicateM)
 import Control.Monad.Reader (asks)
 import GHC.Stack (HasCallStack)
 
-
 getLock :: HasCallStack => Getter Locks Lock -> MudStack Lock
 getLock l = asks . view $ locks.l
-
 
 mkLock :: HasCallStack => IO Lock
 mkLock = newTMVarIO Done
 
-
 mkLocks :: HasCallStack => IO [Lock]
 mkLocks = replicateM 3 mkLock
-
 
 withLock :: HasCallStack => Lock -> IO a -> IO a
 withLock l f = bracket (atomically . takeTMVar $ l)

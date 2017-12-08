@@ -20,21 +20,16 @@ import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import           GHC.Stack (HasCallStack)
 
-
 logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Data.State.Util.Effect"
 
-
 -- ==================================================
-
 
 procEffectList :: HasCallStack => Id -> EffectList -> MudStack ()
 procEffectList i (EffectList xs) = let (ies, es) = partitionEithers xs
                                    in mapM_ (procInstaEffect i) ies >> mapM_ (startEffect i) es
 
-
 -----
-
 
 procInstaEffect :: HasCallStack => Id -> InstaEffect -> MudStack ()
 procInstaEffect i ie@(InstaEffect sub val feel) = getState >>= \ms -> do

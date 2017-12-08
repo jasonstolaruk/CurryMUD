@@ -15,13 +15,10 @@ import           Data.Text (Text)
 import qualified Data.IntMap.Strict as IM (lookup)
 import qualified Data.Text as T
 
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Util.Telnet"
 
-
 -- ==================================================
-
 
 parseTelnet :: Text -> (Text, [TelnetData])
 parseTelnet = f ("", [])

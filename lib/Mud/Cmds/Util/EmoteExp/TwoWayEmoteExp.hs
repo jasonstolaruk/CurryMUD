@@ -29,13 +29,10 @@ import           Data.Text (Text)
 import           GHC.Stack (HasCallStack)
 import qualified Data.Text as T
 
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp"
 
-
 -- ==================================================
-
 
 emotifyTwoWay :: HasCallStack => Text -> Id -> MudState -> Id -> Text -> Either [Text] (Either () [Broadcast])
 emotifyTwoWay cn i ms targetId msg@(T.words -> ws@(headTail . head -> (c, rest)))
@@ -43,7 +40,6 @@ emotifyTwoWay cn i ms targetId msg@(T.words -> ws@(headTail . head -> (c, rest))
   | isHeDon't emoteChar msg = Left . pure $ sorryWtf
   | c == emoteChar          = fmap Right . procTwoWayEmote cn i ms targetId . parseOutDenotative ws $ rest
   | otherwise               = Right . Left $ ()
-
 
 procTwoWayEmote :: HasCallStack => Text -> Id -> MudState -> Id -> Args -> Either [Text] [Broadcast]
 procTwoWayEmote cn i ms targetId as =
@@ -68,16 +64,13 @@ procTwoWayEmote cn i ms targetId as =
   where
     cn' = cn |<>| T.singleton emoteChar
 
-
 -----
-
 
 expCmdifyTwoWay :: HasCallStack => Id -> MudState -> Id -> Sing -> Text -> Either Text [Broadcast]
 expCmdifyTwoWay i ms targetId targetSing msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't expCmdChar msg = Left sorryWtf
   | c == expCmdChar          = procExpCmdTwoWay i ms targetId targetSing . parseOutDenotative ws $ rest
   | otherwise                = Right [ (msg, pure i), (msg, pure targetId) ]
-
 
 procExpCmdTwoWay :: HasCallStack => Id -> MudState -> Id -> Sing -> Args -> Either Text [Broadcast]
 procExpCmdTwoWay _ _  _        _          (_:_:_:_)                               = Left sorryExpCmdLen

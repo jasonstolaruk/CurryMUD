@@ -32,9 +32,7 @@ import           System.Clock (TimeSpec)
 import           System.Random (Random, random, randomR)
 import           System.Random.MWC (GenIO)
 
-
 type MudStack = ReaderT MudData IO
-
 
 data MudData = MudData { _serverSettings :: ServerSettings
                        , _errorLog       :: Maybe LogService
@@ -43,7 +41,6 @@ data MudData = MudData { _serverSettings :: ServerSettings
                        , _locks          :: Locks
                        , _startTime      :: TimeSpec
                        , _mudStateIORef  :: IORef MudState }
-
 
 data MudState = MudState { _armTbl                 :: ArmTbl
                          , _chanTbl                :: ChanTbl
@@ -91,7 +88,6 @@ data MudState = MudState { _armTbl                 :: ArmTbl
                          , _wpnTbl                 :: WpnTbl
                          , _writableTbl            :: WritableTbl }
 
-
 type ArmTbl                 = IM.IntMap Arm
 type ChanTbl                = IM.IntMap Chan
 type ClothTbl               = IM.IntMap Cloth
@@ -138,24 +134,18 @@ type VesselTbl              = IM.IntMap Vessel
 type WpnTbl                 = IM.IntMap Wpn
 type WritableTbl            = IM.IntMap Writable
 
-
 -- ==================================================
-
 
 data Action = Action { actionFun          :: ActionFun
                      , actionShouldPrompt :: Bool }
 
-
 type ActionFun = ActionParams -> MudStack ()
 
-
 -- ==================================================
-
 
 -- Has an object.
 data Arm = Arm { _armSub   :: ArmSub
                , _armClass :: AC } deriving (Eq, Generic, Show)
-
 
 data ArmSub = Head
             | Torso
@@ -165,30 +155,22 @@ data ArmSub = Head
             | Feet
             | Shield deriving (Eq, Generic, Show)
 
-
 type AC = Int
 
-
 -- ==================================================
-
 
 data Chan = Chan { _chanId          :: Int
                  , _chanName        :: ChanName
                  , _chanConnTbl     :: ChanConnTbl
                  , _chanWiretappers :: [Sing] } deriving (Eq, Generic, Show)
 
-
 type ChanName = Text
-
 
 type ChanConnTbl = M.Map Sing IsTuned
 
-
 type IsTuned = Bool
 
-
 -- ==================================================
-
 
 -- Has an object.
 data Cloth = Earring
@@ -206,21 +188,15 @@ data Cloth = Earring
            | Backpack
            | Cloak deriving (Enum, Eq, Generic, Show)
 
-
 -- ==================================================
-
 
 newtype Coins = Coins (Cop, Sil, Gol) deriving (Eq, Generic, Show)
 
-
 type Cop = Int
-
 
 type Sil = Int
 
-
 type Gol = Int
-
 
 instance Monoid Coins where
   mempty = Coins (0, 0, 0)
@@ -230,30 +206,22 @@ instance Monoid Coins where
                 , gol + gol' )
       Coins res
 
-
 -- ==================================================
-
 
 -- Has an object and an inventory and coins.
 data Con = Con { _conIsCloth  :: Bool
                , _conCapacity :: Vol
                , _conFlags    :: Flags } deriving (Eq, Generic, Show)
 
-
 type Vol = Int -- 100 "Vol" = 1 cubic in
-
 
 data ConFlags = ConFlagsTODO deriving Enum
 
-
 type Flags = Int16
-
 
 type ConName = Text
 
-
 -- ==================================================
-
 
 -- Has a container.
 data Corpse = PCCorpse  { _pcCorpseSing  :: Sing
@@ -262,19 +230,14 @@ data Corpse = PCCorpse  { _pcCorpseSing  :: Sing
                         , _pcCorpseRace  :: Race }
             | NpcCorpse { _npcCorpseDesc :: Text } deriving (Eq, Generic, Show)
 
-
 -- ==================================================
-
 
 type CorpseDecompAsync = Async ()
 
-
 -- ==================================================
-
 
 data DurationalEffect = DurationalEffect { _effect        :: Effect
                                          , _effectService :: EffectService }
-
 
 data Effect = Effect { _effectTag     :: Maybe EffectTag
                      , _effectSub     :: EffectSub
@@ -282,68 +245,49 @@ data Effect = Effect { _effectTag     :: Maybe EffectTag
                      , _effectDur     :: Seconds
                      , _effectFeeling :: Maybe EffectFeeling } deriving (Eq, Generic, Show)
 
-
 type EffectTag = Text
-
 
 data EffectSub = EffectAttrib Attrib
                | EffectOther FunName -- Function is run on a new thread every second.
                deriving (Eq, Generic, Show)
 
-
 data Attrib = St | Dx | Ht | Ma | Ps deriving (Bounded, Enum, Eq, Generic, Show)
-
 
 data EffectVal = EffectFixedVal  Int
                | EffectRangedVal Range deriving (Eq, Generic, Show)
 
-
 type Range = (Int, Int)
-
 
 data EffectFeeling = EffectFeeling { efTag :: FeelingTag
                                    , efDur :: Seconds } deriving (Eq, Generic, Show)
 
-
 type EffectService = (EffectAsync, EffectQueue)
-
 
 type EffectAsync = Async ()
 
-
 type EffectQueue = TMQueue EffectCmd
-
 
 data EffectCmd = PauseEffect (TMVar Seconds)
                | StopEffect
 
-
 type EffectFun = Id -> Seconds -> MudStack ()
 
-
 -- ==================================================
-
 
 data EdibleEffects = EdibleEffects { _digestEffects  :: Maybe DigestEffects
                                    , _consumpEffects :: Maybe ConsumpEffects }
 
-
 type DigestEffects = EffectList
 
-
 newtype EffectList = EffectList { unEffectList :: [Either InstaEffect Effect] }
-
 
 data ConsumpEffects = ConsumpEffects { _consumpAmt        :: Mouthfuls
                                      , _consumpInterval   :: Seconds
                                      , _consumpEffectList :: EffectList }
 
-
 type Mouthfuls = Int
 
-
 -- ==================================================
-
 
 -- Has effects.
 data Ent = Ent { _entId    :: Id
@@ -354,24 +298,17 @@ data Ent = Ent { _entId    :: Id
                , _entSmell :: Maybe Text
                , _entFlags :: Flags } deriving (Eq, Generic, Show)
 
-
 type Id = Int
-
 
 type Sing = Text
 
-
 type Plur = Text
-
 
 data EntFlags = EntFlagsTODO deriving Enum
 
-
 -- ==================================================
 
-
 type EqMap = M.Map Slot Id
-
 
 data Slot = HeadS                                   -- armor
           | EarringR1S | EarringR2S                 -- clothing
@@ -401,46 +338,34 @@ data Slot = HeadS                                   -- armor
           | BackpackS                               -- container/clothing
           deriving (Enum, Eq, Generic, Ord, Show)
 
-
 -- ==================================================
-
 
 -- Has an object.
 data Food = Food { _foodId           :: DistinctFoodId
                  , _foodEatDesc      :: Text
                  , _foodRemMouthfuls :: Mouthfuls } deriving (Eq, Generic, Show)
 
-
 newtype DistinctFoodId = DistinctFoodId Id deriving (Eq, Generic, Ord, Show)
-
 
 data DistinctFood = DistinctFood { _foodName            :: FoodName -- To aid in identifying a distinct food. Not seen by players.
                                  , _foodMouthfuls       :: Mouthfuls
                                  , _foodSecsPerMouthful :: Seconds -- Half the number of seconds it takes to eat a mouthful in real life.
                                  , _foodEdibleEffects   :: EdibleEffects }
 
-
 type FoodName = Text
 
-
 -- ==================================================
-
 
 type Fun = MudStack ()
 
-
 type Funs = [Fun]
-
 
 type FunName = Text
 
-
 -- ==================================================
-
 
 -- Has an object.
 newtype HolySymbol = HolySymbol { unHolySymbol :: GodName } deriving (Eq, Generic, Show)
-
 
 data GodName = Aule
              | Caila
@@ -453,35 +378,26 @@ data GodName = Aule
              | Rhayk
              | Rumialys deriving (Bounded, Enum, Eq, Generic, Ord, Show, Read)
 
-
 -- ==================================================
 
-
 type HostMap = M.Map HostName HostRecord
-
 
 data HostRecord = HostRecord { _noOfLogouts   :: Int
                              , _secsConnected :: Integer
                              , _lastLogout    :: UTCTime } deriving (Eq, Generic, Show)
 
-
 -- ==================================================
 
-
 type InacTimerQueue = TMQueue InacTimerCmd
-
 
 data InacTimerCmd = ResetInacTimer
                   | SetInacTimerDur Seconds
 
-
 -----
-
 
 data InstaEffect = InstaEffect { _instaEffectSub     :: InstaEffectSub
                                , _instaEffectVal     :: Maybe EffectVal
                                , _instaEffectFeeling :: Maybe EffectFeeling } deriving (Eq, Generic, Show)
-
 
 data InstaEffectSub = EntInstaEffectFlags
                     | MobInstaEffectPts PtsType
@@ -489,21 +405,15 @@ data InstaEffectSub = EntInstaEffectFlags
                     | InstaEffectOther FunName -- Function is run once.
                     deriving (Eq, Generic, Show)
 
-
 data PtsType = Hp | Mp | Pp | Fp deriving (Bounded, Enum, Eq, Generic, Show)
-
 
 type InstaEffectFun = Id -> MudStack ()
 
-
 -- ==================================================
-
 
 type Inv = [Id]
 
-
 -- ==================================================
-
 
 data Liq = Liq { _liqId        :: DistinctLiqId
                , _liqNoun      :: Noun
@@ -511,74 +421,54 @@ data Liq = Liq { _liqId        :: DistinctLiqId
                , _liqTasteDesc :: Text
                , _liqDrinkDesc :: Text } deriving (Eq, Generic, Show)
 
-
 newtype DistinctLiqId = DistinctLiqId Id  deriving (Eq, Generic, Ord, Show)
-
 
 data DistinctLiq = DistinctLiq { _liqName          :: LiqName -- To aid in identifying a distinct liquid. Not seen by players.
                                , _liqEdibleEffects :: EdibleEffects }
 
-
 type LiqName = Text
-
 
 data Noun = DoArticle    Text
           | Don'tArticle Text deriving (Eq, Generic, Show)
 
-
 -- ==================================================
-
 
 data Locks = Locks { _dbLock        :: Lock
                    , _loggingExLock :: Lock
                    , _persistLock   :: Lock }
 
-
 type Lock = TMVar Done
-
 
 data Done = Done
 
-
 -- ==================================================
-
 
 type LightAsync = Async ()
 
-
 -- ==================================================
-
 
 -- Has an object.
 data Light = Light { _lightSub   :: LightSub
                    , _lightSecs  :: Seconds
                    , _lightIsLit :: Bool } deriving (Eq, Generic, Show)
 
-
 data LightSub = Torch
               | Lamp Mouthfuls deriving (Eq, Generic, Show)
 
-
 -- ==================================================
-
 
 type LogService = (LogAsync, LogQueue)
 
-
 type LogAsync = Async ()
 
-
 type LogQueue = TQueue LogCmd
-
 
 data LogCmd = LogMsg Text
             | RotateLog
             | StopLog
             | Throw
 
-
 -- ==================================================
-
 
 -- Has an entity and an inventory and coins and equipment.
 data Mob = Mob { _sex                    :: Sex
@@ -610,25 +500,19 @@ data Mob = Mob { _sex                    :: Sex
                , _regenQueue             :: Maybe RegenQueue
                , _interp                 :: Maybe Interp }
 
-
 data Sex = Male
          | Female
          | NoSex deriving (Eq, Generic, Ord, Show)
 
-
 type Exp = Int
-
 
 type Lvl = Int
 
-
 type LvlExp = (Lvl, Exp)
-
 
 data Hand = RHand
           | LHand
           | NoHand deriving (Eq, Generic, Show)
-
 
 data Lang = CommonLang
           | DwarfLang
@@ -640,12 +524,9 @@ data Lang = CommonLang
           | NymphLang
           | VulpenoidLang deriving (Bounded, Enum, Eq, Generic, Ord, Show)
 
-
 type MobRmDesc = Maybe Text
 
-
 type TempDesc = Maybe Text
-
 
 data MobSize = SmlMinus -- A rodent.
              | SmlPlus
@@ -654,68 +535,50 @@ data MobSize = SmlMinus -- A rodent.
              | LrgMinus
              | LrgPlus deriving (Eq, Generic, Show)
 
-
 data Party = Party { _following :: Maybe Id
                    , _followers :: Inv
                    , _myGroup   :: Inv
                    , _memberOf  :: Maybe Id } deriving (Eq, Generic, Show)
 
-
 data StomachCont = StomachCont { _distinctId             :: Either DistinctLiqId DistinctFoodId
                                , _consumpTime            :: UTCTime
                                , _hasCausedConsumpEffect :: Bool } deriving (Eq, Generic, Show)
 
-
 type StomachAsync = Async ()
-
 
 type FeelingMap = M.Map FeelingTag Feeling
 
-
 type FeelingTag = Text
-
 
 data Feeling = Feeling { feelingVal   :: FeelingVal
                        , feelingDur   :: Seconds
                        , feelingAsync :: FeelingAsync }
 
-
 data FeelingVal = FeelingNoVal | FeelingFixedVal Int deriving (Eq, Generic, Show)
-
 
 type FeelingAsync = Async ()
 
-
 type FeelingFun = FeelingVal -> Text
 
-
 type ActMap = M.Map ActType ActAsync
-
 
 data ActType = Attacking
              | Drinking
              | Eating
              | Sacrificing deriving (Bounded, Enum, Eq, Generic, Ord, Show)
 
-
 type ActAsync = Async ()
-
 
 type NowEating = (Id, Sing)
 
-
 type NowDrinking = (Liq, Sing)
-
 
 type RegenQueue = TQueue RegenCmd
 
-
 data RegenCmd = StopRegen
-
 
 instance FromJSON Mob where parseJSON = jsonToMob
 instance ToJSON   Mob where toJSON    = mobToJSON
-
 
 mobToJSON :: Mob -> Value
 mobToJSON Mob { .. } = object [ "sex"              .= _sex
@@ -747,7 +610,6 @@ mobToJSON Mob { .. } = object [ "sex"              .= _sex
                               , "corpseDecompSecs" .= _corpseDecompSecs
                               , "party"            .= _party
                               , "stomach"          .= _stomach ]
-
 
 jsonToMob :: Value -> Parser Mob
 jsonToMob (Object o) = Mob <$> o .: "sex"
@@ -788,25 +650,19 @@ jsonToMob (Object o) = Mob <$> o .: "sex"
                            <*> pure Nothing
 jsonToMob _          = empty
 
-
 dfltParty :: Party
 dfltParty = Party Nothing [] [] Nothing
 
-
 -- ==================================================
-
 
 -- Has a mob.
 data Npc = Npc { _npcMsgQueue    :: NpcMsgQueue
                , _npcServerAsync :: NpcServerAsync
                , _npcPossessor   :: Maybe Id }
 
-
 type NpcServerAsync = Async ()
 
-
 -- ==================================================
-
 
 -- Has an entity.
 data Obj = Obj { _objWeight      :: Weight
@@ -817,33 +673,24 @@ data Obj = Obj { _objWeight      :: Weight
                , _objFlags       :: Flags
                , _objBiodegAsync :: Maybe BiodegAsync }
 
-
 type Weight = Int -- 100 "Weight" = 1 lb
-
 
 type Val = Maybe Cop -- The price that a shop would sell the item for.
 
-
 type Wear = Maybe (RemainingUses, TotalUses)
-
 
 type RemainingUses = Int
 
-
 type TotalUses = Int
-
 
 data ObjFlags = IsBiodegradable
               | IsHumming
               | IsTinderbox deriving Enum
 
-
 type BiodegAsync = Async ()
-
 
 instance FromJSON Obj where parseJSON = jsonToObj
 instance ToJSON   Obj where toJSON    = objToJSON
-
 
 objToJSON :: Obj -> Value
 objToJSON Obj { .. } = object [ "objWeight" .= _objWeight
@@ -852,7 +699,6 @@ objToJSON Obj { .. } = object [ "objWeight" .= _objWeight
                               , "objVal"    .= _objVal
                               , "objWear"   .= _objWear
                               , "objFlags"  .= _objFlags ]
-
 
 jsonToObj :: Value -> Parser Obj
 jsonToObj (Object o) = Obj <$> o .: "objWeight"
@@ -864,27 +710,19 @@ jsonToObj (Object o) = Obj <$> o .: "objWeight"
                            <*> pure Nothing
 jsonToObj _          = empty
 
-
 -- ==================================================
-
 
 type SecondsPair = (RemainingSeconds, TotalSeconds)
 
-
 type RemainingSeconds = Seconds
-
 
 type TotalSeconds = Seconds
 
-
 -- ==================================================
-
 
 newtype PausedEffect = PausedEffect { unPausedEffect :: Effect } deriving (Eq, Generic, Show)
 
-
 -- ==================================================
-
 
 -- Has a mob.
 data PC = PC { _race          :: Race
@@ -892,7 +730,6 @@ data PC = PC { _race          :: Race
              , _linked        :: [Sing]
              , _skillPts      :: SkillPts
              , _sacrificesTbl :: SacrificesTbl } deriving (Eq, Generic, Show)
-
 
 data Race = Dwarf
           | Elf
@@ -903,20 +740,15 @@ data Race = Dwarf
           | Nymph
           | Vulpenoid deriving (Bounded, Enum, Eq, Generic, Ord, Show)
 
-
 instance Random Race where
   randomR pair = first toEnum . randomR (pair & both %~ fromEnum)
   random       = randomR (minBound, maxBound)
 
-
 type SkillPts = Int
-
 
 type SacrificesTbl = M.Map GodName Int
 
-
 -- ==================================================
-
 
 -- Has a PC and random names and telepathic links.
 data Pla = Pla { _currHostName   :: HostName
@@ -934,7 +766,6 @@ data Pla = Pla { _currHostName   :: HostName
                , _bonusTime      :: Maybe UTCTime
                , _spiritAsync    :: Maybe SpiritAsync } deriving (Eq, Generic)
 
-
 data PlaFlags = HasRazzled
               | IsAdmin
               | IsGmcp
@@ -950,19 +781,14 @@ data PlaFlags = HasRazzled
               | IsTunedAdmin
               | IsTunedQuestion deriving Enum
 
-
 type SpiritAsync = Async ()
-
 
 type Interp = CmdName -> ActionParams -> MudStack ()
 
-
 type CmdName = Text
-
 
 instance FromJSON Pla where parseJSON = jsonToPla
 instance ToJSON   Pla where toJSON    = plaToJSON
-
 
 plaToJSON :: Pla -> Value
 plaToJSON Pla { .. } = object [ "currHostName"   .= _currHostName
@@ -975,7 +801,6 @@ plaToJSON Pla { .. } = object [ "currHostName"   .= _currHostName
                               , "retainedMsgs"   .= _retainedMsgs
                               , "logoutRmId"     .= _logoutRmId
                               , "bonusTime"      .= _bonusTime ]
-
 
 jsonToPla :: Value -> Parser Pla
 jsonToPla (Object o) = Pla <$> o .: "currHostName"
@@ -994,9 +819,7 @@ jsonToPla (Object o) = Pla <$> o .: "currHostName"
                            <*> pure Nothing
 jsonToPla _          = empty
 
-
 -- ==================================================
-
 
 -- Has effects and an inventory and coins.
 data Rm = Rm { _rmName      :: Text
@@ -1013,9 +836,7 @@ data Rm = Rm { _rmName      :: Text
              , _rmFunNames  :: [FunName]
              , _rmFunAsyncs :: [RmFunAsync] } deriving (Eq, Generic)
 
-
 data RmFlags = RmFlagsTODO deriving Enum
-
 
 data RmLink = StdLink    { _slDir        :: LinkDir
                          , _slDestId     :: Id
@@ -1025,7 +846,6 @@ data RmLink = StdLink    { _slDir        :: LinkDir
                          , _nslCost      :: MoveCost
                          , _nslOriginMsg :: Text
                          , _nslDestMsg   :: Text } deriving (Eq, Generic)
-
 
 data LinkDir = North
              | Northeast
@@ -1038,24 +858,17 @@ data LinkDir = North
              | Up
              | Down deriving (Eq, Generic, Show)
 
-
 type MoveCost = Int
-
 
 type LinkName = Text
 
-
 type RmCoords = (XCoord, YCoord, ZCoord)
-
 
 type XCoord = Int
 
-
 type YCoord = Int
 
-
 type ZCoord = Int
-
 
 data RmEnv = InsideUnlitEnv
            | InsideLitEnv
@@ -1064,51 +877,36 @@ data RmEnv = InsideUnlitEnv
            | SpecialEnv
            | NoEnv deriving (Eq, Generic, Show)
 
-
 type RmLabel = Maybe Text
 
-
 type HookMap = M.Map CmdName [Hook]
-
 
 data Hook = Hook { hookName     :: HookName
                  , hookTriggers :: [Text] } deriving (Eq, Generic, Show)
 
-
 type HookName = Text
-
 
 type HookFun = Id -> Hook -> V.Vector Int -> HookFunRes -> HookFunRes
 
-
 type HookFunRes = (Args, GenericIntermediateRes, Funs)
-
 
 type Args = [Text]
 
-
 type GenericIntermediateRes = (MudState,  [Text], [Broadcast], [Text])
-
 
 type GenericRes             = (MudState, ([Text], [Broadcast], [Text]))
 
-
 type GenericResWithFuns     = (MudState, ([Text], [Broadcast], [Text], Funs))
 
-
 type Broadcast = (Text, Inv)
-
 
 data RmAction = RmAction { rmActionCmdName :: CmdName
                          , rmActionFunName :: FunName } deriving (Eq, Generic, Show)
 
-
 type RmFunAsync = Async ()
-
 
 instance FromJSON Rm where parseJSON = jsonToRm
 instance ToJSON   Rm where toJSON    = rmToJSON
-
 
 rmToJSON :: Rm -> Value
 rmToJSON Rm { .. } = object [ "rmName"     .= _rmName
@@ -1123,7 +921,6 @@ rmToJSON Rm { .. } = object [ "rmName"     .= _rmName
                             , "rmHookMap"  .= _rmHookMap
                             , "rmActions"  .= _rmActions
                             , "rmFunNames" .= _rmFunNames ]
-
 
 jsonToRm :: Value -> Parser Rm
 jsonToRm (Object o) = Rm <$> o .: "rmName"
@@ -1141,42 +938,30 @@ jsonToRm (Object o) = Rm <$> o .: "rmName"
                          <*> mMempty
 jsonToRm _          = empty
 
-
 -- ==================================================
-
 
 type RmActionFun = ActionFun
 
-
 -- ==================================================
-
 
 type RndmNamesTbl = M.Map Sing Sing
 
-
 -- ==================================================
-
 
 data ServerSettings = ServerSettings { settingDebug     :: Bool
                                      , settingEKG       :: Bool
                                      , settingLog       :: Bool
                                      , settingZBackDoor :: Bool } deriving (Eq, Generic, Show)
 
-
 -- ==================================================
-
 
 type TalkAsync = Async ()
 
-
 -- ==================================================
-
 
 type TeleLinkTbl = M.Map Sing IsTuned
 
-
 -- ==================================================
-
 
 data ThreadType = AttackingThread   Id
                 | Biodegrader       Id
@@ -1209,9 +994,7 @@ data ThreadType = AttackingThread   Id
                 | TrashDumpPurger
                 | WorldPersister deriving (Eq, Generic, Ord, Show)
 
-
 -- ==================================================
-
 
 data Type = ArmType
           | ClothType
@@ -1228,42 +1011,32 @@ data Type = ArmType
           | WpnType
           | WritableType deriving (Eq, Generic, Show)
 
-
 -- ==================================================
-
 
 -- Has an object.
 data Vessel = Vessel { _vesselIsHoly       :: Bool
                      , _vesselMaxMouthfuls :: Mouthfuls -- obj vol / mouthful vol
                      , _vesselCont         :: Maybe VesselCont } deriving (Eq, Generic, Show)
 
-
 type VesselCont = (Liq, Mouthfuls)
 
-
 -- ==================================================
-
 
 -- Has an object.
 data Wpn = Wpn { _wpnSub    :: WpnSub
                , _wpnMinDmg :: Int
                , _wpnMaxDmg :: Int } deriving (Eq, Generic, Show)
 
-
 data WpnSub = OneHanded
             | TwoHanded deriving (Eq, Generic, Show)
 
-
 -- ==================================================
-
 
 -- Has an object.
 data Writable = Writable { _writMessage :: Maybe (Text, Lang)
                          , _writRecip   :: Maybe Sing {- for magically scribed msgs -} } deriving (Eq, Generic, Show)
 
-
 -- ==================================================
-
 
 instance FromJSON Arm            where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON ArmSub
@@ -1358,10 +1131,8 @@ instance ToJSON Wpn              where toJSON    = genericToJSON    dropUndersco
 instance ToJSON WpnSub
 instance ToJSON Writable         where toJSON    = genericToJSON    dropUnderscore
 
-
 instance FromJSON ServerSettings where parseJSON = jsonToServerSettings
 instance ToJSON   ServerSettings where toJSON    = serverSettingsToJSON
-
 
 jsonToServerSettings :: Value -> Parser ServerSettings
 jsonToServerSettings (Object o) = ServerSettings <$> o .: "debug"
@@ -1370,24 +1141,19 @@ jsonToServerSettings (Object o) = ServerSettings <$> o .: "debug"
                                                  <*> o .: "zBackDoor"
 jsonToServerSettings _          = empty
 
-
 serverSettingsToJSON :: ServerSettings -> Value
 serverSettingsToJSON ServerSettings { .. } = object [ "debug"     .= settingDebug
                                                     , "ekg"       .= settingEKG
                                                     , "log"       .= settingLog
                                                     , "zBackDoor" .= settingZBackDoor ]
 
-
 instance FromJSONKey GodName
 instance ToJSONKey   GodName
-
 
 dropUnderscore :: Options
 dropUnderscore = defaultOptions { fieldLabelModifier = tail }
 
-
 -- ==================================================
-
 
 makeLenses ''Arm
 makeLenses ''Chan

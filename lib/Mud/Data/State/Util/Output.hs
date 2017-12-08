@@ -75,20 +75,15 @@ import           Prelude hiding (pi)
 import qualified Data.IntMap.Strict as IM (elems, keys, toList)
 import qualified Data.Text as T
 
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Data.State.Util.Output"
 
-
 -- ============================================================
-
 
 anglePrompt :: HasCallStack => MsgQueue -> MudStack ()
 anglePrompt = flip sendPrompt ">"
 
-
 -----
-
 
 -- Because "bcast" calls "parseDesig" with "CurryTime", it should not be used to send a message to the executor of a cmd
 -- in the case that said message contains a serialized "Desig" for which "desigDoMaskInDark" is "True". Otherwise, a
@@ -103,101 +98,75 @@ bcast bs = liftIO . atomically . forM_ bs . sendBcast =<< getStateTime
             parsed = parseDesig (Just ct) i ms . parseVerbObj ct i ms $ msg -- Parse verb objects before desigs: a verb object may contain a corpse desig.
         in isNpc i ms ? (maybeVoid (f ToNpc) . getPossessor i $ ms) :? f FromServer i
 
-
 -----
-
 
 bcastAdmins :: HasCallStack => Text -> MudStack ()
 bcastAdmins = bcastAdminsHelper id
-
 
 bcastAdminsHelper :: HasCallStack => (Inv -> Inv) -> Text -> MudStack ()
 bcastAdminsHelper f msg =
     bcastNl . pure . (colorWith adminBcastColor msg, ) =<< f . getLoggedInAdminIds <$> getState
 
-
 -----
-
 
 bcastAdminsExcept :: HasCallStack => Inv -> Text -> MudStack ()
 bcastAdminsExcept = bcastAdminsHelper . flip (\\)
 
-
 -----
-
 
 bcastIfNotIncog :: HasCallStack => Id -> [Broadcast] -> MudStack ()
 bcastIfNotIncog i bs = getState >>= \ms -> onTrue (isPla i ms) (unless (isIncognito . getPla i $ ms)) . bcast $ bs
 
-
 -----
-
 
 bcastIfNotIncogNl :: HasCallStack => Id -> [Broadcast] -> MudStack ()
 bcastIfNotIncogNl i = bcastIfNotIncog i . appendNlToBs
 
-
 appendNlToBs :: HasCallStack => [Broadcast] -> [Broadcast]
 appendNlToBs bs = bs ++ pure (nlTxt, nubSort . concatMap snd $ bs)
 
-
 -----
-
 
 bcastNl :: HasCallStack => [Broadcast] -> MudStack ()
 bcastNl = bcast . appendNlToBs
 
-
 -----
-
 
 bcastOtherAdmins :: HasCallStack => Id -> Text -> MudStack ()
 bcastOtherAdmins = bcastAdminsHelper . delete
 
-
 -----
-
 
 bcastOthersInRm :: HasCallStack => Id -> Text -> MudStack ()
 bcastOthersInRm i msg = getState >>= \ms ->
     let helper = bcast . pure $ (msg, findMobIds ms . delete i . getMobRmInv i $ ms)
     in isPla i ms ? unless (isIncognito . getPla i $ ms) helper :? helper
 
-
 -----
-
 
 bcastToOutsideMobs :: HasCallStack => Text -> MudStack ()
 bcastToOutsideMobs msg = getState >>= \ms -> let is  = views mobTbl IM.keys ms
                                                  f i = views rmEnv (== OutsideEnv) . getMobRm i $ ms
                                              in bcastNl . pure $ (msg, filter f is)
 
-
 -----
-
 
 blankLine :: HasCallStack => MsgQueue -> MudStack ()
 blankLine = flip writeMsg BlankLine
 
-
 -----
-
 
 dbError :: HasCallStack => MsgQueue -> Cols -> MudStack ()
 dbError mq cols = wrapSend mq cols dbErrorMsg >> sendSilentBoot mq
 
-
 -----
-
 
 massMsg :: HasCallStack => ThreadMsg -> MudStack ()
 massMsg tm = liftIO . atomically . helper =<< getState
   where
     helper (views msgQueueTbl IM.elems -> mqs) = forM_ mqs . flip writeTQueue $ tm
 
-
 -----
-
 
 massSend :: HasCallStack => Text -> MudStack ()
 massSend msg = liftIO . atomically . helper =<< getState
@@ -206,64 +175,47 @@ massSend msg = liftIO . atomically . helper =<< getState
         let cols = getColumns i ms
         in writeTQueue mq . FromServer . frame cols . wrapUnlines cols $ msg
 
-
 -----
-
 
 mkBcast :: Id -> Text -> [Broadcast]
 mkBcast i = pure . (, pure i)
 
-
 -----
-
 
 mkNTBcast :: Id -> Text -> [ClassifiedBcast]
 mkNTBcast i = pure . NonTargetBcast . (, pure i)
 
-
 -----
-
 
 multiSend :: HasCallStack => MsgQueue -> [Text] -> MudStack ()
 multiSend mq = send mq . T.unlines
 
-
 -----
-
 
 multiWrapSend :: HasCallStack => MsgQueue -> Cols -> [Text] -> MudStack ()
 multiWrapSend = multiWrapSendHepler multiWrapNl
 
-
 multiWrapSend1Nl :: HasCallStack => MsgQueue -> Cols -> [Text] -> MudStack ()
 multiWrapSend1Nl = multiWrapSendHepler multiWrap
-
 
 multiWrapSendHepler :: HasCallStack => (Cols -> [Text] -> Text) -> MsgQueue -> Cols -> [Text] -> MudStack ()
 multiWrapSendHepler f mq cols = send mq . f cols
 
-
 -----
-
 
 ok :: HasCallStack => MsgQueue -> MudStack ()
 ok mq = send mq . nlnl $ "OK!"
 
-
 -----
-
 
 -- TODO: Spirits can see in the dark.
 parseDesig :: HasCallStack => Maybe CurryTime -> Id -> MudState -> Text -> Text
 parseDesig = parseDesigHelper (const id)
 
-
 parseDesigSuffix :: HasCallStack => Id -> MudState -> Text -> Text -- Tack on a suffix. Used when logging cmd output.
 parseDesigSuffix = parseDesigHelper (\es -> (<> parensQuote es)) Nothing
 
-
 type Suffixer = (Sing -> Text -> Text)
-
 
 parseDesigHelper :: HasCallStack => Suffixer -> Maybe CurryTime -> Id -> MudState -> Text -> Text
 parseDesigHelper suffixer mct i ms = loop
@@ -280,11 +232,9 @@ parseDesigHelper suffixer mct i ms = loop
             , (corpseDesigDelimiter, expandCorpseDesig               ) ] |&| map (first T.singleton)
     isLit = maybe True (\ct -> isMobRmLit ct i ms) mct
 
-
 extractDelimited :: (HasCallStack, Serializable a) => Text -> Text -> (Text, a, Text)
 extractDelimited delim (T.breakOn delim -> (left, T.breakOn delim . T.tail -> (txt, T.tail -> right))) =
     (left, deserialize . quoteWith delim $ txt, right)
-
 
 expandStdDesig :: HasCallStack => Suffixer -> Bool -> Id -> MudState -> Desig -> Text
 expandStdDesig f isLit i ms d@StdDesig { .. }
@@ -299,7 +249,6 @@ expandStdDesig f isLit i ms d@StdDesig { .. }
     s      = getSing desigId ms
     intros = getIntroduced i ms
 expandStdDesig _ _ _ _ d = pmf "expandStdDesig" d
-
 
 expandEntName :: HasCallStack => Id -> MudState -> Desig -> [Sing] -> Text
 expandEntName i ms StdDesig { .. } intros | f      <- mkCapsFun desigCap
@@ -316,18 +265,15 @@ expandEntName i ms StdDesig { .. } intros | f      <- mkCapsFun desigCap
     expandSex x   = pmf "expandEntName expandSex" x
 expandEntName _ _ d _ = pmf "expandEntName" d
 
-
 expandNonStdDesig :: HasCallStack => Suffixer -> Bool -> Id -> MudState -> Desig -> Text
 expandNonStdDesig f isLit i ms NonStdDesig { .. }
   | isLit     = dEntSing `elem` getIntroduced i ms ? dEntSing :? dDesc
   | otherwise = f dEntSing . mkCapsFun dCap $ "someone"
 expandNonStdDesig _ _ _ _ d = pmf "expandNonStdDesig" d
 
-
 expandCorpseDesig :: HasCallStack => Id -> MudState -> Desig -> Text
 expandCorpseDesig i ms (CorpseDesig ci) = mkCorpseAppellation i ms ci
 expandCorpseDesig _ _  d                = pmf "expandCorpseDesig" d
-
 
 parseVerbObj :: HasCallStack => CurryTime -> Id -> MudState -> Text -> Text
 parseVerbObj ct i ms = loop
@@ -339,9 +285,7 @@ parseVerbObj ct i ms = loop
     expander VerbObj { .. } = isLit ? verbObjTxt :? mkCapsFun verbObjCap "something"
     isLit                   = isMobRmLit ct i ms
 
-
 -----
-
 
 retainedMsg :: HasCallStack => Id -> MudState -> Text -> MudStack ()
 retainedMsg targetId ms msg@(T.uncons -> Just (x, xs))
@@ -354,16 +298,12 @@ retainedMsg targetId ms msg@(T.uncons -> Just (x, xs))
                 | otherwise             = msg
 retainedMsg _ _ _ = unit
 
-
 -----
-
 
 send :: HasCallStack => MsgQueue -> Text -> MudStack ()
 send mq = writeMsg mq . FromServer
 
-
 -----
-
 
 sendCmdNotFound :: HasCallStack => Id -> MsgQueue -> Cols -> MudStack ()
 sendCmdNotFound i mq cols = isSpiritId i <$> getState >>= \case
@@ -376,20 +316,16 @@ sendCmdNotFound i mq cols = isSpiritId i <$> getState >>= \case
   where
     f = send mq . nlnl $ sorryCmdNotFound
 
-
 firstSpiritCmdNotFound :: HasCallStack => Id -> PlaTbl -> (PlaTbl, [Text])
 firstSpiritCmdNotFound i pt
   | pt^.ind i.to isNotFirstSpiritCmdNotFound = (pt, [])
   | otherwise                                = ( pt & ind i %~ setPlaFlag IsNotFirstSpiritCmdNotFound True
                                                , [ "", hintSpiritCmdNotFound ] )
 
-
 -----
-
 
 sendDfltPrompt :: HasCallStack => MsgQueue -> Id -> MudStack ()
 sendDfltPrompt mq i = ((>>) <$> sendPrompt mq . mkDfltPrompt i <*> sendGmcpVitals i) =<< getState
-
 
 mkDfltPrompt :: HasCallStack => Id -> MudState -> Text
 mkDfltPrompt i ms = let (hps,  mps,  pps,  fps ) = getPts i ms
@@ -408,13 +344,10 @@ mkDfltPrompt i ms = let (hps,  mps,  pps,  fps ) = getPts i ms
     indentColor     = isNpc i ms ? toNpcColor :? promptIndentColor
     f a pair@(x, _) = commaShow x <> colorWith (mkColorTxtForXps pair) a
 
-
 -----
-
 
 sendGmcpRmInfo :: HasCallStack => Maybe Int -> Id -> MudState -> MudStack ()
 sendGmcpRmInfo maybeZoom = gmcpHelper (gmcpRmInfo maybeZoom)
-
 
 gmcpHelper :: HasCallStack => (Id -> MudState -> Text) -> Id -> MudState -> MudStack ()
 gmcpHelper f i ms
@@ -424,53 +357,39 @@ gmcpHelper f i ms
     helper i' | isGmcpId i' ms = send (getMsgQueue i' ms) . quoteWith' (telnetGmcpLeft, telnetGmcpRight) . f i $ ms
               | otherwise      = unit
 
-
 sendGmcpVitals :: HasCallStack => Id -> MudState -> MudStack ()
 sendGmcpVitals = gmcpHelper gmcpVitals
 
-
 -----
-
 
 sendMsgBoot :: HasCallStack => MsgQueue -> Maybe Text -> MudStack ()
 sendMsgBoot mq = writeMsg mq . MsgBoot . fromMaybe dfltBootMsg
 
-
 sendSilentBoot :: HasCallStack => MsgQueue -> MudStack ()
 sendSilentBoot mq = writeMsg mq SilentBoot
 
-
 -----
-
 
 sendPrompt :: HasCallStack => MsgQueue -> Text -> MudStack ()
 sendPrompt mq = writeMsg mq . Prompt
 
-
 -----
-
 
 wrapSend :: HasCallStack => MsgQueue -> Cols -> Text -> MudStack ()
 wrapSend = wrapSendHepler wrapUnlinesNl
 
-
 wrapSend1Nl :: HasCallStack => MsgQueue -> Cols -> Text -> MudStack ()
 wrapSend1Nl = wrapSendHepler wrapUnlines
-
 
 wrapSendHepler :: HasCallStack => (Cols -> Text -> Text) -> MsgQueue -> Cols -> Text -> MudStack ()
 wrapSendHepler f mq cols = send mq . f cols
 
-
 -----
-
 
 wrapSendPrompt :: HasCallStack => MsgQueue -> Cols -> Text -> MudStack ()
 wrapSendPrompt mq cols = sendPrompt mq . wrapUnlinesInit cols
 
-
 -----
-
 
 writeMsg :: HasCallStack => MsgQueue -> ThreadMsg -> MudStack ()
 writeMsg mq = liftIO . atomically . writeTQueue mq

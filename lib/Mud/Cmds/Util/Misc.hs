@@ -147,35 +147,26 @@ import           GHC.Stack (HasCallStack)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 import           Prelude hiding (exp)
 
-
 blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Cmds.Util.Misc"
-
 
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Cmds.Util.Misc"
 
-
 -----
-
 
 logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Cmds.Util.Misc"
 
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Cmds.Util.Misc"
 
-
 -- ==================================================
-
 
 asterisk :: Text
 asterisk = colorWith asteriskColor "*"
 
-
 -----
-
 
 awardExp :: HasCallStack => Exp -> Text -> Id -> MudStack ()
 awardExp amt reason i = getLvlExp i <$> getState >>= \(l, x) -> let diff = calcLvlForExp (x + amt) - l in
@@ -198,10 +189,8 @@ awardExp amt reason i = getLvlExp i <$> getState >>= \(l, x) -> let diff = calcL
                 mkLogMsg = ("gained a level " <>) . parensQuote $ "now level " <> showTxt (newLvl - seed + 1)
         in (ms'', (ms'', bool (unzip . unfoldr f $ diff) mempties $ diff <= 0))
 
-
 noOfLvlUpRndmInts :: Int
 noOfLvlUpRndmInts = 5
-
 
 lvlUp :: HasCallStack => Id -> MudState -> V.Vector Int -> Lvl -> Lvl -> MudState
 lvlUp i = helper
@@ -220,9 +209,7 @@ lvlUp i = helper
                                         in helper ms' vRight (succ oldLvl) newLvl
                                     xs -> pmf "lvlUp" xs
 
-
 -----
-
 
 consume :: HasCallStack => Id -> [StomachCont] -> MudStack ()
 consume _ []     = unit
@@ -258,9 +245,7 @@ consume i newScs = do now <- liftIO getCurrentTime
             others' = others ++ map fst invalids
         in (ms & mobTbl.ind i.stomach .~ others' ++ scs', el)
 
-
 -----
-
 
 dispCmdList :: HasCallStack => [Cmd] -> ActionFun
 dispCmdList cmds (NoArgs i mq cols) =
@@ -268,11 +253,9 @@ dispCmdList cmds (NoArgs i mq cols) =
 dispCmdList cmds (LowerNub i mq cols as) = dispMatches i mq cols cmdNamePadding Isn'tRegex as . mkCmdListTxt $ cmds
 dispCmdList _    p                       = pmf "dispCmdList" p
 
-
 mkCmdListTxt :: HasCallStack => [Cmd] -> [Text]
 mkCmdListTxt cmds = let zipped = zip (styleCmdAbbrevs cmds) [ cmdDesc cmd | cmd <- cmds ]
                      in [ uncurry (<>) . first padCmdName $ pair | pair@(_, d) <- zipped, ()!# d ]
-
 
 styleCmdAbbrevs :: HasCallStack => [Cmd] -> [Text]
 styleCmdAbbrevs = map f . mkCmdTriplesForStyling
@@ -280,16 +263,13 @@ styleCmdAbbrevs = map f . mkCmdTriplesForStyling
     f (_,  Nothing,  scn) = scn
     f (cn, Just cpa, _  ) = uncurry (<>) . first (colorWith abbrevColor) . maybe (cn, "") (cpa, ) $ cpa `T.stripPrefix` cn
 
-
 mkCmdTriplesForStyling :: HasCallStack => [Cmd] -> [(CmdName, Maybe CmdPriorityAbbrevTxt, Text)]
 mkCmdTriplesForStyling cmds = let cmdNames       = [ cmdName           cmd | cmd <- cmds ]
                                   cmdPAs         = [ cmdPriorityAbbrev cmd | cmd <- cmds ]
                                   styledCmdNames = styleAbbrevs Don'tQuote cmdNames
                               in zip3 cmdNames cmdPAs styledCmdNames
 
-
 -----
-
 
 dispMatches :: HasCallStack => Id -> MsgQueue -> Cols -> Int -> IsOrIsn'tRegex -> [Text] -> [Text] -> MudStack ()
 dispMatches i mq cols indent reg needles haystack = dropEmpties <$> liftIO (mapM search needles) >>= \matches ->
@@ -303,16 +283,12 @@ dispMatches i mq cols indent reg needles haystack = dropEmpties <$> liftIO (mapM
                   | haystack' <- [ (hay, hay') | hay <- haystack, let hay' = T.toLower . dropANSI $ hay ]
                   = return [ a | (a, b) <- haystack', needle `T.isInfixOf` b ]
 
-
 -----
-
 
 embedId :: Id -> Text
 embedId = quoteWith (T.singleton plaIdDelimiter) . showTxt
 
-
 -----
-
 
 expandEmbeddedIds :: HasCallStack => MudState -> ChanContext -> [Broadcast] -> MudStack [Broadcast]
 expandEmbeddedIds ms ChanContext { revealAdminNames } = concatMapM helper
@@ -327,10 +303,8 @@ expandEmbeddedIds ms ChanContext { revealAdminNames } = concatMapM helper
               rebuild = quoteWith' (x, y)
           in mapM f is >>= concatMapM helper
 
-
 breakOnDelim :: Text -> (Text, Text)
 breakOnDelim = T.break (== plaIdDelimiter)
-
 
 expandEmbeddedIdsToSings :: HasCallStack => MudState -> Text -> Text
 expandEmbeddedIdsToSings ms = helper
@@ -340,23 +314,17 @@ expandEmbeddedIdsToSings ms = helper
       (x, breakOnDelim . T.tail -> (numTxt, T.tail -> y)) -> let embeddedId = read . T.unpack $ numTxt
                                                              in helper . quoteWith' (x, y) . getSing embeddedId $ ms
 
-
 -----
-
 
 fakeClientInput :: HasCallStack => MsgQueue -> Text -> MudStack ()
 fakeClientInput mq = writeMsg mq . FromClient . nl
 
-
 -----
-
 
 formatChanMsg :: Text -> Text -> Text -> Text
 formatChanMsg cn n msg = T.concat [ parensQuote cn, " ", n, ": ", msg ]
 
-
 -----
-
 
 formatQuestion :: HasCallStack => Id  -> MudState -> Broadcast -> MudStack [Broadcast]
 formatQuestion i ms (txt, is)
@@ -368,9 +336,7 @@ formatQuestion i ms (txt, is)
         return [ (formatChanMsg "Question" styled txt, pure i') | i' <- is' | styled <- styleds ]
     getStyled targetId = view _3 . head . filter (views _1 (== i)) <$> getQuestionStyleds targetId ms
 
-
 -----
-
 
 getAllChanIdNames :: HasCallStack => Id -> MudState -> MudStack (IM.IntMap [(Id, Text)])
 getAllChanIdNames i ms = let tunedChans = foldr helper [] . getPCChans i $ ms in
@@ -378,11 +344,9 @@ getAllChanIdNames i ms = let tunedChans = foldr helper [] . getPCChans i $ ms in
   where
     helper chan = views chanConnTbl (M.! getSing i ms) chan ? (chan :) :? id
 
-
 getChanIdNames :: HasCallStack => Id -> Chan -> MudState -> MudStack [(Id, Text)]
 getChanIdNames i c ms = let (linkeds, nonLinkedIds) = getChanLinkeds_nonLinkedIds i c ms in
     sortBy (compare `on` snd) . (linkeds ++) . zip nonLinkedIds <$> mapM (updateRndmName i) nonLinkedIds
-
 
 getChanLinkeds_nonLinkedIds :: HasCallStack => Id -> Chan -> MudState -> ([(Id, Sing)], Inv)
 getChanLinkeds_nonLinkedIds i c ms =
@@ -394,7 +358,6 @@ getChanLinkeds_nonLinkedIds i c ms =
         (linkeds, nonLinkeds) = partition (isLinked ms . (i, ) . fst) others
         nonLinkedIds          = map fst nonLinkeds
     in (linkeds, nonLinkedIds)
-
 
 getChanStyleds :: HasCallStack => Id -> Chan -> MudState -> MudStack [(Id, Text, Text)]
 getChanStyleds i c ms = let (linkeds, nonLinkedIds) = getChanLinkeds_nonLinkedIds i c ms in
@@ -408,18 +371,14 @@ getChanStyleds i c ms = let (linkeds, nonLinkedIds) = getChanLinkeds_nonLinkedId
                 a = (x, y, styled)
         in return . zipWith helper combo $ styleds
 
-
 -----
-
 
 getPCChans :: HasCallStack => Id -> MudState -> [Chan]
 getPCChans i ms = views chanTbl (IM.foldr helper []) ms
   where
     helper chan acc = getSing i ms `elem` (chan^.chanConnTbl.to M.keys) ? (chan : acc) :? acc
 
-
 -----
-
 
 getQuestionStyleds :: HasCallStack => Id -> MudState -> MudStack [(Id, Text, Text)]
 getQuestionStyleds i ms = let (plaIds,    adminIds) = getTunedQuestionIds i ms
@@ -437,43 +396,32 @@ getQuestionStyleds i ms = let (plaIds,    adminIds) = getTunedQuestionIds i ms
                                       a = (x, y, styled)
                               in return . zipWith helper combo $ styleds
 
-
 -----
-
 
 getTunedQuestionIds :: HasCallStack => Id -> MudState -> (Inv, Inv)
 getTunedQuestionIds i ms =
     (getLoggedInPlaIds &&& getNonIncogLoggedInAdminIds) ms & both %~ filter (`isTunedQuestionId` ms) . (i `delete`)
 
-
 -----
-
 
 hasEnc :: HasCallStack => Args -> Bool
 hasEnc [] = False
 hasEnc as = ((||) <$> any (`elem` [ enc, enc's ]) <*> (== prd enc) . last) as
 
-
 -----
-
 
 hasType :: HasCallStack => Id -> MudState -> Bool
 hasType i = views typeTbl (i `IM.member`)
 
-
 -----
-
 
 hasYou :: [Text] -> Bool
 hasYou = any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower)
 
-
 -----
-
 
 initPropNamesTbl :: HasCallStack => MudStack () -- Used by the "!propnames" debug cmd.
 initPropNamesTbl = initTblHelper "initPropNamesTbl" "prop_names" (lookupPropName "jason") insertPropNames propNamesFileFun
-
 
 initTblHelper :: HasCallStack => FunName -> Text -> IO (Maybe Text) -> (Text -> IO ()) -> FilePathFun -> MudStack ()
 initTblHelper fn (dblQuote -> tblName) lookupFun insertFun fpf = liftIO (mkMudFilePath fpf) >>= \fp ->
@@ -484,69 +432,51 @@ initTblHelper fn (dblQuote -> tblName) lookupFun insertFun fpf = liftIO (mkMudFi
       Nothing -> logHelper ("initializing the " <> tblName <> " table.") >> withDbExHandler_ fn (insertFun txt)
       Just _  -> logHelper $ the tblName <> " table has already been initialized."
 
-
 initWordsTbl :: HasCallStack => MudStack () -- Used by the "!words" debug cmd.
 initWordsTbl = initTblHelper "initWordsTbl" "words" (lookupWord "a") insertWords wordsFileFun
 
-
 -----
-
 
 isActingAny :: HasCallStack => Id -> MudState -> Bool
 isActingAny i = not . M.null . getActMap i
 
-
 isAttacking :: HasCallStack => Id -> MudState -> Bool
 isAttacking = isActing Attacking
-
 
 isActing :: HasCallStack => ActType -> Id -> MudState -> Bool
 isActing act i = M.member act . getActMap i
 
-
 isDrinking :: HasCallStack => Id -> MudState -> Bool
 isDrinking = isActing Drinking
-
 
 isEating :: HasCallStack => Id -> MudState -> Bool
 isEating = isActing Eating
 
-
 isDrinkingEating :: HasCallStack => Id -> MudState -> (Bool, Bool)
 isDrinkingEating i = (isDrinking `fanUncurry` isEating) . (i, )
-
 
 isSacrificing :: HasCallStack => Id -> MudState -> Bool
 isSacrificing = isActing Sacrificing
 
-
 -----
-
 
 isAlive :: HasCallStack => Id -> MudState -> Bool
 isAlive i = (i `notElem`) . getInv iNecropolis
 
-
 -----
-
 
 isBracketed :: [Text] -> Bool
 isBracketed ws = or [ elem @[] (T.head . head $ ws) "[<", "]." `T.isSuffixOf` last ws, ">." `T.isSuffixOf` last ws ]
 
-
 -----
-
 
 isHeDon't :: Char -> Text -> Bool
 isHeDon't c = (== prd (T.singleton c))
 
-
 -----
-
 
 isHostBanned :: HasCallStack => Text -> IO Any
 isHostBanned host = isBanned host <$> getDbTblRecs @BanHostRec "ban_host"
-
 
 isBanned :: (HasCallStack, BanRecord a) => Text -> [a] -> Any
 isBanned target = helper . reverse
@@ -555,13 +485,10 @@ isBanned target = helper . reverse
     helper (x:xs) | recTarget x == target = Any . recIsBanned $ x
                   | otherwise             = helper xs
 
-
 -----
-
 
 isLinked :: HasCallStack => MudState -> (Id, Id) -> Bool
 isLinked = helperIsLinked (||)
-
 
 helperIsLinked :: HasCallStack => (Bool -> Bool -> Bool) -> MudState -> (Id, Id) -> Bool
 helperIsLinked f ms (i, i') = let s                = getSing i  ms
@@ -572,27 +499,20 @@ helperIsLinked f ms (i, i') = let s                = getSing i  ms
   where
     noNpcs = not ((||) <$> isNpc i <*> isNpc i' $ ms)
 
-
 isDblLinked :: HasCallStack => MudState -> (Id, Id) -> Bool
 isDblLinked = helperIsLinked (&&)
 
-
 -----
-
 
 isOutside :: Id -> MudState -> Bool
 isOutside i = views rmEnv (== OutsideEnv) . getMobRm i
 
-
 -----
-
 
 isPCBanned :: HasCallStack => Sing -> IO Any
 isPCBanned banSing = isBanned banSing <$> getDbTblRecs @BanPCRec "ban_pc"
 
-
 -----
-
 
 locateHelper :: HasCallStack => MudState -> [Text] -> Id -> (Id, Text)
 locateHelper ms txts i = case getType i ms of
@@ -604,30 +524,23 @@ locateHelper ms txts i = case getType i ms of
     mkDescId txt targetId = ((txts ++) . pure $ txt |<>| mkNameTypeIdDesc targetId ms, targetId)
     oops                  = blowUp "locateHelper" "ID is in limbo" . showTxt $ i
 
-
 -----
-
 
 loggedInOut :: Bool -> Text
 loggedInOut = loggedInOutHelper id
 
-
 loggedInOutHelper :: HasCallStack => (Text -> Text) -> Bool -> Text
 loggedInOutHelper f = ("logged " <>) . f . inOut
-
 
 inOut :: Bool -> Text
 inOut True  = "in"
 inOut False = "out"
 
-
 loggedInOutColorize :: Bool -> Text
 loggedInOutColorize True  = loggedInOutHelper (colorWith loggedInColor) True
 loggedInOutColorize False = loggedInOutHelper id                        False
 
-
 -----
-
 
 mkActionParams :: HasCallStack => Id -> MudState -> Args -> ActionParams
 mkActionParams i ms as = ActionParams { myId        = i
@@ -635,9 +548,7 @@ mkActionParams i ms as = ActionParams { myId        = i
                                       , plaCols     = getColumns  i ms
                                       , args        = as }
 
-
 -----
-
 
 mkChanReport :: HasCallStack => Id -> MudState -> Chan -> [Text]
 mkChanReport i ms (Chan ci cn cct tappers) =
@@ -649,9 +560,7 @@ mkChanReport i ms (Chan ci cn cct tappers) =
     descPla (s, t, l) = T.concat [ underline s, ": ", tunedInOutColorize t, " / ", loggedInOutColorize l ]
     f                 = sortBy (compare `on` view _1)
 
-
 -----
-
 
 mkEmoteMsgs :: HasCallStack => MudState -> [Either Text (Text, [EmoteWord], Text)] -> (Text, Text, Inv, [Broadcast])
 mkEmoteMsgs ms xformed =
@@ -680,18 +589,14 @@ mkEmoteMsgs ms xformed =
         _ = ()
     in (formatMsg toSelf, formatMsg toOthers, targetIds, toTargetBs)
 
-
 -----
-
 
 mkHimHer :: Sex -> Text
 mkHimHer Male   = "him"
 mkHimHer Female = "her"
 mkHimHer NoSex  = "it"
 
-
 -----
-
 
 mkHolySymbolDesc :: GodName -> Text -- TODO: 4 more holy symbols to go.
 mkHolySymbolDesc Aule      = "The holy symbol of Aule is a "
@@ -719,7 +624,6 @@ mkHolySymbolDesc Rumialys  = "The holy symbol of Rumialys is a steel ring about 
                              \thin, straight bar running through the center, connecting two opposites edges of the \
                              \ring. There are words etched upon the ring's outer surface."
 
-
 mkHolySymbolVol :: GodName -> Vol -- TODO: Zeros.
 mkHolySymbolVol Aule      = 0
 mkHolySymbolVol Caila     = round (4 * 0.5  * 5 * 100 :: Double)
@@ -731,7 +635,6 @@ mkHolySymbolVol Itulvatar = 250
 mkHolySymbolVol Murgorhd  = round (3.5  * 0.5  * 7  * 100 :: Double) -- 12.25 cubic inches, or 0.007 cubic feet.
 mkHolySymbolVol Rhayk     = round (1.25 * 1.25 * 11 * 100 :: Double)
 mkHolySymbolVol Rumialys  = 250
-
 
 mkHolySymbolWeight :: GodName -> Weight -- TODO: Zeros.
 mkHolySymbolWeight Aule      = 0
@@ -745,17 +648,13 @@ mkHolySymbolWeight Murgorhd  = 315 -- 45 lbs per cubic foot (oak) * 0.007 cubic 
 mkHolySymbolWeight Rhayk     = 310
 mkHolySymbolWeight Rumialys  = 15
 
-
 -----
-
 
 mkInterfaceList :: HasCallStack => IO Text
 mkInterfaceList = NI.getNetworkInterfaces >>= \ns ->
     return . commas $ [ quoteWith' ((T.pack *** showTxt) . (NI.name &&& NI.ipv4) $ n) ": " | n <- ns ]
 
-
 -----
-
 
 mkMobRmDesc :: HasCallStack => Id -> MudState -> Text
 mkMobRmDesc i ms | hasMobId i ms = let t = commas . dropEmpties $ fromMaybeEmp (getMobRmDesc i ms) : helper
@@ -768,64 +667,48 @@ mkMobRmDesc i ms | hasMobId i ms = let t = commas . dropEmpties $ fromMaybeEmp (
              , (Eating,      isEating     )
              , (Attacking,   isAttacking  ) ]
 
-
 -----
-
 
 mkNameTypeIdDesc :: HasCallStack => Id -> MudState -> Text
 mkNameTypeIdDesc i ms = let (n, typeTxt) = case getType i ms of RmType -> (getRmName i ms, pp RmType)
                                                                 t      -> (getSing   i ms, pp t     )
                         in n <> spaced (parensQuote typeTxt) <> bracketQuote (showTxt i)
 
-
 -----
-
 
 mkPossPro :: Sex -> Text
 mkPossPro Male   = "his"
 mkPossPro Female = "her"
 mkPossPro NoSex  = "its"
 
-
 -----
-
 
 mkPros :: Sex -> (Text, Text, Text)
 mkPros sexy = (mkThrPerPro, mkPossPro, mkReflexPro) & each %~ (sexy |&|)
 
-
 -----
-
 
 mkReflexPro :: Sex -> Text
 mkReflexPro Male   = "himself"
 mkReflexPro Female = "herself"
 mkReflexPro NoSex  = "itself"
 
-
 -----
-
 
 mkRetainedMsgFromPerson :: Sing -> Text -> Text
 mkRetainedMsgFromPerson s msg = fromPersonMarker `T.cons` (quoteWith "__" s |<>| msg)
 
-
 -----
-
 
 mkRightForNonTargets :: (Text, Text, Text) -> Either Text (Text, [EmoteWord], Text)
 mkRightForNonTargets = Right . (_2 %~ (pure . ForNonTargets))
 
-
 -----
-
 
 mkRndmVector :: HasCallStack => MudStack (V.Vector Int)
 mkRndmVector = rndmVector rndmVectorLen
 
-
 -----
-
 
 mkSingleTarget :: HasCallStack => MsgQueue -> Cols -> Text -> Text -> SingleTarget
 mkSingleTarget mq cols target (sorryIgnoreLocPref -> sorryMsg) =
@@ -840,23 +723,18 @@ mkSingleTarget mq cols target (sorryIgnoreLocPref -> sorryMsg) =
     t   = hlp ? T.tail (T.tail target) :? target
     f i = ((sorryMsg, pure i) :)
 
-
 -----
-
 
 mkThrPerPro :: Sex -> Text
 mkThrPerPro Male   = "he"
 mkThrPerPro Female = "she"
 mkThrPerPro NoSex  = "it"
 
-
 -----
-
 
 mkWhoTxt :: HasCallStack => Id -> MudState -> [Text]
 mkWhoTxt i ms = let txts = mkWhoCharList i ms
                 in (++ [ mkWhoFooter i ms ]) $ txts |!| mkWhoHeader False ++ txts
-
 
 mkWhoCharList :: HasCallStack => Id -> MudState -> [Text]
 mkWhoCharList i ms =
@@ -887,10 +765,8 @@ mkWhoCharList i ms =
             descThem (s, r, l) = T.concat [ padName "?", padSex  s, padRace r, l ]
     in concat [ descTunedIns, descTunedOuts, descOthers ]
 
-
 isTunedIn :: HasCallStack => MudState -> (Id, Id) -> Bool
 isTunedIn ms (i, i') | s <- getSing i' ms = fromMaybe False (view (at s) . getTeleLinkTbl i $ ms)
-
 
 mkWhoFooter :: HasCallStack => Id -> MudState -> Text
 mkWhoFooter i ms = let plaIds@(length -> x) = [ i' | i' <- getLoggedInPlaIds ms
@@ -902,24 +778,19 @@ mkWhoFooter i ms = let plaIds@(length -> x) = [ i' | i' <- getLoggedInPlaIds ms
                                  in isNonZero y |?| spcL . parensQuote . T.concat $ ts
                                , "." ]
 
-
 mkWhoHeader :: Bool -> [Text]
 mkWhoHeader b = [ T.concat [ padName "Name", b |?| padId "Id", padSex  "Sex", padRace "Race", "Level" ], divider cols ]
   where
     cols = namePadding + getSum x + sexPadding + racePadding + lvlPadding
     x    = b |?| Sum idPadding
 
-
 -----
-
 
 onOff :: Bool -> Text
 onOff True  = "on"
 onOff False = "off"
 
-
 -----
-
 
 pager :: HasCallStack => Id -> MsgQueue -> Maybe Fun -> [Text] -> MudStack ()
 pager i mq mf txt@(length -> txtLen) = getState >>= \ms -> let pl = getPageLines i ms in if txtLen + 3 <= pl
@@ -929,48 +800,35 @@ pager i mq mf txt@(length -> txtLen) = getState >>= \ms -> let pl = getPageLines
       sendPagerPrompt mq (pl - 2) txtLen
       setInterp i . Just . interpPager mf pl txtLen $ pair
 
-
 -----
-
 
 parseOutDenotative :: [Text] -> Text -> [Text]
 parseOutDenotative ws rest = onFalse (()# rest) (rest :) . tail $ ws
 
-
 -----
-
 
 ppMaybe :: (Pretty a) => Maybe a -> Text
 ppMaybe = maybe none pp
 
-
 -----
-
 
 punc :: String
 punc = "!\"),./:;?"
 
-
 isPunc :: Char -> Bool
 isPunc = (`elem` punc)
 
-
 -----
-
 
 questionChanContext :: ChanContext
 questionChanContext = ChanContext "question" Nothing True
 
-
 -----
-
 
 sendGenericErrorMsg :: HasCallStack => MsgQueue -> Cols -> MudStack ()
 sendGenericErrorMsg mq cols = wrapSend mq cols genericErrorMsg
 
-
 -----
-
 
 showTime :: HasCallStack => MsgQueue -> Cols -> MudStack Text
 showTime mq cols = liftIO getCurryTime >>= \CurryTime { .. } ->
@@ -978,7 +836,6 @@ showTime mq cols = liftIO getCurryTime >>= \CurryTime { .. } ->
       then case getMoonPhaseForDayOfMonth curryDayOfMonth of Nothing    -> const sorryTimeUnknown
                                                              Just phase -> mkTimeDescNight phase
       else mkTimeDescDay
-
 
 mkTimeDescDay :: Hour -> Text
 mkTimeDescDay {- morning   -} 6  = "The sun is rising in the east; a new day is dawning. It's about 6:00."
@@ -995,10 +852,8 @@ mkTimeDescDay {- evening   -} 16 = mkTimeDescDayHelper "it's mid evening."
 mkTimeDescDay {- evening   -} 17 = mkTimeDescDayHelper "it's late in the evening and will be dark soon."
 mkTimeDescDay                 x  = pmf "mkTimeDescDay" x
 
-
 mkTimeDescDayHelper :: Text -> Text
 mkTimeDescDayHelper = ("Judging by the position of the sun in the sky, " <>)
-
 
 mkTimeDescNight :: MoonPhase -> Hour -> Text
 mkTimeDescNight NewMoon _  = "Given that the moon is altogether absent from the sky, you can't tell what time of night \
@@ -1013,38 +868,29 @@ mkTimeDescNight _       18 = "The sun has finished setting. It's about 18:00."
 mkTimeDescNight phase   19 = mkTimeDescNightHelper phase "night has only just begun."
 mkTimeDescNight _       x  = pmf "mkTimeDescNight" x
 
-
 mkTimeDescNightHelper :: MoonPhase -> Text -> Text
 mkTimeDescNightHelper phase t = T.concat [ "Judging by the position of the ", pp phase, " moon in the sky, ", t ]
 
-
 -----
-
 
 tunedInOut :: Bool -> Text
 tunedInOut = tunedInOutHelper id
 
-
 tunedInOutHelper :: (Text -> Text) -> Bool -> Text
 tunedInOutHelper f = ("tuned " <>) . f . inOut
-
 
 tunedInOutColorize :: Bool -> Text
 tunedInOutColorize True  = tunedInOutHelper (colorWith tunedInColor) True
 tunedInOutColorize False = tunedInOutHelper id                       False
 
-
 -----
-
 
 unmsg :: [Text] -> [Text]
 unmsg [cn        ] = [ T.init cn, ""            ]
 unmsg [cn, target] = [ cn,        T.init target ]
 unmsg xs           = pmf "unmsg" xs
 
-
 -----
-
 
 updateRndmName :: HasCallStack => Id -> Id -> MudStack Sing
 updateRndmName i targetId = do
@@ -1071,24 +917,18 @@ updateRndmName i targetId = do
         (head -> match) -> let (name, readNum -> num) = T.break isDigit match
                            in name <> showTxt (succ num)
 
-
 -----
-
 
 withDbExHandler :: HasCallStack => Text -> IO a -> MudStack (Maybe a)
 withDbExHandler fn f = (Just <$> dbOperation f) `catch` (\e -> dbExHandler fn e >> return Nothing)
 
-
 withDbExHandler_ :: HasCallStack => Text -> IO () -> MudStack ()
 withDbExHandler_ fn f = dbOperation f `catch` dbExHandler fn
 
-
 -----
-
 
 withoutArgs :: HasCallStack => ActionFun -> ActionParams -> MudStack ()
 withoutArgs f p = ignore p >> f p { args = [] }
-
 
 ignore :: HasCallStack => ActionFun
 ignore (Ignoring mq cols as) = wrapSend1Nl mq cols . parensQuote . thrice prd $ "Ignoring " <> as

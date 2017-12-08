@@ -16,12 +16,9 @@ import           GHC.Stack (HasCallStack)
 import           Prelude hiding (exp)
 import qualified Data.Map.Strict as M (elems, empty, fromList, keys)
 
-
 default (Int)
 
-
 -- ==================================================
-
 
 clone :: HasCallStack => Id -> (Inv, MudState, Funs) -> Inv -> (Inv, MudState, Funs)
 clone destId = foldl' helper
@@ -106,7 +103,6 @@ clone destId = foldl' helper
           VesselType     -> f . newVessel   ms mkEntTemplate mkObjTemplate mkVesselTemplate          $ destId
           WpnType        -> f . newWpn      ms mkEntTemplate mkObjTemplate (getWpn      targetId ms) $ destId
           WritableType   -> f . newWritable ms mkEntTemplate mkObjTemplate (getWritable targetId ms) $ destId
-
 
 cloneEqMap :: EqMap -> (Inv, MudState, Funs) -> ((Inv, EqMap), MudState, Funs)
 cloneEqMap em (is, ms, fs) = let (is', ms', fs') = clone iClone ([], ms, fs) . M.elems $ em

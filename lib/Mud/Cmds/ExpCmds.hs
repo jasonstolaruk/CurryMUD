@@ -32,20 +32,15 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import           GHC.Stack (HasCallStack)
 
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Cmds.ExpCmds"
 
-
 -----
-
 
 logPlaOut :: Text -> Id -> [Text] -> MudStack ()
 logPlaOut = L.logPlaOut "Mud.Cmds.ExpCmds"
 
-
 -- ==================================================
-
 
 -- TODO: Distinguish between "visible" and "audible" expressive cmds.
 expCmdSet :: HasCallStack => S.Set ExpCmd
@@ -999,7 +994,6 @@ expCmdSet = S.fromList
                                        "% yawns.")
                             Nothing ]
 
-
 expCmds :: HasCallStack => [Cmd]
 expCmds = S.foldr helper [] expCmdSet
   where
@@ -1009,17 +1003,13 @@ expCmds = S.foldr helper [] expCmdSet
                                              , cmdAction         = Action (expCmd ec) True
                                              , cmdDesc           = "" } :)
 
-
 expCmdNames :: HasCallStack => [Text]
 expCmdNames = S.toList . S.map (\(ExpCmd n _ _) -> n) $ expCmdSet
-
 
 getExpCmdByName :: HasCallStack => ExpCmdName -> ExpCmd
 getExpCmdByName cn = head . S.toList . S.filter (\(ExpCmd cn' _ _) -> cn' == cn) $ expCmdSet
 
-
 -----
-
 
 expCmd :: HasCallStack => ExpCmd -> ActionFun
 expCmd (ExpCmd ecn HasTarget {} _   ) p@NoArgs {}        = advise p [] . sorryExpCmdRequiresTarget $ ecn
@@ -1085,26 +1075,21 @@ expCmd (ExpCmd ecn ect         desc)   (OneArgNubbed i mq cols target) = case ec
       (x, _) -> wrapSend mq cols . sorryExpCmdInInvEq $ x
 expCmd _ p = advise p [] adviceExpCmdExcessArgs
 
-
 expCmdHelper :: HasCallStack => ExpCmdFun
 expCmdHelper i mq cols ecn (toSelf, bs, desc, logMsg) = do logPlaOut ecn i . pure $ logMsg
                                                            wrapSend mq cols toSelf
                                                            bcastIfNotIncog i bs
                                                            mobRmDescHelper i desc
 
-
 mobRmDescHelper :: HasCallStack => Id -> MobRmDesc -> MudStack ()
 mobRmDescHelper _ Nothing    = unit
 mobRmDescHelper i (Just "" ) = tweak $ mobTbl.ind i.mobRmDesc .~ Nothing
 mobRmDescHelper i (Just txt) = tweak $ mobTbl.ind i.mobRmDesc ?~ txt
 
-
 serializeDesigHelper :: HasCallStack => Desig -> Text -> Text
 serializeDesigHelper d toOthers = serialize . bool d { desigCap = Don'tCap } d $ T.head toOthers == '%'
 
-
 -----
-
 
 mkExpAction :: HasCallStack => Text -> ActionFun
 mkExpAction name = expCmd . head . S.toList . S.filter helper $ expCmdSet

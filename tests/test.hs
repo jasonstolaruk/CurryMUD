@@ -14,23 +14,17 @@ import Test.Tasty (TestTree, defaultMain, testGroup)
 import Test.Tasty.HUnit (testCase)
 import Test.Tasty.QuickCheck as QC (testProperty)
 
-
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
-
 -- ==================================================
-
 
 main :: IO ()
 main = defaultMain tests
 
-
 tests :: TestTree
 tests = testGroup "tests" [ propertyTests, unitTests ]
 
-
 -- ==================================================
-
 
 propertyTests :: TestTree
 propertyTests = testGroup "property tests" [ propTests_Mud_Data_State_Util_Misc
@@ -41,17 +35,13 @@ propertyTests = testGroup "property tests" [ propTests_Mud_Data_State_Util_Misc
                                            , propTests_Mud_Util_Text
                                            , propTests_Mud_Util_Wrapping ]
 
-
 -- --------------------------------------------------
-
 
 propTests_Mud_Data_State_Util_Misc :: TestTree
 propTests_Mud_Data_State_Util_Misc = testGroup "Mud.Data.State.Util.Misc"
     [ QC.testProperty "prop_getUnusedId" prop_getUnusedId ]
 
-
 -- --------------------------------------------------
-
 
 propTests_Mud_Data_State_Util_Random :: TestTree
 propTests_Mud_Data_State_Util_Random = testGroup "Mud.Data.State.Util.Random"
@@ -64,17 +54,13 @@ propTests_Mud_Data_State_Util_Random = testGroup "Mud.Data.State.Util.Random"
     , QC.testProperty "prop_rndmRs_noRange"                      prop_rndmRs_noRange
     , QC.testProperty "prop_rndmRs_minimalRange"                 prop_rndmRs_minimalRange ]
 
-
 -- --------------------------------------------------
-
 
 propTests_Mud_TheWorld_TheWorld :: TestTree
 propTests_Mud_TheWorld_TheWorld = testGroup "Mud.TheWorld.TheWorld"
     [ QC.testProperty "prop_noDupIds" prop_noDupIds ]
 
-
 -- --------------------------------------------------
-
 
 propTests_Mud_Util_List :: TestTree
 propTests_Mud_Util_List = testGroup "Mud.Util.List"
@@ -82,9 +68,7 @@ propTests_Mud_Util_List = testGroup "Mud.Util.List"
     , QC.testProperty "prop_countOcc"    prop_countOcc
     , QC.testProperty "prop_mkCountList" prop_mkCountList ]
 
-
 -- --------------------------------------------------
-
 
 propTests_Mud_Util_Padding :: TestTree
 propTests_Mud_Util_Padding = testGroup "Mud.Util.Padding"
@@ -93,9 +77,7 @@ propTests_Mud_Util_Padding = testGroup "Mud.Util.Padding"
     , QC.testProperty "prop_padOrTrunc_pads"        prop_padOrTrunc_pads
     , QC.testProperty "prop_padOrTrunc_truncates"   prop_padOrTrunc_truncates ]
 
-
 -- --------------------------------------------------
-
 
 propTests_Mud_Util_Text :: TestTree
 propTests_Mud_Util_Text = testGroup "Mud.Util.Text"
@@ -103,9 +85,7 @@ propTests_Mud_Util_Text = testGroup "Mud.Util.Text"
     , QC.testProperty "prop_findFullNameForAbbrev_findsNothing" prop_findFullNameForAbbrev_findsNothing
     , QC.testProperty "prop_findFullNameForAbbrev_findsMatch"   prop_findFullNameForAbbrev_findsMatch ]
 
-
 -- --------------------------------------------------
-
 
 propTests_Mud_Util_Wrapping :: TestTree
 propTests_Mud_Util_Wrapping = testGroup "Mud.Util.Wrapping"
@@ -116,9 +96,7 @@ propTests_Mud_Util_Wrapping = testGroup "Mud.Util.Wrapping"
     , QC.testProperty "prop_wrapLineWithIndentTag" prop_wrapLineWithIndentTag
     , QC.testProperty "prop_calcIndent"            prop_calcIndent ]
 
-
 -- ==================================================
-
 
 unitTests :: TestTree
 unitTests = testGroup "unit tests" [ unitTests_Mud_Data_Misc
@@ -128,9 +106,7 @@ unitTests = testGroup "unit tests" [ unitTests_Mud_Data_Misc
                                    , unitTests_Mud_Util_Telnet
                                    , unitTests_Mud_Util_Text ]
 
-
 -- --------------------------------------------------
-
 
 unitTests_Mud_Data_Misc :: TestTree
 unitTests_Mud_Data_Misc = testGroup "Mud.Data.Misc"
@@ -139,9 +115,7 @@ unitTests_Mud_Data_Misc = testGroup "Mud.Data.Misc"
     , testCase "test_deserializeStdDesig"    test_deserializeStdDesig
     , testCase "test_deserializeNonStdDesig" test_deserializeNonStdDesig ]
 
-
 -- --------------------------------------------------
-
 
 unitTests_Mud_Data_State_Util_Misc :: TestTree
 unitTests_Mud_Data_State_Util_Misc = testGroup "Mud.Data.State.Util.Misc"
@@ -156,9 +130,7 @@ unitTests_Mud_Data_State_Util_Misc = testGroup "Mud.Data.State.Util.Misc"
     , testCase "test_procQuoteChars_three"            test_procQuoteChars_three
     , testCase "test_procQuoteChars_four"             test_procQuoteChars_four ]
 
-
 -- --------------------------------------------------
-
 
 unitTests_Mud_Misc_CurryTime :: TestTree
 unitTests_Mud_Misc_CurryTime = testGroup "Mud.Misc.CurryTime"
@@ -196,9 +168,7 @@ unitTests_Mud_Misc_CurryTime = testGroup "Mud.Misc.CurryTime"
     , testCase "test_secsToCurryTime_oneSecLessThanTwoYearsPlusOne" test_secsToCurryTime_oneSecLessThanTwoYearsPlusOne
     , testCase "test_secsToCurryTime_oneSecLessThanTwoYearsPlusTwo" test_secsToCurryTime_oneSecLessThanTwoYearsPlusTwo ]
 
-
 -- --------------------------------------------------
-
 
 unitTests_Mud_Util_Misc :: TestTree
 unitTests_Mud_Util_Misc = testGroup "Mud.Util.Misc"
@@ -208,9 +178,7 @@ unitTests_Mud_Util_Misc = testGroup "Mud.Util.Misc"
     , testCase "test_mUnless_IOTrue"          test_mUnless_IOTrue
     , testCase "test_mUnless_IOFalse"         test_mUnless_IOFalse ]
 
-
 -- --------------------------------------------------
-
 
 unitTests_Mud_Util_Telnet :: TestTree
 unitTests_Mud_Util_Telnet = testGroup "Mud.Util.Telnet"
@@ -233,9 +201,7 @@ unitTests_Mud_Util_Telnet = testGroup "Mud.Util.Telnet"
     , testCase "test_parseTelnet_malformed9"         test_parseTelnet_malformed9
     , testCase "test_parseTelnet_malformed10"        test_parseTelnet_malformed10 ]
 
-
 -- --------------------------------------------------
-
 
 unitTests_Mud_Util_Text :: TestTree
 unitTests_Mud_Util_Text = testGroup "Mud.Util.Text"

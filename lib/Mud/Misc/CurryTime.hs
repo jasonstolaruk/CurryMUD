@@ -14,31 +14,25 @@ import Data.Text (Text)
 import Data.Time (UTCTime(..), diffUTCTime, fromGregorian, getCurrentTime)
 import Prelude hiding (min)
 
-
 initCurryYear :: Year
 initCurryYear = 4171 -- Approximately the same number of seconds as 1600 earth years.
 
-
 -- ==================================================
-
 
 -- Months
 curryMonthsInYear :: Month
 curryMonthsInYear = 8
-
 
 -- Weeks
 curryWeeksInMonth, curryWeeksInYear :: Week
 curryWeeksInMonth = 3
 curryWeeksInYear  = curryWeeksInMonth * curryMonthsInYear
 
-
 -- Days
 curryDaysInWeek, curryDaysInMonth, curryDaysInYear :: Day
 curryDaysInWeek  = 7
 curryDaysInMonth = curryDaysInWeek  * curryWeeksInMonth
 curryDaysInYear  = curryDaysInMonth * curryMonthsInYear
-
 
 -- Hours
 curryHoursInDay, curryHoursInWeek, curryHoursInMonth, curryHoursInYear :: Hour
@@ -47,7 +41,6 @@ curryHoursInWeek  = curryHoursInDay   * curryDaysInWeek
 curryHoursInMonth = curryHoursInWeek  * curryWeeksInMonth
 curryHoursInYear  = curryHoursInMonth * curryMonthsInYear
 
-
 -- Mins
 curryMinsInHour, curryMinsInDay, curryMinsInWeek, curryMinsInMonth, curryMinsInYear :: Min
 curryMinsInHour  = 60
@@ -55,7 +48,6 @@ curryMinsInDay   = curryMinsInHour  * curryHoursInDay
 curryMinsInWeek  = curryMinsInDay   * curryDaysInWeek
 curryMinsInMonth = curryMinsInWeek  * curryWeeksInMonth
 curryMinsInYear  = curryMinsInMonth * curryMonthsInYear
-
 
 -- Seconds
 currySecsInMin, currySecsInHour, currySecsInDay, currySecsInWeek, currySecsInMonth, currySecsInYear :: Sec
@@ -66,23 +58,17 @@ currySecsInWeek  = currySecsInDay   * curryDaysInWeek   -- 504,000
 currySecsInMonth = currySecsInWeek  * curryWeeksInMonth -- 1,512,000
 currySecsInYear  = currySecsInMonth * curryMonthsInYear -- 12,096,000
 
-
 -- ==================================================
-
 
 curryEpoch :: UTCTime
 curryEpoch = UTCTime (fromGregorian 2017 1 1) 0
 
-
 -----
-
 
 getCurryTime :: IO CurryTime
 getCurryTime = secsToCurryTime <$> getSecsFromCurryEpoch
 
-
 -----
-
 
 getMoonPhaseForDayOfMonth :: Day -> Maybe MoonPhase
 getMoonPhaseForDayOfMonth = flip lookup [ (1,  NewMoon)
@@ -107,41 +93,30 @@ getMoonPhaseForDayOfMonth = flip lookup [ (1,  NewMoon)
                                         , (20, WaningCrescent)
                                         , (21, WaningCrescent) ]
 
-
 -----
-
 
 getSecsFromCurryEpoch :: IO Sec
 getSecsFromCurryEpoch = round . (`diffUTCTime` curryEpoch) <$> getCurrentTime
 
-
 -----
-
 
 isDay :: Hour -> Bool -- Day (light) hours are 6:00-17:59 (12 hours).
 isDay = inRange (6, 17)
 
-
 isNight :: Hour -> Bool
 isNight = not . isDay -- Night (dark) hours are 18:00-5:59 (8 hours).
 
-
 -----
-
 
 ppMonthForMonthNum :: Month -> Text
 ppMonthForMonthNum = pp @CurryMonth . toEnum . pred
 
-
 -----
-
 
 ppWeekdayForDayOfWeek :: Day -> Text
 ppWeekdayForDayOfWeek = pp @CurryWeekday . toEnum . pred
 
-
 -----
-
 
 secsToCurryTime :: Sec -> CurryTime
 secsToCurryTime x = let years      = x `div` currySecsInYear
@@ -162,9 +137,7 @@ secsToCurryTime x = let years      = x `div` currySecsInYear
                         sec        =        secs   `rem` currySecsInMin
                     in CurryTime year month week dayOfMonth dayOfWeek hour min sec
 
-
 -----
-
 
 showElapsedCurryTime :: UTCTime -> UTCTime -> Text
 showElapsedCurryTime a b = let CurryTime { .. } = secsToCurryTime . round $ a `diffUTCTime` b
@@ -181,9 +154,7 @@ showElapsedCurryTime a b = let CurryTime { .. } = secsToCurryTime . round $ a `d
                                                                 (x:rest) -> commas . reverse $ "and " <> x : rest
 
 
-
 -----
-
 
 showCurryTime :: CurryTime -> [Text]
 showCurryTime CurryTime { .. } = [ "Year:         " <> showTxt   curryYear
