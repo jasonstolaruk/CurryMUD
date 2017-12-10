@@ -421,7 +421,7 @@ printPanicMsg :: HasCallStack => IO ()
 printPanicMsg = printErrorMsg $ panicMsg <> ": see the logs for details"
 
 panicMsg :: HasCallStack => Text
-panicMsg = "panic! " <> parensQuote ("the " <> singleQuote "impossible" <> " happened")
+panicMsg = "panic! (the 'impossible' happened)"
 
 -----
 

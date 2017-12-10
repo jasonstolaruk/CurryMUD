@@ -402,7 +402,7 @@ npcPriorityAbbrevCmdTuples =
     , ("time",        "ti",  time,           True,  cmdDescTime)
     , ("unready",     "un",  unready,        True,  cmdDescUnready)
     , ("whisper",     "whi", whisper,        True,  cmdDescWhisper)
-    , ("whoami",      "wh",  whoAmI,         True,  "Confirm who " <> parensQuote "and what" <> " you are.") ]
+    , ("whoami",      "wh",  whoAmI,         True,  "Confirm who (and what) you are.") ]
 
 noOfNpcCmds :: HasCallStack => Int
 noOfNpcCmds = length npcRegularCmdTuples + length npcPriorityAbbrevCmdTuples + length langsNoCommon
@@ -460,7 +460,7 @@ admin   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs 
                 if getAll . mconcat $ [ All . isLoggedIn $ adminPla
                                       , not (isAdminId i ms) |?| All . not . isIncognito $ adminPla ]
                   then sendFun formatted
-                  else multiSendFun [ formatted, parensQuote "Message retained." ]
+                  else multiSendFun [ formatted, msgRetainedMsg ]
                 retainedMsg adminId ms . mkRetainedMsgFromPerson s $ toAdmin
                 ts <- liftIO mkTimestamp
                 withDbExHandler_ "admin_msg" . insertDbTblAdminMsg . AdminMsgRec ts s adminSing $ toSelf
@@ -483,7 +483,7 @@ adminList (NoArgs i mq cols) = sequence_ [ logPlaExecArgs "admin" [] i, multiWra
                     singSuffixes = sortBy (compare `on` fst) [ second ((" logged " <>) . mkSuffix) pair
                                                              | (swap -> pair) <- mkAdminIdSingList ms ]
                     mkSuffix ai  = if isAdmin p && isIncognitoId ai ms
-                      then inOut (isLoggedIn . getPla ai $ ms) |<>| parensQuote "incognito"
+                      then inOut (isLoggedIn . getPla ai $ ms) <> " (incognito)"
                       else inOut . isAwake ai $ ms
                     singSuffixes' = onFalse (isAdmin p) (filter f) singSuffixes
                       where
@@ -1698,7 +1698,7 @@ lightUp p@ActionParams { myId } lightArg fireArg = getState >>= \ms ->
                       toSelf    = prd $ "You light the " <> lightSing
                       d         = mkStdDesig myId ms DoCap
                       mkMsg     = T.concat . (serialize d <> " lights " :)
-                      inInvMsg  = mkMsg [ mkSerVerbObj . aOrAn $ lightSing, " ", parensQuote "carried", "." ]
+                      inInvMsg  = mkMsg [ mkSerVerbObj . aOrAn $ lightSing, " (carried)." ]
                       inEqMsg   = mkMsg [ mkPossPro . getSex myId $ ms, " ", lightSing, "." ]
                       bs        = pure (lightId `elem` is ? inInvMsg :? inEqMsg, desigOtherIds d)
                       res       = ( ms & lightTbl.ind lightId.lightIsLit .~ True
@@ -1761,7 +1761,7 @@ link (NoArgs i mq cols) = do
                       where
                         x' = case view (at linkSing) . getTeleLinkTbl i $ ms of
                           Nothing  -> x
-                          Just val -> val ? x :? x |<>| parensQuote "tuned out"
+                          Just val -> val ? x :? (x <> " (tuned out)")
                 in linkSing |&| (isAwake linkId ms ? f _1 :? f _2)
         in do logPla "link" i . slashes . dropBlanks $ [ twoWays       |!| "Two-way: "         <> commas twoWays
                                                        , oneWaysFromMe |!| "One-way from me: " <> commas oneWaysFromMe
@@ -2933,8 +2933,8 @@ showAction p@(Lower i mq cols as) = checkDark p $ getState >>= \ms ->
                          in if theType theTarget `notElem` [ NpcType, PlaType ]
                            then wrapSend mq cols . sorryShowTarget . theSing $ theTarget
                            else do
-                               let logMsg = slashes . dropBlanks $ [ invLogMsg |!| parensQuote "inv" |<>| invLogMsg
-                                                                   , eqLogMsg  |!| parensQuote "eq"  |<>| eqLogMsg ]
+                               let logMsg = slashes . dropBlanks $ [ invLogMsg |!| "(inv) " <> invLogMsg
+                                                                   , eqLogMsg  |!| "(eq) "  <> eqLogMsg ]
                                logMsg |#| logPla "show" i . (T.concat [ "showing to ", theSing theTarget, ": " ] <>)
                                multiWrapSend mq cols . dropBlanks $ sorryRmMsg : [ parseDesig Nothing i ms msg
                                                                                  | msg <- invToSelfs ++ eqToSelfs ]
@@ -2965,17 +2965,15 @@ showAction p@(Lower i mq cols as) = checkDark p $ getState >>= \ms ->
                                         , ca <- mkCorpseAppellation theId ms itemId
                                         = (ca, expandCorpseTxt ca . getCorpseDesc itemId $ ms)
                                         | otherwise = (getSing `fanUncurry` getEntDesc) (itemId, ms)
-                             in ( T.concat [ serialize d, " shows you ", underline . aOrAn $ n, " ", parensQuote "carried"
-                                           , nl ":", t ]
-                                , pure theId)
+                             in ( T.concat [ serialize d, " shows you ", underline . aOrAn $ n, nl " (carried):", t ]
+                                , pure theId )
               mkToOthersBs itemIds = concatMap f $ theId `delete` desigOtherIds d
                 where
                   f targetId = foldl' g [] itemIds
                     where
                       g acc itemId = let n  | getType itemId ms == CorpseType = mkCorpseAppellation targetId ms itemId
                                             | otherwise                       = getSing itemId ms
-                                         ts = [ serialize d, " shows ", aOrAn n, " ", parensQuote "carried", " to "
-                                              , theDesig, "." ]
+                                         ts = [ serialize d, " shows ", aOrAn n, " (carried) to ", theDesig, "." ]
                                      in acc ++ pure (T.concat ts, pure targetId)
               -----
               (canCoins, can'tCoinMsgs) = distillEcs ecs
@@ -3077,9 +3075,9 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                       bs = map f . desigOtherIds $ d
                                         where
                                           f i' | x  <- aOrAn (ic ? mkCorpseAppellation i' ms targetId :? targetSing)
-                                               , vo <- mkSerVerbObj $ x |<>| parensQuote "carried"
+                                               , vo <- mkSerVerbObj $ x <> " (carried)"
                                                = (prd $ serialize d <> " smells " <> vo, pure i')
-                                      logMsg = T.concat [ "smelled ", aOrAn targetSing, " ", parensQuote "carried", "." ]
+                                      logMsg = "smelled " <> aOrAn targetSing <> " (carried)."
                                   in ioHelper smellDesc bs logMsg
               Right _          -> sorry sorrySmellExcessTargets
     -----
@@ -3141,11 +3139,9 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                 logMsg      = parseDesigSuffix i ms . prd $ "smelled " <> targetDesig
                 smellMob    = ioHelper smellDesc bs logMsg
                 smellCorpse = let corpseBs = map f . desigOtherIds $ d
-                                  f i'     | vo <- mkSerVerbObj . aOrAn . mkCorpseAppellation i' ms $ targetId
-                                           = (T.concat [ serialize d, " smells ", vo , " ", parensQuote "on the ground"
-                                                       , "." ], pure i')
-                                  corpseLogMsg = T.concat [ "smelled ", aOrAn targetSing, " "
-                                                          , parensQuote "on the ground", "." ]
+                                  f i' | vo <- mkSerVerbObj . aOrAn . mkCorpseAppellation i' ms $ targetId
+                                       = (T.concat [ serialize d, " smells ", vo, " (on the ground)." ], pure i')
+                                  corpseLogMsg = "smelled " <> aOrAn targetSing <> " (on the ground)."
                               in ioHelper smellDesc corpseBs corpseLogMsg
             in case getType targetId ms of NpcType    -> smellMob
                                            PlaType    -> smellMob
@@ -3262,9 +3258,9 @@ taste p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                     bs = map f . desigOtherIds $ d
                                       where
                                         f i' | txt <- aOrAn (ic ? mkCorpseAppellation i' ms targetId :? targetSing)
-                                             , vo  <- mkSerVerbObj $ txt |<>| parensQuote "carried"
+                                             , vo  <- mkSerVerbObj $ txt <> " (carried)"
                                              = (prd $ serialize d <> " tastes " <> vo, pure i')
-                                    logMsg = T.concat [ "tasted ", aOrAn targetSing, " ", parensQuote "carried", "." ]
+                                    logMsg = "tasted " <> aOrAn targetSing <> " (carried)."
                                 in ioHelper tasteDesc bs logMsg
             Right _          -> sorry sorryTasteExcessTargets
           _ -> let (canCoins, can'tCoinMsgs) = distillEcs ecs in case can'tCoinMsgs of

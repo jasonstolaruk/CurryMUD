@@ -554,7 +554,7 @@ mkChanReport :: HasCallStack => Id -> MudState -> Chan -> [Text]
 mkChanReport i ms (Chan ci cn cct tappers) =
     let desc    = commas . map descPla . f $ [ (s, t, l) | (s, t) <- M.toList cct
                                                          , let l = isAwake (getIdForPCSing s ms) ms ]
-        tapping = getSing i ms `elem` tappers |?| spcL . parensQuote $ "wiretapped"
+        tapping = getSing i ms `elem` tappers |?| " (wiretapped)"
     in [ T.concat [ bracketQuote . showTxt $ ci, " ", dblQuote cn, tapping, ":" ], desc ]
   where
     descPla (s, t, l) = T.concat [ underline s, ": ", tunedInOutColorize t, " / ", loggedInOutColorize l ]

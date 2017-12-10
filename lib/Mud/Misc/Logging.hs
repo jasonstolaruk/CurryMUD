@@ -208,7 +208,7 @@ logPlaExecArgs modName cn as i = logPla modName cn i . prd $ "executing " <> hel
            | otherwise = dblQuote . T.unwords $ cn : as
 
 logPlaOut :: HasCallStack => Text -> CmdName -> Id -> [Text] -> MudStack ()
-logPlaOut modName cn i (slashes -> msgs) = logPla modName cn i $ parensQuote "output" |<>| msgs
+logPlaOut modName cn i (slashes -> msgs) = logPla modName cn i $ "(output) " <> msgs
 
 massLogPla :: HasCallStack => Text -> Text -> Text -> MudStack ()
 massLogPla modName (dblQuote -> funName) msg = helper =<< getState

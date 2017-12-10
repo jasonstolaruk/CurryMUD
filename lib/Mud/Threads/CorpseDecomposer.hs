@@ -35,7 +35,6 @@ import           Data.Text (Text)
 import           Data.Typeable (Typeable)
 import           GHC.Stack (HasCallStack)
 import qualified Data.IntMap.Strict as IM (elems, empty, toList)
-import qualified Data.Text as T
 
 blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Threads.CorpseDecomposer"
@@ -90,21 +89,21 @@ corpseDecompHelper i w (x, total) = getState >>= \ms ->
         lens         = bool npcCorpseDesc pcCorpseDesc ipc
     in tweaks $ if
       | x == d -> [ corpseTbl.ind i.lens      .~ mkCorpseTxt ("You see the lifeless ", ".")
-                  , entTbl   .ind i.entSmell  ?~ corpseSmellLvl1
+                  , entTbl   .ind i.entSmell  ?~ corpseSmellLvl1Msg
                   , objTbl   .ind i.objTaste  ?~ "Really? What did you expect? At least the corpse hasn't decomposed \
                                                  \much yet..." ]
       | x == c -> [ corpseTbl.ind i.lens      .~ mkCorpseTxt ("The ", " has begun to decompose.")
-                  , entTbl   .ind i.entSmell  ?~ corpseSmellLvl2
+                  , entTbl   .ind i.entSmell  ?~ corpseSmellLvl2Msg
                   , objTbl   .ind i.objTaste  ?~ "As you may have anticipated, the taste of the decomposing corpse is \
                                                  \decidedly unappetizing."
                   , objTbl   .ind i.objWeight .~ minusTenth w ]
       | x == b -> [ corpseTbl.ind i.lens      .~ mkCorpseTxt ("The ", " has decomposed significantly.")
-                  , entTbl   .ind i.entSmell  ?~ corpseSmellLvl3
+                  , entTbl   .ind i.entSmell  ?~ corpseSmellLvl3Msg
                   , objTbl   .ind i.objTaste  ?~ "The decomposing corpse could very well be the most vile thing you \
                                                  \have ever tasted in your life."
                   , objTbl   .ind i.objWeight .~ minusQuarter w ]
       | x == a -> [ corpseTbl.ind i.lens      .~ "The unidentifiable corpse is in an advanced stage of decomposition."
-                  , entTbl   .ind i.entSmell  ?~ corpseSmellLvl4
+                  , entTbl   .ind i.entSmell  ?~ corpseSmellLvl4Msg
                   , objTbl   .ind i.objTaste  ?~ "Ugh! Why? WHY?"
                   , objTbl   .ind i.objWeight .~ minusHalf w
                   , entTbl   .ind i.sing      .~ "decomposed corpse"
@@ -121,7 +120,7 @@ finishDecomp i = modifyStateSeq $ \ms ->
                                           in ((the' $ n <> " disintegrates.", pure targetId) : )
                     | otherwise         = id
         mkCarriedBs = let n = mkCorpseAppellation invId ms i
-                      in pure (T.concat [ "The ", n, " ", parensQuote "carried", " disintegrates." ], pure invId)
+                      in pure ("The " <> n <> " (carried) disintegrates.", pure invId)
         oops        = blowUp "finishDecomp" (descSingId i ms <> " is in limbo") ""
     in (ms, [ destroyDisintegratedCorpse i, bcastNl bs ])
 

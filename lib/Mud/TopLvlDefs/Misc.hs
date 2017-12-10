@@ -64,7 +64,6 @@ module Mud.TopLvlDefs.Misc ( acl
                            , yous ) where
 
 import           Mud.TopLvlDefs.Chars
-import           Mud.Util.Quoting
 import           Paths_curry_mud
 
 import           Data.Monoid ((<>))
@@ -106,7 +105,7 @@ coinFullNames :: [Text]
 coinFullNames = [ "copper piece", "silver piece", "gold piece" ]
 
 corpsePlaceholder :: Text
-corpsePlaceholder = parensQuote "corpse"
+corpsePlaceholder = "(corpse)"
 
 dbTblPurgerDelay :: Seconds
 dbTblPurgerDelay = oneHrInSecs

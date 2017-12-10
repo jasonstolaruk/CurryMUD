@@ -708,15 +708,14 @@ helperExtinguishEitherInv i d a@(ms, (_, _, _, _)) = \case
                          & _2._1       <>~ toSelfs
                          & _2._2       <>~ bs
                          & _2._3       <>~ toSelfs
-                         & _2._4       <>+ (forM_ is' $ \i' -> views (lightAsyncTbl.at i') maybeThrowDeath ms)
+                         & _2._4       <>+ forM_ is' (\i' -> views (lightAsyncTbl.at i') maybeThrowDeath ms)
 
 mkExtinguishDescs :: HasCallStack => Id -> MudState -> Desig -> (Inv, InvOrEq) -> (Inv, [Text], [Broadcast])
 mkExtinguishDescs i ms d (is, x) = foldr f mempty is
   where
     f targetId tuple =
         let s        = getSing targetId ms
-            inInvMsg | vo <- mkSerVerbObj . aOrAn $ s
-                     = T.concat [ serialize d, " extinguishes ", vo, " ", parensQuote "carried", "." ]
+            inInvMsg | vo <- mkSerVerbObj . aOrAn $ s = T.concat [ serialize d, " extinguishes ", vo, " (carried)." ]
             inEqMsg  | d' <- serialize d { desigDoMaskInDark = False }
                      = T.concat [ d', " extinguishes ", mkPossPro . getSex i $ ms, " ", s, "." ]
             sorry g  = tuple & _2 %~ (g s :)
@@ -1086,11 +1085,11 @@ mkCoinsDesc cols (Coins (each %~ Sum -> (cop, sil, gol))) =
 -----
 
 mkCorpseSmellLvl :: HasCallStack => Text -> Int
-mkCorpseSmellLvl t = if | t == corpseSmellLvl1 -> 1
-                        | t == corpseSmellLvl2 -> 2
-                        | t == corpseSmellLvl3 -> 3
-                        | t == corpseSmellLvl4 -> 4
-                        | otherwise            -> blowUp "mkCorpseSmellLvl" "unexpected ent smell" . showTxt $ t
+mkCorpseSmellLvl t = if | t == corpseSmellLvl1Msg -> 1
+                        | t == corpseSmellLvl2Msg -> 2
+                        | t == corpseSmellLvl3Msg -> 3
+                        | t == corpseSmellLvl4Msg -> 4
+                        | otherwise               -> blowUp "mkCorpseSmellLvl" "unexpected ent smell" . showTxt $ t
 
 -----
 
@@ -1606,7 +1605,7 @@ sacrificeHelper p@(ActionParams i mq cols _) ci gn = getState >>= \ms ->
                        t   = case getCorpse ci ms of PCCorpse s _ _ _ -> spcL . parensQuote $ s
                                                      _                -> ""
                    in logPla "sacrificeHelper" i msg
-    murgorhdMsg  = spcL . parensQuote $ "you are careful to point the apex of the triangle westward"
+    murgorhdMsg  = " (you are careful to point the apex of the triangle westward)"
 
 -----
 

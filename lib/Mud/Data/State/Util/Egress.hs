@@ -88,9 +88,9 @@ handleEgress i mq isDropped = egressHelper `finally` writeMsg mq FinishedEgress
 peepHelper :: HasCallStack => Id -> MudState -> Sing -> Bool -> (MudState, [Broadcast], [(Id, Text)])
 peepHelper i ms s spirit =
     let (peeperIds, peepingIds) = getPeepersPeeping i ms
-        bs      | a <- "You are no longer peeping ", b <- parensQuote $ s <> spaced "has" <> txt
+        bs      | a <- "You are no longer peeping ", b <- parensQuote $ s <> " has " <> txt
                 = [ (nlnl . T.concat $ [ a, s, " ", b, "." ], pure peeperId) | peeperId <- peeperIds ]
-        logMsgs | a <- "no longer peeping ", b <- parensQuote $ s <> spaced "has" <> txt
+        logMsgs | a <- "no longer peeping ", b <- parensQuote $ s <> " has " <> txt
                 = [ (peeperId, T.concat [ a, s, " ", b, "." ]) | peeperId <- peeperIds ]
         txt     = spirit ? "passed into the beyond" :? "disconnected"
     in (upd ms [ plaTbl %~ stopPeeping     peepingIds
@@ -183,6 +183,6 @@ mkFarewellStats i ms = concat [ header, ts, footer ]
     langs            = commas [ pp lang | lang <- sort . getKnownLangs i $ ms ]
     (l, expr)        = getLvlExp i ms
     sacrificesHelper = noneOnNull . commas . map (flip quoteWith' " to " . swap . (pp *** commaShow)) . sort . M.toList
-    totalTime        = maybe (parensQuote "no host records") g . getHostMap s $ ms
+    totalTime        = maybe "(no host records)" g . getHostMap s $ ms
       where
         g = T.pack . renderSecs . M.foldl (\acc -> views secsConnected (+ acc)) 0
