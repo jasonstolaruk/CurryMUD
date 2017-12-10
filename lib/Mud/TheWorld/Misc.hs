@@ -85,9 +85,9 @@ mkGenericHookFun toSelf bcastTxt logMsgTxt = f
     f i Hook { .. } _ a@(_, (ms, _, _, _), _) =
         let selfDesig = mkStdDesig i ms DoCap
         in a &    _1 %~  (\\ hookTriggers)
-             & _2._2 <>~ pure toSelf
-             & _2._3 <>~ pure (serialize selfDesig |<>| bcastTxt, desigOtherIds selfDesig)
-             & _2._4 <>~ pure (bracketQuote hookName |<>| parseDesigSuffix i ms logMsgTxt)
+             & _2._2 <>+ toSelf
+             & _2._3 <>+ (serialize selfDesig |<>| bcastTxt, desigOtherIds selfDesig)
+             & _2._4 <>+ bracketQuote hookName |<>| parseDesigSuffix i ms logMsgTxt
 
 -----
 
@@ -153,7 +153,7 @@ helperTrashEitherInv :: Id
                     -> Either Text Inv
                     -> (MudState, [Text], [Broadcast])
 helperTrashEitherInv i d a@(ms, _, _) = \case
-  Left  msg -> a & _2 <>~ pure msg
+  Left  msg -> a & _2 <>+ msg
   Right is  -> let (toSelfs, bs) = mkTrashInvDescs i ms d is
                in a & _1.invTbl.ind i          %~  (\\ is)
                     & _1.invTbl.ind iTrashDump %~  addToInv ms is

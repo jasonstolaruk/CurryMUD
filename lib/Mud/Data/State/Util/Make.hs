@@ -43,7 +43,7 @@ import           Mud.Util.Operators
 
 import           Control.Arrow (second)
 import           Control.Lens (_2, _3, at)
-import           Control.Lens.Operators ((.~), (&), (%~), (<>~))
+import           Control.Lens.Operators ((.~), (&), (%~))
 import           Control.Monad (when)
 import           Data.Bits (setBit, zeroBits)
 import qualified Data.Map.Strict as M (empty)
@@ -102,7 +102,7 @@ newCon ms et ot con ic mc invId = let (i, typeTbl.ind i .~ ConType -> ms', fs) =
 createCorpse :: MudState -> EntTemplate -> ObjTemplate -> Con -> (Inv, Coins) -> Corpse -> Seconds -> (Id, MudState, Funs)
 createCorpse ms et ot con ic c secs = let tuple@(i, _, _) = createCon ms et ot con ic Nothing
                                       in tuple & _2.corpseTbl.ind i .~ c
-                                               & _3 <>~ pure (startCorpseDecomp i . dup $ secs)
+                                               & _3 <>+ startCorpseDecomp i (dup secs)
 
 newCorpse :: MudState
           -> EntTemplate

@@ -65,7 +65,7 @@ startEffectHelper i e = getDurEffects i <$> getState >>= \durEffs -> do
     q <- liftIO newTMQueueIO
     a <- runAsync . threadEffect i e $ q
     views effectFeeling (maybeVoid (flip (startFeeling i) FeelingNoVal)) e
-    tweak $ durationalEffectTbl.ind i <>~ pure (DurationalEffect e (a, q))
+    tweak $ durationalEffectTbl.ind i <>+ DurationalEffect e (a, q)
   where
     logHelper = logPla "startEffectHelper" i
 

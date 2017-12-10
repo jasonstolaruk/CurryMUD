@@ -2,6 +2,7 @@
 
 module Mud.Util.Operators ( (!#)
                           , (#)
+                          , (<>+)
                           , (?)
                           , (|!|)
                           , (|#|)
@@ -10,6 +11,8 @@ module Mud.Util.Operators ( (!#)
                           , (|?|)
                           , Cond(..) ) where
 
+import Control.Lens.Operators ((<>~))
+import Control.Lens.Setter (ASetter)
 import Control.Monad (unless)
 import Data.Bool (bool)
 import Data.Function ((&))
@@ -19,9 +22,11 @@ import Data.Text (Text)
 infixl 0 ?
 infixl 0 |&|
 infixl 1 :?, |!|, |?|
-infixr 6 |<>|
 infixl 8 |#|
 infixl 9 !#, #
+
+infixr 4 <>+
+infixr 6 |<>|
 
 -- ==================================================
 
@@ -66,10 +71,15 @@ False ? (_ :? y) = y
 
 -----
 
+(|&|) :: a -> (a -> b) -> b
+(|&|) = (&)
+
+-----
+
 (|<>|) :: Text -> Text -> Text
 a |<>| b = a <> " " <> b
 
 -----
 
-(|&|) :: a -> (a -> b) -> b
-(|&|) = (&)
+(<>+) :: (Applicative f, Monoid (f a)) => ASetter s t (f a) (f a) -> a -> s -> t
+a <>+ b = a <>~ pure b

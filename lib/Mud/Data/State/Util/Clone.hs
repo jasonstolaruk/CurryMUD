@@ -8,6 +8,7 @@ import           Mud.Data.State.Util.Make
 import           Mud.Data.State.Util.Misc
 import           Mud.TheWorld.Zones.AdminZoneIds (iClone)
 import           Mud.Util.Misc
+import           Mud.Util.Operators
 
 import           Control.Lens (_1, _2, _3, view, views)
 import           Control.Lens.Operators ((.~), (&), (%~), (^.), (<>~))
@@ -63,14 +64,14 @@ clone destId = foldl' helper
             mkVesselTemplate | v <- getVessel targetId ms
                              = VesselTemplate { vtCont = v^.vesselCont
                                               , vtHoly = views vesselIsHoly (`boolToMaybe` getHolySymbol targetId ms) v }
-            f             (newId,    ms', fs) = p & _1 <>~ pure newId
+            f             (newId,    ms', fs) = p & _1 <>+ newId
                                                   & _2 .~  ms'
                                                   & _3 <>~ fs
-            g newId coins (is,       ms', fs) = p & _1 <>~ pure newId
+            g newId coins (is,       ms', fs) = p & _1 <>+ newId
                                                   & _2 .~  upd ms' [ invTbl  .ind newId .~ sortInv ms' is
                                                                    , coinsTbl.ind newId .~ coins ]
                                                   & _3 <>~ fs
-            h newId coins ((is, em), ms', fs) = p & _1 <>~ pure newId
+            h newId coins ((is, em), ms', fs) = p & _1 <>+ newId
                                                   & _2 .~  upd ms' [ invTbl  .ind newId .~ sortInv ms' is
                                                                    , coinsTbl.ind newId .~ coins
                                                                    , eqTbl   .ind newId .~ em ]

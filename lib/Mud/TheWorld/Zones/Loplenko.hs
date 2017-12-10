@@ -29,7 +29,7 @@ import           Mud.Util.Wrapping
 
 import           Control.Exception.Lifted (try)
 import           Control.Lens (_1, _2, _3, _4)
-import           Control.Lens.Operators ((.~), (&), (%~), (<>~))
+import           Control.Lens.Operators ((.~), (&), (%~))
 import           Control.Monad ((>=>))
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Bits (zeroBits)
@@ -75,12 +75,11 @@ lookBookshelvesHookName :: HookName
 lookBookshelvesHookName = "Loplenko_iLibrary_lookBookshelves"
 
 lookBookshelvesHookFun :: HookFun
-lookBookshelvesHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
+lookBookshelvesHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) | d <- mkStdDesig i ms DoCap =
     a & _1    %~  (\\ hookTriggers)
-      & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
-                    in pure (serialize selfDesig <> " peruses the books on the bookshelves.", desigOtherIds selfDesig) )
-      & _2._4 <>~ pure (bracketQuote hookName <> " bookshelves")
-      & _3    <>~ pure helper
+      & _2._3 <>+ (serialize d <> " peruses the books on the bookshelves.", desigOtherIds d)
+      & _2._4 <>+ bracketQuote hookName <> " bookshelves"
+      & _3    <>+ helper
   where
     helper       = pager i mq Nothing =<< eitherRet handler =<< try readBookList
     readBookList = [ map xformLeadingSpaceChars . parseWrap s cols $ cont | file <- liftIO . mkMudFilePath $ bookListFileFun
@@ -108,20 +107,19 @@ lookSundialHookFun = mkGenericHookFun t "looks at the sundial." "looked at sundi
 -----
 
 readBookHelper :: Book -> HookFun
-readBookHelper b i Hook { .. } _ a@(_, (ms, _, _, _), _) =
+readBookHelper b i Hook { .. } _ a@(_, (ms, _, _, _), _) | d <- mkStdDesig i ms DoCap =
     a & _1    %~  (\\ hookTriggers)
-      & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
-                    in pure (serialize selfDesig <> " reads a book.", desigOtherIds selfDesig) )
-      & _2._4 <>~ pure (T.concat [ bracketQuote hookName, " ", dblQuote . pp $ b, " book" ])
-      & _3    <>~ pure (readABook i b)
+      & _2._3 <>+ (serialize d <> " reads a book.", desigOtherIds d)
+      & _2._4 <>+ bracketQuote hookName |<>| dblQuote (pp b) <> " book"
+      & _3    <>+ readABook i b
 
 readABook :: Id -> Book -> MudStack ()
 readABook i b = ((,) <$> getState <*> getServerSettings) >>= \(ms, s) ->
     let (mq, cols)     = getMsgQueueColumns i ms
         rmDescHelper x = tweak $ mobTbl.ind i.mobRmDesc .~ x
         next           = rmDescHelper Nothing >> setInterp i Nothing >> sendDfltPrompt mq i >> bcastNl bs
-        bs             = pure (serialize selfDesig <> " finishes reading a book.", desigOtherIds selfDesig)
-        selfDesig      = mkStdDesig i ms DoCap
+        bs             = pure (serialize d <> " finishes reading a book.", desigOtherIds d)
+        d              = mkStdDesig i ms DoCap
     in do rmDescHelper . Just $ "reading a book"
           pager i mq (Just next) =<< parseBookTxt s cols <$> getBookTxt b cols
 
@@ -323,11 +321,10 @@ readSundialHookName :: HookName
 readSundialHookName = "Loplenko_iLoplenkoWelcome_readSundial"
 
 readSundialHookFun :: HookFun
-readSundialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
+readSundialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) | d <- mkStdDesig i ms DoCap =
     a & _1    %~  (\\ hookTriggers)
-      & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
-                    in pure (serialize selfDesig <> " reads the sundial.", desigOtherIds selfDesig) )
-      & _2._4 <>~ pure (bracketQuote hookName <> " read sundial")
+      & _2._3 <>+ (serialize d <> " reads the sundial.", desigOtherIds d)
+      & _2._4 <>+ bracketQuote hookName <> " read sundial"
       & _3    .~  pure (uncurry helper . getMsgQueueColumns i $ ms)
   where
     helper mq cols = liftIO getCurryTime >>= \CurryTime { .. } -> wrapSend mq cols $ if isDay curryHour

@@ -40,7 +40,7 @@ import           Mud.Util.Quoting
 import           Mud.Util.Text
 
 import           Control.Lens (_1, _2, _3, _4, view)
-import           Control.Lens.Operators ((?~), (.~), (&), (%~), (<>~))
+import           Control.Lens.Operators ((?~), (.~), (&), (%~))
 import           Control.Monad (forM_)
 import           Data.Bits (setBit, zeroBits)
 import           Data.Function (on)
@@ -61,7 +61,6 @@ logNotice = L.logNotice "Mud.TheWorld.Zones.AdminZone"
 -- ==================================================
 -- Hooks:
 
--- TODO: Consider visibility (here and in other zones).
 adminZoneHooks :: [(HookName, HookFun)]
 adminZoneHooks = [ (drinkPoolHookName,                    drinkPoolHookFun                   )
                  , (fillPoolHookName,                     fillPoolHookFun                    )
@@ -85,7 +84,7 @@ drinkPoolHookName :: HookName
 drinkPoolHookName = "AdminZone_iAtrium_drinkPool"
 
 drinkPoolHookFun :: HookFun
-drinkPoolHookFun i _ _ a@(as, (ms, _, _, _), _) | fst (calcStomachAvailSize i ms) <= 0 = a & _2._2 <>~ pure sorryFull
+drinkPoolHookFun i _ _ a@(as, (ms, _, _, _), _) | fst (calcStomachAvailSize i ms) <= 0 = a & _2._2 <>+ sorryFull
                                                 | db <- DrinkBundle { drinkerId       = i
                                                                     , drinkerMq       = getMsgQueue i ms
                                                                     , drinkerCols     = getColumns  i ms
@@ -122,7 +121,7 @@ fillPoolHookFun i Hook { .. } _ a@(as, (ms, _, _, _), _) =
 helperFillWaterRmEitherInv :: Id -> Desig -> [Either Text Inv] -> GenericIntermediateRes -> GenericIntermediateRes
 helperFillWaterRmEitherInv _ _        []         a = a
 helperFillWaterRmEitherInv i srcDesig (eis:eiss) a = helperFillWaterRmEitherInv i srcDesig eiss $ case eis of
-    Left msg -> a & _2 <>~ pure msg
+    Left msg -> a & _2 <>+ msg
     Right is -> helper is a
   where
     helper []       a'               = a'
@@ -140,7 +139,7 @@ helperFillWaterRmEitherInv i srcDesig (eis:eiss) a = helperFillWaterRmEitherInv 
                               | otherwise     -> fillUp
       where
         (🍧) = (/=) `on` view liqId
-        sorry msg = a' & _2 <>~ pure msg
+        sorry msg = a' & _2 <>+ msg
         sorryEnc  = sorryGetEnc <> "any more water."
         (vs, vmm) = (getSing `fanUncurry` getMaxMouthfuls) (vi, ms)
         calcCanCarryMouthfuls amt = let (myWeight, myMaxEnc) = (calcWeight `fanUncurry` calcMaxEnc) (i, ms)
@@ -149,21 +148,21 @@ helperFillWaterRmEitherInv i srcDesig (eis:eiss) a = helperFillWaterRmEitherInv 
                                           -> floor (margin `divide` mouthfulWeight :: Double)
                                           | otherwise -> amt
         fillUp                    = a' & _1.vesselTbl.ind vi.vesselCont ?~ (waterLiq, vmm)
-                                       & _2 <>~ mkFillUpMsg
-                                       & _3 <>~ bcastHelper
-                                       & _4 <>~ mkFillUpMsg
-        mkFillUpMsg               = pure $ "You fill up the " <> vs <> " with water from the pool."
+                                       & _2 <>+ mkFillUpMsg
+                                       & _3 <>+ bcastHelper
+                                       & _4 <>+ mkFillUpMsg
+        mkFillUpMsg               = "You fill up the " <> vs <> " with water from the pool."
         partialMsgHelper mouths   = a' & _1.vesselTbl.ind vi.vesselCont ?~ (waterLiq, mouths)
-                                       & _2 <>~ mkPartialFillUpMsg
-                                       & _3 <>~ bcastHelper
-                                       & _4 <>~ mkPartialFillUpMsg
-        mkPartialFillUpMsg = pure . T.concat $ [ "You partially fill the ", vs, " with water from the pool. ", sorryEnc ]
-        bcastHelper        = pure (T.concat [ serialize srcDesig, " fills ", mkSerVerbObj . aOrAn $ vs, " with " -- TODO: Test.
-                                            , mkSerVerbObj "water from the pool", "." ], desigOtherIds srcDesig)
+                                       & _2 <>+ mkPartialFillUpMsg
+                                       & _3 <>+ bcastHelper
+                                       & _4 <>+ mkPartialFillUpMsg
+        mkPartialFillUpMsg = T.concat [ "You partially fill the ", vs, " with water from the pool. ", sorryEnc ]
+        bcastHelper        = (T.concat [ serialize srcDesig, " fills ", mkSerVerbObj . aOrAn $ vs, " with "
+                                       , mkSerVerbObj "water from the pool", "." ], desigOtherIds srcDesig)
 
 -----
 
-getFlowerHook :: Hook -- TODO: Here.
+getFlowerHook :: Hook
 getFlowerHook = Hook getFlowerHookName [ "flower", "flowers" ]
 
 getFlowerHookName :: HookName
@@ -171,16 +170,14 @@ getFlowerHookName = "AdminZone_iAtrium_getFlower"
 
 getFlowerHookFun :: HookFun
 getFlowerHookFun i Hook { .. } v a@(_, (ms, _, _, _), _) = if calcWeight i ms + flowerWeight > calcMaxEnc i ms
-  then a & _2._2 .~ pure (sorryGetEnc <> rest)
-  else a & _1    %~  (\\ hookTriggers)
-         & _2._2 <>~ pure msg
-         & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
-                       in pure (serialize selfDesig <> " picks " <> rest, desigOtherIds selfDesig) )
-         & _2._4 <>~ pure (bracketQuote hookName <> " picked flower")
-         & _3    .~  pure (mkFlower i v)
-  where
-    msg  = "You pick " <> rest
-    rest = "a flower from the flowerbed."
+  then a & _2._2 .~ pure (sorryGetEnc <> "a flower from the flowerbed.")
+  else let d = mkStdDesig i ms DoCap
+       in a & _1    %~  (\\ hookTriggers)
+            & _2._2 <>+ "You pick a flower from the flowerbed."
+            & _2._3 <>+ (T.concat [ serialize d, " picks ", mkSerVerbObj "a flower", " from "
+                                  , mkSerVerbObj "the flowerbed", "." ], desigOtherIds d) -- TODO: Test.
+            & _2._4 <>+ bracketQuote hookName <> " picked flower"
+            & _3    .~  pure (mkFlower i v)
 
 mkFlower :: Id -> V.Vector Int -> MudStack ()
 mkFlower i v = modifyStateSeq $ \ms -> let et = EntTemplate (Just "flower")
@@ -227,7 +224,7 @@ lookCeilingHookFun = mkGenericHookFun ceilingDesc "looks up at the ceiling." "lo
 
 -----
 
-lookFlowerbedHook :: Hook
+lookFlowerbedHook :: Hook -- TODO: Here.
 lookFlowerbedHook = Hook lookFlowerbedHookName [ "flowerbed", "flower", "flowers" ]
 
 lookFlowerbedHookName :: HookName
@@ -261,13 +258,11 @@ readLookPaperHookName :: HookName
 readLookPaperHookName = "AdminZone_iTutEntrance_readLookPaper"
 
 readLookPaperHookFun :: HookFun
-readLookPaperHookFun i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _), _) =
+readLookPaperHookFun i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _), _) | d <- mkStdDesig i ms DoCap =
     a &    _1 %~  (\\ hookTriggers)
-      & _2._2 <>~ pure signDesc
-      & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
-                    in pure ( serialize selfDesig <> " reads the piece of paper nailed to the sign."
-                            , desigOtherIds selfDesig ) )
-      & _2._4 <>~ pure (bracketQuote hookName <> " read paper")
+      & _2._2 <>+ signDesc
+      & _2._3 <>+ (serialize d <> " reads the piece of paper nailed to the sign.", desigOtherIds d)
+      & _2._4 <>+ bracketQuote hookName <> " read paper"
   where
     signDesc = dblQuote . prd $ "Your lucky number is " <> x
     x        = showTxt . rndmIntToPer $ r
@@ -348,7 +343,6 @@ smellFlowerbedHookFun = mkGenericHookFun smellDesc "smells the flowerbed." "smel
 -- ==================================================
 -- Room action functions:
 
--- TODO: Consider visibility (here and in other zones).
 adminZoneRmActionFuns :: [(FunName, RmActionFun)]
 adminZoneRmActionFuns = pure (pickRmActionFunName, pick)
 

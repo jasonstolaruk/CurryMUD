@@ -63,7 +63,7 @@ import           Control.Arrow ((***), first)
 import           Control.Concurrent.STM (atomically)
 import           Control.Concurrent.STM.TQueue (writeTQueue)
 import           Control.Lens (each, to, views)
-import           Control.Lens.Operators ((.~), (&), (%~), (^.), (<>~))
+import           Control.Lens.Operators ((.~), (&), (%~), (^.))
 import           Control.Monad (forM_, unless)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.List ((\\), delete, elemIndex)
@@ -292,7 +292,7 @@ retainedMsg targetId ms msg@(T.uncons -> Just (x, xs))
   | isNpc targetId ms                 = bcastNl . mkBcast targetId $ stripMarker
   | isLoggedIn . getPla targetId $ ms = let (targetMq, targetCols) = getMsgQueueColumns targetId ms
                                         in wrapSend targetMq targetCols stripMarker
-  | otherwise                         = tweak $ plaTbl.ind targetId.retainedMsgs <>~ pure msg
+  | otherwise                         = tweak $ plaTbl.ind targetId.retainedMsgs <>+ msg
   where
     stripMarker | x == fromPersonMarker = xs
                 | otherwise             = msg

@@ -12,7 +12,7 @@ import           Mud.Util.Operators
 
 import           Control.Arrow (second)
 import           Control.Lens (view, views)
-import           Control.Lens.Operators ((.~), (<>~))
+import           Control.Lens.Operators ((.~))
 import qualified Data.IntMap.Strict as IM (filter, toList)
 import           Data.Text (Text)
 import           GHC.Stack (HasCallStack)
@@ -23,7 +23,7 @@ logNotice = L.logNotice "Mud.Threads.RmFuns"
 -- ==================================================
 
 runRmFunAsync :: HasCallStack => Id -> Fun -> MudStack () -- Room functions should have their own exception handlers.
-runRmFunAsync i f = runAsync f >>= \a -> tweak $ rmTbl.ind i.rmFunAsyncs <>~ pure a
+runRmFunAsync i f = runAsync f >>= \a -> tweak $ rmTbl.ind i.rmFunAsyncs <>+ a
 
 startRmFuns :: HasCallStack => MudStack ()
 startRmFuns = getState >>= \ms -> do logNotice "startRmFuns" "starting room functions."

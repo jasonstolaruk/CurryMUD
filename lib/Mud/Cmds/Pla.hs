@@ -1100,23 +1100,23 @@ emptyAction   (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs
           then (ms', (toSelfs', bs, logSings))
           else genericSorry ms dudeYourHandsAreEmpty
     helperEmptyEitherInv d a = \case
-      Left  msg -> a & _2 <>~ pure msg
+      Left  msg -> a & _2 <>+ msg
       Right is  -> foldl' f a is
       where
         f a'@(ms, _, _, _) targetId =
             let s            = getSing targetId ms
                 poss         = mkPossPro . getSex i $ ms
                 t            = T.concat [ serialize d, " empties the contents of ", mkSerVerbObj $ poss |<>| s, "." ]
-                alreadyEmpty = a' & _2 <>~ pure (sorryEmptyAlready s)
+                alreadyEmpty = a' & _2 <>+ sorryEmptyAlready s
                 emptyIt      = a' & _1 .~  (ms & vesselTbl.ind targetId.vesselCont .~ Nothing)
-                                  & _2 <>~ pure (prd $ "You empty the contents of the " <> s)
-                                  & _3 <>~ pure (t, desigOtherIds d)
-                                  & _4 <>~ pure s
+                                  & _2 <>+ prd ("You empty the contents of the " <> s)
+                                  & _3 <>+ (t, desigOtherIds d)
+                                  & _4 <>+ s
             in case getType targetId ms of
               VesselType -> maybe alreadyEmpty (const emptyIt) . getVesselCont targetId $ ms
-              ConType    -> a' & _2 <>~ pure sorryEmptyCon
-              CorpseType -> a' & _2 <>~ pure sorryEmptyCorpse
-              _          -> a' & _2 <>~ pure (sorryEmptyType s)
+              ConType    -> a' & _2 <>+ sorryEmptyCon
+              CorpseType -> a' & _2 <>+ sorryEmptyCorpse
+              _          -> a' & _2 <>+ sorryEmptyType s
 emptyAction p = pmf "emptyAction" p
 
 -----
@@ -1580,11 +1580,11 @@ intro p@(LowerNub i mq cols as) = getStateTime >>= \(ms, ct) ->
                             in a' & _2 <>~ mkNTBcast i sorry
                        else a' & _1.ind targetId.introduced %~ (sort . (s :))
                                & _2 <>~ cbs
-                               & _3 <>~ pure logMsg
+                               & _3 <>+ logMsg
                                & _4 %~  (targetId :)
           _       -> let b = head . mkNTB . sorryIntroType $ targetSing
                      in a' & _2 %~ (`appendIfUnique` b)
-    helperIntroEitherCoins a (Left msgs)   = a & _1 <>~ (mkNTBcast i . T.concat $ [ nlnl msg | msg <- msgs ])
+    helperIntroEitherCoins a (Left msgs)   = a & _1 <>~ mkNTBcast i (T.concat [ nlnl msg | msg <- msgs ])
     helperIntroEitherCoins a Right {}      = let cb = head . mkNTB $ sorryIntroCoin
                                              in first (`appendIfUnique` cb) a
     fromClassifiedBcast (TargetBcast    b) = b
@@ -1627,10 +1627,10 @@ leave p@(WithArgs i mq cols (nub -> as)) =
           let s                              = getSing i ms
               (chanIds, chanNames, chanRecs) = foldl' unzipper ([], [], []) chanId_name_isDels
               unzipper acc (ci, cn, isDel)
-                | isDel     = acc & _2 <>~ pure cn
-                                  & _3 <>~ (pure . ChanRec "" ci cn s . asteriskQuote $ "Channel deleted.")
-                | otherwise = acc & _1 <>~ pure ci
-                                  & _2 <>~ pure cn
+                | isDel     = acc & _2 <>+ cn
+                                  & _3 <>+ ChanRec "" ci cn s (asteriskQuote "Channel deleted.")
+                | otherwise = acc & _1 <>+ ci
+                                  & _2 <>+ cn
               toSelfMsgs = mkLeaveMsg chanNames
               msgs       = ()# sorryMsgs ? toSelfMsgs :? sorryMsgs ++ (toSelfMsgs |!| "" : toSelfMsgs)
               f bs ci    | c        <- getChan ci ms
@@ -1650,11 +1650,11 @@ leave p@(WithArgs i mq cols (nub -> as)) =
                 in (ms', (ms', chanId_name_isDels, sorryMsgs))
       where
         f triple a@(T.toLower -> a') =
-            let notFound     = triple & _3 <>~ pure (sorryChanName a)
+            let notFound     = triple & _3 <>+ sorryChanName a
                 found match  = let (cn, c) = getMatchingChanWithName match cns cs
                                    ci      = c^.chanId
                                    isDel   = views chanConnTbl ((== 1) . M.size) c
-                               in (triple & _2 <>~ pure (ci, cn, isDel) |&|) $ if isDel
+                               in (triple & _2 <>+ (ci, cn, isDel) |&|) $ if isDel
                                  then _1.chanTbl.at  ci                  .~ Nothing
                                  else _1.chanTbl.ind ci.chanConnTbl.at s .~ Nothing
                 (cs, cns, s) = mkChanBindings i ms
@@ -1784,7 +1784,7 @@ link p@(LowerNub i mq cols as) = getState >>= \ms -> if
                 in if ()!# invCoins
                   then (ms', (sorryInInv ++ sorryInEq ++ bs',        logMsgs', fs))
                   else (ms,  (mkBcast i . nlnl $ sorryLinkNoOneHere, [],       []))
-    helperLinkEitherInv a (Left  sorryMsg ) = ()# sorryMsg ? a :? (a & _2 <>~ (mkBcast i . nlnl $ sorryMsg))
+    helperLinkEitherInv a (Left  sorryMsg ) = ()# sorryMsg ? a :? (a & _2 <>~ mkBcast i (nlnl sorryMsg))
     helperLinkEitherInv a (Right targetIds) = foldl' tryLink a targetIds
       where
         tryLink a'@(ms, _, _, _) targetId = let targetSing = getSing targetId ms in case getType targetId ms of
@@ -1820,13 +1820,13 @@ link p@(LowerNub i mq cols as) = getState >>= \ms -> if
                                 & _1.teleLinkMstrTbl.ind targetId.at s          ?~ True
                                 & _1.mobTbl         .ind i       .curPp         -~ 10
                                 & _2 <>~ bs
-                                & _3 <>~ pure logMsg
+                                & _3 <>+ logMsg
                                 & _4 <>~ [ action, awardExp 100 ("linked by " <> targetSing) targetId ]
           _  -> let b = (nlnl . sorryLinkType $ targetSing, pure i)
                 in a' & _2 %~ (`appendIfUnique` b)
           where
             action = rndmDo_ (calcProbLinkFlinch targetId ms) . mkExpAction "flinch" . mkActionParams targetId ms $ []
-    helperLinkEitherCoins a (Left msgs) = a & _1 <>~ (mkBcast i . T.concat $ [ nlnl msg | msg <- msgs ])
+    helperLinkEitherCoins a (Left msgs) = a & _1 <>~ mkBcast i (T.concat [ nlnl msg | msg <- msgs ])
     helperLinkEitherCoins a Right {}    = let b = (nlnl sorryLinkCoin, pure i) in first (`appendIfUnique` b) a
 link p = pmf "link" p
 
@@ -1982,8 +1982,8 @@ newChan p@(WithArgs i mq cols (nub -> as)) = getState >>= \ms ->
                             cr = ChanRec "" ci a s . asteriskQuote $ "New channel created."
                         in triple & _1.chanTbl.at ci      ?~ c
                                   & _1.mobTbl.ind i.curPp -~ 5
-                                  & _2 <>~ pure (a, cr)
-        sorry msg    = _3 <>~ pure msg
+                                  & _2 <>+ (a, cr)
+        sorry msg    = _3 <>+ msg
         isNG c       = not $ isLetter c || isDigit c
         illegalNames = [ "admin", "all", "question" ] ++ pcNames
         pcNames      = views pcTbl (map (uncapitalize . (`getSing` ms)) . IM.keys) ms
@@ -2241,7 +2241,7 @@ readAction p@(LowerNub i mq cols as) = checkDark p $ (,) <$> getState <*> mkRndm
       where
         helperEitherInv   acc (Left  msg ) = acc & _1 <>~ wrapUnlinesNl cols msg
         helperEitherInv   acc (Right is  ) = readHelper i cols ms d acc is
-        helperEitherCoins acc (Left  msgs) = acc & _1 <>~ (multiWrapNl cols . intersperse "" $ msgs)
+        helperEitherCoins acc (Left  msgs) = acc & _1 <>~ multiWrapNl cols (intersperse "" msgs)
         helperEitherCoins acc (Right _   ) = acc & _1 <>~ wrapUnlinesNl cols sorryReadCoins
     ioHelper (toSelf, bs, logMsgs) = do logMsgs |#| logPla "read" i . prd . slashes
                                         send mq toSelf
@@ -2279,7 +2279,7 @@ helperReady :: HasCallStack => Id
                             -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
                             -> (Either Text Inv, Maybe RightOrLeft)
                             -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
-helperReady _ _  _ a (Left  msg,       _   ) = a & _3 <>~ pure msg
+helperReady _ _  _ a (Left  msg,       _   ) = a & _3 <>+ msg
 helperReady i ms d a (Right targetIds, mrol) = foldl' (readyDispatcher i ms d mrol) a targetIds
 
 readyDispatcher :: HasCallStack => Id
@@ -2290,7 +2290,7 @@ readyDispatcher :: HasCallStack => Id
                                 -> Id
                                 -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
 readyDispatcher i ms d mrol a targetId =
-    helper |&| either (\msg -> a & _3 <>~ pure msg) (`uncurry7` (i, ms, d, mrol, a, targetId, targetSing))
+    helper |&| either (\msg -> a & _3 <>+ msg) (`uncurry7` (i, ms, d, mrol, a, targetId, targetSing))
   where
     helper = case getType targetId ms of
       ArmType        -> Right readyArm
@@ -2316,7 +2316,7 @@ readyCloth :: HasCallStack => Id
                            -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
 readyCloth i ms d mrol a@(et, _, _, _, _) clothId clothSing | em <- et IM.! i, cloth <- getCloth clothId ms =
   case mrol |&| maybe (getAvailClothSlot i ms cloth em) (getDesigClothSlot ms clothSing cloth em) of
-      Left  msg  -> a & _3 <>~ pure msg
+      Left  msg  -> a & _3 <>+ msg
       Right slot -> moveReadiedItem i a slot clothId . mkReadyClothMsgs slot $ cloth
   where
     mkReadyClothMsgs (pp -> slot) = \case
@@ -2432,7 +2432,7 @@ readyWpn i ms d mrol a@(et, _, _, _, _) wpnId wpnSing | em <- et IM.! i, wpn <- 
                 in moveReadiedItem i a BothHandsS wpnId readyMsgs
             | otherwise -> sorry . sorryReadyWpnHands $ wpnSing
   where
-    sorry msg = a & _3 <>~ pure msg
+    sorry msg = a & _3 <>+ msg
     vo        = mkSerVerbObj . aOrAn $ wpnSing
     poss      = mkPossPro . getSex i $ ms
 
@@ -2466,7 +2466,7 @@ readyArm :: HasCallStack => Id
                          -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
 readyArm i ms d mrol a@(et, _, _, _, _) armId armSing | em <- et IM.! i, sub <- getArmSub armId ms =
     case mrol |&| maybe (getAvailArmSlot ms sub em) sorry of
-      Left  msg  -> a & _3 <>~ pure msg
+      Left  msg  -> a & _3 <>+ msg
       Right slot -> moveReadiedItem i a slot armId . mkReadyArmMsgs $ sub
   where
     sorry          = Left . sorryReadyRol armSing
@@ -2502,7 +2502,7 @@ readyLight i ms d mrol a@(et, _, _, _, _) lightId lightSing | em <- et IM.! i = 
                                   , mkPossPro . getSex i $ ms, " ", pp slot, "." ]
                   in moveReadiedItem i a slot lightId readyMsgs
   where
-    sorry msg = a & _3 <>~ pure msg
+    sorry msg = a & _3 <>+ msg
 
 -----
 
@@ -2947,10 +2947,10 @@ showAction p@(Lower i mq cols as) = checkDark p $ getState >>= \ms ->
       | ()!# invCoins =
           let (eiss, ecs)                         = uncurry (resolveMobInvCoins i ms inInvs) invCoins
               showInvHelper                       = foldl' helperEitherInv mempty eiss
-              helperEitherInv acc (Left  msg    ) = acc & _1 <>~ pure msg
+              helperEitherInv acc (Left  msg    ) = acc & _1 <>+ msg
               helperEitherInv acc (Right itemIds) = acc & _1 <>~ mkToSelfMsgs itemIds
                                                         & _2 <>~ mkBs
-                                                        & _3 <>~ pure mkLogMsg
+                                                        & _3 <>+ mkLogMsg
                 where
                   mkBs     = mkToTargetBs itemIds ++ mkToOthersBs itemIds
                   mkLogMsg = commas . map (`getSing` ms) $ itemIds
@@ -2996,10 +2996,10 @@ showAction p@(Lower i mq cols as) = checkDark p $ getState >>= \ms ->
           let (gecrs, miss, rcs)                  = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
               eiss                                = zipWith (curry procGecrMisMobEq) gecrs miss
               showEqHelper                        = foldl' helperEitherInv mempty eiss
-              helperEitherInv acc (Left  msg    ) = acc & _1 <>~ pure msg
+              helperEitherInv acc (Left  msg    ) = acc & _1 <>+ msg
               helperEitherInv acc (Right itemIds) = acc & _1 <>~ mkToSelfMsgs itemIds
                                                         & _2 <>~ mkBs
-                                                        & _3 <>~ pure mkLogMsg
+                                                        & _3 <>+ mkLogMsg
                 where
                   mkBs     = mkToTargetBs itemIds ++ mkToOthersBs itemIds
                   mkLogMsg = commas . map (`getSing` ms) $ itemIds
@@ -3428,7 +3428,7 @@ unlink p@(LowerNub i mq cols as) = getState >>= \ms ->
                                                       , mobTbl.ind i       .curPp  -~ onTrue (isSpirit myPla) (const 0) 5 ]
                                in a & _1 .~  ms''
                                     & _2 <>~ (nlnl srcMsg, pure i) : targetBs
-                                    & _3 <>~ pure targetSing
+                                    & _3 <>+ targetSing
             in helper |&| modifyState >=> \(bs, logMsgs) -> do
                 logMsgs |#| logPla "unlink" i . slashes
                 bcast . onFalse (()# guessWhat) ((guessWhat, pure i) :) $ bs

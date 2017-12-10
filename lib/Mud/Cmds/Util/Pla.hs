@@ -311,9 +311,9 @@ connectHelper i (target, as) ms =
                                                                        in sorryProcTarget msg
                                              | otherwise = pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing ?~ True
                                                                 & _1.mobTbl.ind i.curPp -~ 3
-                                                                & _2 <>~ pure (Right targetSing)
+                                                                & _2 <>+ Right targetSing
                                  in either sorryProcTarget checkChanName . checkMutuallyTuned i ms' $ targetSing
-                           sorryProcTarget msg = pair & _2 <>~ pure (Left msg)
+                           sorryProcTarget msg = pair & _2 <>+ Left msg
                            blocked             = sorryProcTarget . (effortsBlockedMsg <>)
                        in findFullNameForAbbrev a targetSings |&| maybe notFoundSing foundSing
                    ci                         = c^.chanId
@@ -401,16 +401,16 @@ disconnectHelper i (target, as) idNamesTbl ms =
         notFound    = sorry . sorryChanName $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if views chanConnTbl (M.! s) c
           then let procTarget (pair@(ms', _), b) a = case filter ((== a) . T.toLower . snd) $ idNamesTbl IM.! ci of
-                     [] -> (pair & _2 <>~ (pure . Left . hint . sorryChanTargetName (dblQuote cn) $ a), True)
+                     [] -> (pair & _2 <>+ (Left . hint . sorryChanTargetName (dblQuote cn) $ a), True)
                      [(targetId, targetName)]
                        | not . hasPp i ms' $ 3 ->
                            let targetName' = isRndmName targetName ? underline targetName :? targetName
                                msg         = sorryPp $ "disconnect " <> targetName'
-                           in (pair & _2 <>~ pure (Left msg), b)
+                           in (pair & _2 <>+ Left msg, b)
                        | otherwise -> let targetSing = getSing targetId ms'
                                       in ( pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Nothing
                                                 & _1.mobTbl.ind i.curPp -~ 3
-                                                & _2 <>~ pure (Right (targetId, targetSing, targetName))
+                                                & _2 <>+ Right (targetId, targetSing, targetName)
                                          , b )
                      xs -> pmf "disconnectHelper found" xs
                      where
@@ -505,7 +505,7 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
   where
     targetSing = getSing targetId ms
     next       = helperFillEitherInv i srcDesig targetId eiss
-    sorry msg  = a & _2 <>~ pure msg
+    sorry msg  = a & _2 <>+ msg
     helper _                              []       a'                = a'
     helper cont@(targetLiq, targetMouths) (vi:vis) a'@(ms', _, _, _)
       | isNothing . getVesselCont targetId $ ms' = a'
@@ -514,44 +514,42 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
       | otherwise                                = helper cont vis . (_3 <>~ bs) $ case getVesselCont vi ms' of
           Nothing | vmm <  targetMouths -> a' & _1.vesselTbl.ind targetId.vesselCont ?~ (targetLiq, targetMouths - vmm)
                                               & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
-                                              & _2 <>~ mkFillUpMsg
-                                              & _4 <>~ mkFillUpMsg
+                                              & _2 <>+ mkFillUpMsg
+                                              & _4 <>+ mkFillUpMsg
                   | vmm == targetMouths -> a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
                                               & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
-                                              & _2 <>~ mkFillUpEmptyMsg
-                                              & _4 <>~ mkFillUpEmptyMsg
+                                              & _2 <>+ mkFillUpEmptyMsg
+                                              & _4 <>+ mkFillUpEmptyMsg
                   | otherwise           -> a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
                                               & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, targetMouths)
-                                              & _2 <>~ mkXferEmptyMsg
-                                              & _4 <>~ mkXferEmptyMsg
+                                              & _2 <>+ mkXferEmptyMsg
+                                              & _4 <>+ mkXferEmptyMsg
           Just (vl, vm)
             | vl 🍰 targetLiq    -> sorry' . uncurry sorryFillLiqTypes $ (targetId, vi) & both %~ flip getBothGramNos ms'
             | vm >= vmm          -> sorry' . sorryFillAlready $ vs
             | vAvail <- vmm - vm -> if | vAvail <  targetMouths ->
                                            a' & _1.vesselTbl.ind targetId.vesselCont ?~ (targetLiq, targetMouths - vAvail)
                                               & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
-                                              & _2 <>~ mkFillUpMsg
-                                              & _4 <>~ mkFillUpMsg
+                                              & _2 <>+ mkFillUpMsg
+                                              & _4 <>+ mkFillUpMsg
                                        | vAvail == targetMouths ->
                                            a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
                                               & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
-                                              & _2 <>~ mkFillUpEmptyMsg
-                                              & _4 <>~ mkFillUpEmptyMsg
+                                              & _2 <>+ mkFillUpEmptyMsg
+                                              & _4 <>+ mkFillUpEmptyMsg
                                        | otherwise ->
                                            a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
                                               & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vm + targetMouths)
-                                              & _2 <>~ mkXferEmptyMsg
-                                              & _4 <>~ mkXferEmptyMsg
+                                              & _2 <>+ mkXferEmptyMsg
+                                              & _4 <>+ mkXferEmptyMsg
       where
         (🍰) = (/=) `on` view liqId
-        sorry' msg       = a' & _2 <>~ pure msg
+        sorry' msg       = a' & _2 <>+ msg
         (vs, vmm)        = (getSing `fanUncurry` getMaxMouthfuls) (vi, ms')
         n                = renderLiqNoun targetLiq id
-        mkFillUpMsg      = pure . T.concat $ [ "You fill up the ", vs, " with ", n, " from the ", targetSing, "." ]
-        mkFillUpEmptyMsg = pure . T.concat $ [ "You fill up the ", vs, " with ", n, " from the ", targetSing
-                                             , ", emptying it." ]
-        mkXferEmptyMsg   = pure . T.concat $ [ "You transfer ", n, " to the ", vs,  " from the ", targetSing
-                                             , ", emptying it." ]
+        mkFillUpMsg      = T.concat [ "You fill up the ", vs, " with ", n, " from the ", targetSing, "." ]
+        mkFillUpEmptyMsg = T.concat [ "You fill up the ", vs, " with ", n, " from the ", targetSing, ", emptying it." ]
+        mkXferEmptyMsg   = T.concat [ "You transfer ", n, " to the ", vs,  " from the ", targetSing, ", emptying it." ]
         bs               | (vo1, vo2) <- (targetSing, vs) & both %~ mkSerVerbObj . aOrAn
                          = pure ( T.concat [ serialize srcDesig, " transfers liquid from ", vo1, " to ", vo2, "." ]
                                 , desigOtherIds srcDesig )
@@ -648,7 +646,7 @@ helperDropEitherInv :: HasCallStack => Id
                                     -> Either Text Inv
                                     -> GenericIntermediateRes
 helperDropEitherInv i d fromId toId a@(ms, _, _, _) = \case
-  Left  msg -> a & _2 <>~ pure msg
+  Left  msg -> a & _2 <>+ msg
   Right is  -> let (is',     sorrys) = checkNowEating i ms "drop" "" is
                    (toSelfs, bs    ) = mkGetDropInvDescs i ms d Drop is'
                in a & _1.invTbl.ind fromId %~  (\\ is')
@@ -704,13 +702,13 @@ helperExtinguishEitherInv :: HasCallStack => Id
                                           -> (Either Text Inv, InvOrEq)
                                           -> GenericResWithFuns
 helperExtinguishEitherInv i d a@(ms, (_, _, _, _)) = \case
-  (Left  msg, _) -> a & _2._1 <>~ pure msg
+  (Left  msg, _) -> a & _2._1 <>+ msg
   (Right is,  x) -> let (is', toSelfs, bs) = mkExtinguishDescs i ms d (is, x)
                     in a & _1.lightTbl %~  flip (foldr $ \i' -> ind i'.lightIsLit .~ False) is'
                          & _2._1       <>~ toSelfs
                          & _2._2       <>~ bs
                          & _2._3       <>~ toSelfs
-                         & _2._4       <>~ (pure . forM_ is' $ \i' -> views (lightAsyncTbl.at i') maybeThrowDeath ms)
+                         & _2._4       <>+ (forM_ is' $ \i' -> views (lightAsyncTbl.at i') maybeThrowDeath ms)
 
 mkExtinguishDescs :: HasCallStack => Id -> MudState -> Desig -> (Inv, InvOrEq) -> (Inv, [Text], [Broadcast])
 mkExtinguishDescs i ms d (is, x) = foldr f mempty is
@@ -805,7 +803,7 @@ helperGetEitherInv :: HasCallStack => Id
                                    -> Either Text Inv
                                    -> GenericIntermediateRes
 helperGetEitherInv i d fromId a@(ms, _, _, _) = \case
-  Left  msg                              -> a & _2 <>~ pure msg
+  Left  msg                              -> a & _2 <>+ msg
   Right (sortByType -> (npcPCs, others)) ->
     let maxEnc            = calcMaxEnc i ms
         (_, cans, can'ts) = foldl' (partitionInvByEnc ms maxEnc)
@@ -832,9 +830,8 @@ partitionInvByEnc = partitionInvHelper calcWeight
 
 partitionInvHelper :: HasCallStack => (Id -> MudState -> Int) -> MudState -> Int -> (Int, Inv, Inv) -> Id -> (Int, Inv, Inv)
 partitionInvHelper f ms maxAmt acc@(x, _, _) targetId = let x' = x + f targetId ms
-                                                            a  = acc & _1 .~ x'
-                                                                     & _2 <>~ pure targetId
-                                                            b  = acc & _3 <>~ pure targetId
+                                                            a  = acc & _1 .~ x' & _2 <>+ targetId
+                                                            b  = acc & _3 <>+ targetId
                                                         in bool b a $ x' <= maxAmt
 
 mkCan'tGetInvDescs :: HasCallStack => Id -> MudState -> Weight -> Inv -> [Text]
@@ -876,7 +873,7 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
     findFullNameForAbbrev name (map fst . mkSettingPairs i $ ms) |&| maybe notFound found
   where
     notFound    = appendMsg . sorrySetName $ name
-    appendMsg m = a & _2 <>~ pure m
+    appendMsg m = a & _2 <>+ m
     found       = \case "admin"    -> alterTuning "admin" IsTunedAdmin
                         "columns"  -> procEither . alterNumeric minCols      maxCols      "columns" $ columns
                         "lines"    -> procEither . alterNumeric minPageLines maxPageLines "lines"   $ pageLines
@@ -894,15 +891,15 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
     alterNumeric minVal maxVal settingName lens x
       | not . inRange (minVal, maxVal) $ x = appendMsg . sorrySetRange settingName minVal $ maxVal
       | otherwise = let msg = T.concat [ "Set ", settingName, " to ", showTxt x, "." ]
-                    in appendMsg msg & _1.lens .~ x & _3 <>~ pure msg
+                    in appendMsg msg & _1.lens .~ x & _3 <>+ msg
     alterTuning n flag = case lookup value inOutOnOffs of
       Nothing      -> appendMsg . sorryParseInOut value $ n
       Just newBool -> let msg = T.concat [ "Tuned ", inOut newBool, " the ", n, " channel." ]
-                      in appendMsg msg & _1 %~ setPlaFlag flag newBool & _3 <>~ pure msg
+                      in appendMsg msg & _1 %~ setPlaFlag flag newBool & _3 <>+ msg
     alterPts n flag = case lookup value onOffs of
       Nothing      -> appendMsg . sorryParseOnOff value $ n
       Just newBool -> let msg = T.concat [ "Turned ", onOff newBool, " ", T.toUpper n, " in prompt." ]
-                      in appendMsg msg & _1 %~ setPlaFlag flag newBool & _3 <>~ pure msg
+                      in appendMsg msg & _1 %~ setPlaFlag flag newBool & _3 <>+ msg
 
 mkSettingPairs :: HasCallStack => Id -> MudState -> [(Text, Text)]
 mkSettingPairs i ms = let p = getPla i ms
@@ -929,15 +926,14 @@ helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> val
   where
     linkNames   = map uncapitalize . M.keys $ linkTbl
     chanNames   = selects chanName T.toLower chans
-    notFound    = a & _3 <>~ pure (sorryTuneName name)
+    notFound    = a & _3 <>+ sorryTuneName name
     found val n = if n == "all"
                     then appendMsg "all telepathic connections" & _1 %~ M.map (const val)
                                                                 & _2 %~ map (chanConnTbl.at s ?~ val)
                     else foundHelper
       where
         appendMsg connName = let msg = T.concat [ "You tune ", connName, " ", inOut val, "." ]
-                             in a & _3 <>~ pure msg
-                                  & _4 <>~ pure msg
+                             in a & _3 <>+ msg & _4 <>+ msg
         foundHelper
           | n `elem` linkNames = let n' = capitalize n in appendMsg n' & _1.at n' ?~ val
           | otherwise          = case partition (views chanName ((== n) . T.toLower)) chans of
@@ -957,7 +953,7 @@ helperUnready :: HasCallStack => Id
                               -> Either Text Inv
                               -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
 helperUnready i ms d a = \case
-  Left  msg       -> a & _3 <>~ pure msg
+  Left  msg       -> a & _3 <>+ msg
   Right targetIds -> let (bs, msgs) = mkUnreadyDescs i ms d targetIds
                      in a & _1.ind i %~ M.filter (`notElem` targetIds)
                           & _2.ind i %~ addToInv ms targetIds
@@ -1466,9 +1462,9 @@ moveReadiedItem :: HasCallStack => Id
                                 -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
 moveReadiedItem i a s targetId (msg, b) = a & _1.ind i.at s ?~ targetId
                                             & _2.ind i %~ (targetId `delete`)
-                                            & _3 <>~ pure msg
-                                            & _4 <>~ pure b
-                                            & _5 <>~ pure msg
+                                            & _3 <>+ msg
+                                            & _4 <>+ b
+                                            & _5 <>+ msg
 
 -----
 
@@ -1515,8 +1511,8 @@ readHelper i cols ms d = foldl' helper
     helper acc targetId =
         let s                 = getSing targetId ms
             readIt txt header = acc & _1 <>~ (multiWrapNl cols . T.lines $ header <> txt)
-                                    & _2 <>~ pure (T.concat [ serialize d, " reads ", aOrAn s, "." ], desigOtherIds d)
-                                    & _3 <>~ pure (s |<>| parensQuote (showTxt targetId))
+                                    & _2 <>+ (T.concat [ serialize d, " reads ", aOrAn s, "." ], desigOtherIds d)
+                                    & _3 <>+ s |<>| parensQuote (showTxt targetId)
         in case getType targetId ms of
           WritableType ->
               let (Writable msg r) = getWritable targetId ms in case msg of
@@ -1534,9 +1530,9 @@ readHelper i cols ms d = foldl' helper
           HolySymbolType -> -- TODO: Can any holy vessels be read?
               let langs         = getKnownLangs i ms
                   holyHelper ts = acc & _1 <>~ multiWrapNl cols ts
-                                      & _2 <>~ pure ( T.concat [ serialize d, " reads the writing on ", aOrAn s, "." ]
-                                                    , desigOtherIds d )
-                                      & _3 <>~ pure (s |<>| parensQuote (showTxt targetId))
+                                      & _2 <>+ ( T.concat [ serialize d, " reads the writing on ", aOrAn s, "." ]
+                                               , desigOtherIds d )
+                                      & _3 <>+ s |<>| parensQuote (showTxt targetId)
               in either f holyHelper $ case getHolySymbolGodName targetId ms of
                 Caila     | uncurry (&&) . second (== Human) . (isPla `fanUncurry` getRace) $ (i, ms)
                                                    -> Right . pure $ cailaOK
@@ -1645,7 +1641,7 @@ helperGiveEitherInv :: HasCallStack => Id
                                     -> Either Text Inv
                                     -> GenericIntermediateRes
 helperGiveEitherInv i d toId a@(ms, _, _, _) = \case
-  Left  msg -> a & _2 <>~ pure msg
+  Left  msg -> a & _2 <>+ msg
   Right is  ->
     let (is', sorrys)     = checkNowEating i ms "give" "to someone" is
         (_, cans, can'ts) = foldl' (partitionInvByEnc ms . calcMaxEnc toId $ ms) (calcWeight toId ms, [], []) is'
@@ -1759,7 +1755,7 @@ helperPutEitherInv :: HasCallStack => Id
                                    -> Either Text Inv
                                    -> GenericIntermediateRes
 helperPutEitherInv i d mnom toId toSing a@(ms, origToSelfs, _, _) = \case
-  Left  msg -> a & _2 <>~ pure msg
+  Left  msg -> a & _2 <>+ msg
   Right is  ->
     let (is', toSelfs)    | pair   <- checkNowEating i ms "put" "in a container" is
                           , (x, y) <- checkIsLitLight pair
@@ -1950,7 +1946,7 @@ helperRemEitherInv :: HasCallStack => Id
                                    -> Either Text Inv
                                    -> GenericIntermediateRes
 helperRemEitherInv i d mnom fromId fromSing icir a@(ms, _, _, _) = \case
-  Left  msg -> a & _2 <>~ pure msg
+  Left  msg -> a & _2 <>+ msg
   Right is  -> let (_, cans, can'ts) = f is
                    f | icir          = foldl' (partitionInvByEnc ms . calcMaxEnc i $ ms) (calcWeight i ms, [], [])
                      | otherwise     = (0, , [])
