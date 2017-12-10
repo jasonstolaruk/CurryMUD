@@ -175,7 +175,7 @@ getFlowerHookFun i Hook { .. } v a@(_, (ms, _, _, _), _) = if calcWeight i ms + 
        in a & _1    %~  (\\ hookTriggers)
             & _2._2 <>+ "You pick a flower from the flowerbed."
             & _2._3 <>+ (T.concat [ serialize d, " picks ", mkSerVerbObj "a flower", " from "
-                                  , mkSerVerbObj "the flowerbed", "." ], desigOtherIds d) -- TODO: Test.
+                                  , mkSerVerbObj "the flowerbed", "." ], desigOtherIds d)
             & _2._4 <>+ bracketQuote hookName <> " picked flower"
             & _3    .~  pure (mkFlower i v)
 
