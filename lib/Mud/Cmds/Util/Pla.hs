@@ -1323,7 +1323,7 @@ mkFullDesc i ms = mkDescForPercent9 (calcStomachPerFull i ms)
     , "You feel satisfied."
     , "You are quite full."
     , "You are extremely full."
-    , thrice prd "You are profoundly satiated. You don't feel so good" ]
+    , "You are profoundly satiated. You don't feel so good..." ]
 
 -----
 
@@ -1364,7 +1364,7 @@ mkMaybeCorpseSmellMsg i ms i' f | getType i' ms == CorpseType, n <- mkCorpseAppe
                                 | otherwise = Nothing
   where
     helper n = case mkCorpseSmellLvl . getEntSmell i' $ ms of
-      1 -> thrice prd $ "Thankfully, the " <> n <> " hasn't begun to give off an odor yet"
+      1 -> "Thankfully, the " <> n <> " hasn't begun to give off an odor yet..."
       2 -> prd $ "There is a distinct odor emanating from the " <> n
       3 -> the' $ n <> " is exuding a most repulsive aroma."
       4 -> "There's no denying that the foul smell of death is in the air."
@@ -1474,7 +1474,7 @@ notFoundSuggestAsleeps a@(capitalize . T.toLower -> a') asleepSings ms =
       Just asleepTarget ->
           let heShe = mkThrPerPro . getSex (getIdForPCSing asleepTarget ms) $ ms
               guess = a' /= asleepTarget |?| ("Perhaps you mean " <> asleepTarget <> "? ")
-          in T.concat [ guess, "Unfortunately, ", bool heShe asleepTarget $ ()# guess, thrice prd " is sleeping at the moment" ]
+          in T.concat [ guess, "Unfortunately, ", bool heShe asleepTarget $ ()# guess, " is sleeping at the moment..." ]
       Nothing -> sorryTwoWayLink a
 
 -----
@@ -1592,7 +1592,7 @@ resolveRmInvCoins i ms = resolveHelper i ms procGecrMisRm procReconciledCoinsRm
 sacrificeHelper :: HasCallStack => ActionParams -> Id -> GodName -> MudStack ()
 sacrificeHelper p@(ActionParams i mq cols _) ci gn = getState >>= \ms ->
     let toSelf = T.concat [ "You kneel before the ", mkCorpseAppellation i ms ci, ", laying upon it the holy symbol of "
-                          , pp gn, gn == Murgorhd |?| murgorhdMsg, thrice prd ". You say a prayer" ]
+                          , pp gn, gn == Murgorhd |?| murgorhdMsg, ". You say a prayer..." ]
         d      = mkStdDesig i ms DoCap
         helper targetId | vo <- mkSerVerbObj . the . mkCorpseAppellation targetId ms $ ci
                         , ts <- [ serialize d, " kneels before ", vo, " and says a prayer to ", pp gn, "." ]

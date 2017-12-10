@@ -41,10 +41,7 @@ import Mud.Data.State.MudData
 import Mud.TheWorld.LiqIds
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Seconds
-import Mud.Util.Misc
-import Mud.Util.Text
 
-import Data.Monoid ((<>))
 import Data.Text (Text)
 
 liqList :: [(Id, DistinctLiq, Liq)]
@@ -402,10 +399,8 @@ potInstantHtLiq :: Liq
 potInstantHtLiq = Liq (DistinctLiqId iLiqPotInstantHt)
                       (DoArticle "dirty liquid")
                       "It smells like an ashtray!"
-                      ("It tastes like soot and coal. " <> f "Now your mouth feels dirty and gross")
-                      (f "You swallow gritty lumps of" <> " something. Could it be dirt? " <> f "Hmm")
-  where
-    f = thrice prd
+                      "It tastes like soot and coal. Now your mouth feels dirty and gross..."
+                      "You swallow gritty lumps of... something. Could it be dirt? Hmm..."
 
 potInstantHtDistinctLiq :: DistinctLiq
 potInstantHtDistinctLiq = DistinctLiq "pot_insta_HT" EdibleEffects { _digestEffects  = Nothing
@@ -489,7 +484,7 @@ potInstantPsLiq = Liq (DistinctLiqId iLiqPotInstantPs)
                       (DoArticle "incandescent, sky-blue liquid")
                       "There is a striking scent of mist on a cold morning."
                       "The liquid itself might be tasteless. The smell, however, is pronounced."
-                      (thrice prd "The liquid doesn't taste like much" <> " until the smell of cold rain hits you like a thick fog.")
+                      "The liquid doesn't taste like much... until the smell of cold rain hits you like a thick fog."
 
 potInstantPsDistinctLiq :: DistinctLiq
 potInstantPsDistinctLiq = DistinctLiq "pot_insta_PS" EdibleEffects { _digestEffects  = Nothing

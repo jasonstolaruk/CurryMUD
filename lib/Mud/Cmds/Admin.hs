@@ -2222,7 +2222,7 @@ adminTime :: HasCallStack => ActionFun
 adminTime (NoArgs i mq cols) = do
     logPlaExec (prefixAdminCmd "time") i
     (ct, zt) <- liftIO $ (,) <$> formatTimeHelper `fmap` getCurrentTime <*> formatTimeHelper `fmap` getZonedTime
-    multiWrapSend mq cols [ thrice prd "At the tone, the time will be", ct, zt ]
+    multiWrapSend mq cols [ "At the tone, the time will be...", ct, zt ]
 adminTime p = withoutArgs adminTime p
 
 -----

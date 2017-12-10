@@ -219,8 +219,8 @@ lookCeilingHookName = "AdminZone_iEmpty_lookCeiling"
 lookCeilingHookFun :: HookFun
 lookCeilingHookFun = mkGenericHookFun ceilingDesc "looks up at the ceiling." "looked at ceiling"
   where
-    ceilingDesc = thrice prd "The tall ceiling looks identical to the walls: plain and white. Even if there was a \
-                             \means of exit up there, you can't imagine how you'd reach it"
+    ceilingDesc = "The tall ceiling looks identical to the walls: plain and white. Even if there was a means of exit up \
+                  \there, you can't imagine how you'd reach it..."
 
 -----
 
@@ -727,7 +727,7 @@ createAdminZone = do
         (mkRm (RmTemplate "Attic"
             "Though the confined attic is dusty, its cozy atmosphere creates an oddly welcoming space.\n\
             \There is an elliptical hole in the floor through which a narrow ladder leads down."
-            (Just . thrice prd $ "Is that the soft squeak of a mouse you hear? Maybe you're just hearing things")
+            (Just "Is that the soft squeak of a mouse you hear? Maybe you're just hearing things...")
             (Just "The air here is dusty and a little stale, though not stifling.")
             zeroBits
             [ NonStdLink "d" iWeightRm 1 "% climbs down the ladder and into the hole in the floor."
@@ -796,7 +796,7 @@ createAdminZone = do
         mempty
         (mkRm (RmTemplate "Admin lounge"
             "Welcome, admin! This is your private space where you can relax and take it easy."
-            (Just . thrice prd $ "You can almost hear the crackle of a fire")
+            (Just "You can almost hear the crackle of a fire...")
             (Just "There is a lingering scent of pipe tobacco in the air.")
             zeroBits
             [ NonStdLink "out" iLoungeEntrance 1 "% exits the lounge." "% exits the lounge." ]

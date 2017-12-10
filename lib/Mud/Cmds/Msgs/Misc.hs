@@ -23,7 +23,7 @@ adminKillMsg :: Text -> Text
 adminKillMsg t = "There is a blinding yellow light and a deafening crack as " <> t <> " instantly struck dead!"
 
 asMsg :: Text
-asMsg = thrice prd "You suddenly feel as though someone else is in control"
+asMsg = "You suddenly feel as though someone else is in control..."
 
 bannedMsg :: Text
 bannedMsg = "You have been banned from CurryMUD!"
@@ -124,7 +124,7 @@ linkLostMsg :: Sing -> Text
 linkLostMsg s = "Your telepathic link with " <> s <> " fizzles away!"
 
 linkMissingMsg :: Sing -> Text
-linkMissingMsg s = thrice prd $ "You notice that your telepathic link with " <> s <> " is missing"
+linkMissingMsg s = "You notice that your telepathic link with " <> s <> " is missing..."
 
 linkRetainedMsg :: Sing -> Text
 linkRetainedMsg s = "There is a sudden surge of energy over your telepathic link with " <> s <> "!"
@@ -227,7 +227,7 @@ rulesMsg =
     lSpcs <> "Please be aware that player activity is automatically logged by the system. Furthermore, administrators have the ability to actively monitor player activity with the express purpose of 1) ensuring that players are following the rules, and 2) tracking down bugs. Administrators promise to maintain player privacy as much as possible."
 
 sleepMsg :: Text
-sleepMsg = thrice prd "You go to sleep"
+sleepMsg = "You go to sleep..."
 
 smellCoinMsg :: Text -> Bool -> Text
 smellCoinMsg t isPlur = T.concat [ "The ", t, " smell", not isPlur |?| "s", " of metal, with just a hint of grime." ]
@@ -236,7 +236,7 @@ spiritDetachMsg :: Text
 spiritDetachMsg = "Your spirit detaches from your dead body!"
 
 sudoMsg :: Text
-sudoMsg = thrice prd "HELLO, ROOT! We trust you have received the usual lecture from the local System Administrator"
+sudoMsg = "HELLO, ROOT! We trust you have received the usual lecture from the local System Administrator..."
 
 tasteCoinMsg :: Text -> Text
 tasteCoinMsg t = "You are first struck by an unmistakably metallic taste, followed soon by the salty essence of sweat \
@@ -253,7 +253,7 @@ teleOriginMsg :: Text -> Text
 teleOriginMsg t = "There is a soft audible pop as " <> t <> " vanishes in a jarring flash of white light."
 
 theBeyondMsg :: Text
-theBeyondMsg = thrice prd "Your spirit passes into the beyond. A hand reaches out to guide you, and pulls you in"
+theBeyondMsg = "Your spirit passes into the beyond. A hand reaches out to guide you, and pulls you in..."
 
 unlinkMsg :: Text -> Sing -> Text
 unlinkMsg t s = T.concat [ "You suddenly feel a slight tingle ", t, "; you sense that your telepathic link with ", s

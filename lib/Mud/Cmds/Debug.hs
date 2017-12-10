@@ -627,7 +627,7 @@ debugMkKewpie p = withoutArgs debugMkKewpie p
 
 debugMultiLine :: HasCallStack => ActionFun
 debugMultiLine (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "multiline") i
-                                       wrapSend1Nl mq cols . thrice prd $ "Beginning multi-line input"
+                                       wrapSend1Nl mq cols "Beginning multi-line input..."
                                        setInterp i . Just . interpMutliLine f $ []
 
   where

@@ -120,7 +120,7 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
                in (>> bcastHelper True) . ioHelper x . T.concat $ xs
            | isZero stomAvail ->
                let xs = [ "You are so full after ", mkMouthfulTxt x, " mouthful", sOnNon1 x, t ]
-                   t  = thrice prd " that you have to stop drinking. You don't feel so good"
+                   t  = " that you have to stop drinking. You don't feel so good..."
                in (>> bcastHelper False) . ioHelper x . T.concat $ xs
            | x == drinkAmt    -> (>> bcastHelper False) . ioHelper x $ "You finish drinking."
            | otherwise        -> loop . succ $ x
@@ -165,7 +165,7 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
                bcastHelper True
            | isZero stomAvail ->
                let xs = [ "You are so full after ", mkMouthfulTxt x, " mouthful", sOnNon1 x, t ]
-                   t  = thrice prd " that you have to stop eating. You don't feel so good"
+                   t  = " that you have to stop eating. You don't feel so good..."
                in (>> bcastHelper False) . ioHelper x . T.concat $ xs
            | x == eatAmt -> (>> bcastHelper False) . ioHelper x $ "You finish eating."
            | otherwise   -> loop . succ $ x

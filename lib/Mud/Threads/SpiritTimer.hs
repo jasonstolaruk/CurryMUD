@@ -62,9 +62,8 @@ spiritTimer :: HasCallStack => Id -> MsgQueue -> Cols -> Seconds -> MudStack ()
 spiritTimer i _  _    0 = logPla "spiritTimer" i "spirit timer expired."
 spiritTimer i mq cols secs
   | secs == 75 = helper "You feel the uncanny pull of the beyond. Your time in this dimension is coming to an end."
-  | secs == 45 = helper . thrice prd $ "You feel the uncanny pull of the beyond. You have VERY little time left in \
-                                       \this dimension"
-  | secs == 15 = helper . thrice prd $ "You are fading away"
+  | secs == 45 = helper "You feel the uncanny pull of the beyond. You have VERY little time left in this dimension..."
+  | secs == 15 = helper "You are fading away..."
   | otherwise  = next
   where
     helper msg = do logPlaOut "spiritTimer" i . pure $ msg
