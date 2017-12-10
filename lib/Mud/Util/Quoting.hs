@@ -22,9 +22,6 @@ angleBracketQuote = quoteWith' ("<", ">")
 asteriskQuote :: Text -> Text
 asteriskQuote = quoteWith' ("*** ", " ***")
 
-backQuote :: Text -> Text
-backQuote = quoteWith "`"
-
 bracketQuote :: Text -> Text
 bracketQuote = quoteWith' ("[", "]")
 

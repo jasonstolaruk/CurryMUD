@@ -341,8 +341,7 @@ instance Pretty DurationalEffect where
   pp (DurationalEffect e _) = pp e
 
 instance Pretty Effect where
-  pp (Effect effTag effSub effVal secs effFeeling) = T.concat [ bracketQuote "durational"
-                                                              , " "
+  pp (Effect effTag effSub effVal secs effFeeling) = T.concat [ "[durational] "
                                                               , maybeEmp (spcR . dblQuote) effTag
                                                               , pp effSub
                                                               , " by "
@@ -411,7 +410,7 @@ instance Pretty Hand where
   pp NoHand = "not handed"
 
 instance Pretty InstaEffect where
-  pp (InstaEffect effSub effVal effFeeling) = T.concat [ bracketQuote "instantaneous", " ", pp effSub, " by "
+  pp (InstaEffect effSub effVal effFeeling) = T.concat [ "[instantaneous] ", pp effSub, " by "
                                                        , effectValHelper effVal, effectFeelingHelper effFeeling ]
 
 instance Pretty InstaEffectSub where
