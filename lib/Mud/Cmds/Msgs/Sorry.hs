@@ -413,11 +413,10 @@ sorryIgnoreLocPrefPlur msg = parensQuote $ msg <> " need not be given location p
 -----
 
 sorryInterpPickPtsMax :: Text -> Text
-sorryInterpPickPtsMax t = T.concat [ can't "add any more to ", t, " ", parensQuote "it's set to the maximum value of 100", "." ]
+sorryInterpPickPtsMax t = can't "add any more to " <> t <> " (it's set to the maximum value of 100)."
 
 sorryInterpPickPtsMin :: Text -> Text
-sorryInterpPickPtsMin t = T.concat [ can't "subtract any more from ", t, " "
-                                   , parensQuote "it's set to the minimum value of 10", "." ]
+sorryInterpPickPtsMin t = can't "subtract any more from " <> t <> " (it's set to the minimum value of 10)."
 
 sorryInterpPickPtsPts :: Text
 sorryInterpPickPtsPts = "You don't have any points left."
@@ -751,7 +750,7 @@ sorryEquipInvLook a b = T.concat [ "You can only use the "
 -----
 
 sorryExpCmdBlush :: Text -> Text
-sorryExpCmdBlush r = prd . but $ r <> "s can't visibly blush " <> parensQuote "the fur gets in the way"
+sorryExpCmdBlush r = but $ r <> "s can't visibly blush (the fur gets in the way)."
 
 sorryExpCmdCoins :: Text
 sorryExpCmdCoins = but "expressive commands cannot be used with coins."
@@ -952,8 +951,7 @@ sorryInterpNameExcessArgs :: Text
 sorryInterpNameExcessArgs = "Your name must be a single word."
 
 sorryInterpNameIllegal :: Text
-sorryInterpNameIllegal =
-    prd $ "Your name cannot include any numbers or symbols " <> parensQuote "though it may contain an apostrophe"
+sorryInterpNameIllegal = "Your name cannot include any numbers or symbols (though it may contain an apostrophe)."
 
 sorryInterpNameLen :: Text
 sorryInterpNameLen = T.concat [ "Your name must be between ", minNameLenTxt, " and ", maxNameLenTxt, " characters long." ]
@@ -1058,7 +1056,7 @@ sorryKillSelf :: Text
 sorryKillSelf = can't "kill yourself."
 
 sorryKillSpirit :: Text -> Text
-sorryKillSpirit t = prd $ t <> " has already died " <> parensQuote "and is presently a spirit"
+sorryKillSpirit t = t <> " has already died (and is presently a spirit)."
 
 sorryKillType :: Id -> Text
 sorryKillType i = "ID " <> showTxt i <> " is not a mobile."
@@ -1103,7 +1101,7 @@ sorryLightSelf :: Sing -> Text
 sorryLightSelf s = the' s <> " can't light itself."
 
 sorryLightTinderbox :: Text
-sorryLightTinderbox = prd $ "You don't have a tinderbox in your inventory " <> parensQuote "a fire source is required"
+sorryLightTinderbox = "You don't have a tinderbox in your inventory (a fire source is required)."
 
 sorryLightTorchSecs :: Text
 sorryLightTorchSecs = "The torch is spent and cannot be lit again."
@@ -1153,8 +1151,7 @@ sorryLookEmptyRmWithHooks = "You don't see anything to look at on the ground her
 -----
 
 sorryMkFoodAmt :: Text -> Text
-sorryMkFoodAmt a = dblQuote a <> " is not a valid quantity of food. " <>
-                   parensQuote "You can create between 1 and 100 food objects."
+sorryMkFoodAmt a = dblQuote a <> " is not a valid quantity of food. (You can create between 1 and 100 food objects.)"
 
 sorryMkFoodName :: Text -> Text
 sorryMkFoodName a = dblQuote a <> " is not a valid distinct food name."
@@ -1162,8 +1159,8 @@ sorryMkFoodName a = dblQuote a <> " is not a valid distinct food name."
 -----
 
 sorryMkHolyAmt :: Text -> Text
-sorryMkHolyAmt a = dblQuote a <> " is not a valid quantity of holy symbols. " <>
-                   parensQuote "You can create between 1 and 100 holy symbols."
+sorryMkHolyAmt a = dblQuote a <> " is not a valid quantity of holy symbols. (You can create between 1 and 100 holy \
+                                 \symbols.)"
 
 sorryMkHolyGodName :: Text -> Text
 sorryMkHolyGodName a = dblQuote a <> " is not a valid god name."
@@ -1358,8 +1355,8 @@ sorryReadLang s lang = T.concat [ "Although you recognize that the text on the "
                                 , ", you can't make heads or tails of it." ]
 
 sorryReadNoHooks :: Text
-sorryReadNoHooks = "You don't see anything to read here. " <>
-                   parensQuote "If you'd like to read an item on the ground, please pick up the item first."
+sorryReadNoHooks = "You don't see anything to read here. (If you'd like to read an item on the ground, please pick up \
+                   \the item first.)"
 
 sorryReadOrigLang :: Lang -> Text
 sorryReadOrigLang lang = "Most unfortunately, as you don't know " <> pp lang <> ", you cannot read the text."
@@ -1371,8 +1368,8 @@ sorryReadUnknownLang :: Sing -> Text
 sorryReadUnknownLang s = "The text written on the " <> s <> " is in a language you don't recognize."
 
 sorryReadWithHooks :: Text -> Text
-sorryReadWithHooks t = dblQuote t <> " does not match the name of a readable fixture of this room. " <>
-                       parensQuote "If you'd like to read an item on the ground, please pick up the item first."
+sorryReadWithHooks t = dblQuote t <> " does not match the name of a readable fixture of this room. (If you'd like to \
+                                     \read an item on the ground, please pick up the item first.)"
 
 -----
 
@@ -1623,8 +1620,7 @@ sorryStopNotDoing :: ActType -> Text
 sorryStopNotDoing actType = "You're not " <> pp actType <> " anything at the moment."
 
 sorryStopNotDoingAnything :: Text
-sorryStopNotDoingAnything =
-    prd $ "You're not doing anything that can be stopped " <> parensQuote "sacrificing, eating, drinking, or attacking"
+sorryStopNotDoingAnything = "You're not doing anything that can be stopped (sacrificing, eating, drinking, or attacking)."
 
 -----
 

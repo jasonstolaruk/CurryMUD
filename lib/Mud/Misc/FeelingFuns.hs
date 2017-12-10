@@ -6,8 +6,6 @@ import           Mud.Data.Misc
 import           Mud.Data.State.MudData
 import           Mud.TheWorld.Foods
 import           Mud.TheWorld.Liqs
-import           Mud.Util.Quoting
-import           Mud.Util.Text
 
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
@@ -49,8 +47,8 @@ foodFeelingFun (FeelingFixedVal _) = "You feel your health return as nourishment
 gorhnaFeelingFun :: FeelingFun
 gorhnaFeelingFun FeelingNoVal        = ""
 gorhnaFeelingFun (FeelingFixedVal 0) = ""
-gorhnaFeelingFun (FeelingFixedVal _) = prd $ "You feel an odd, uneven throbbing throughout your extremities " <>
-                                             parensQuote "a well-known side effect of gorhna nuts"
+gorhnaFeelingFun (FeelingFixedVal _) = "You feel an odd, uneven throbbing throughout your extremities (a well-known \
+                                       \side effect of gorhna nuts)."
 
 -----
 

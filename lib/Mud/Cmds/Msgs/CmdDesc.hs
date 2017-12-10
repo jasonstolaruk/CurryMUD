@@ -9,7 +9,6 @@ import           Mud.Util.Text
 
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
-import qualified Data.Text as T
 
 cmdDescAbout :: Text
 cmdDescAbout = "About CurryMUD."
@@ -140,7 +139,7 @@ cmdDescPut :: Text
 cmdDescPut = "Put one or more items into a) a container in your inventory, or b) a container in your current room."
 
 cmdDescQuit :: Text
-cmdDescQuit = prd $ dblQuote "Go to sleep " <> parensQuote "quit playing CurryMUD"
+cmdDescQuit = dblQuote "Go to sleep" <> " (quit playing CurryMUD)."
 
 cmdDescRead :: Text
 cmdDescRead = "Read the text that is written on a) an item in your inventory, or b) a fixture of your current room."
@@ -208,7 +207,7 @@ cmdDescWhisper :: Text
 cmdDescWhisper = "Whisper something to someone in your current room."
 
 cmdDescWho :: Text
-cmdDescWho = prd . T.concat $ [ "Display or search a list of who is currently ", dblQuote "awake", " ", parensQuote "logged in" ]
+cmdDescWho = "Display or search a list of who is currently " <> dblQuote "awake" <> " (logged in)."
 
 cmdDescWhoAmI :: Text
 cmdDescWhoAmI = "Confirm your name, sex, and race."

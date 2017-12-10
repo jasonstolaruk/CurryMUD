@@ -259,7 +259,7 @@ debugCins   (OneArg i mq cols a) = getState >>= \ms -> case reads . T.unpack $ a
       | otherwise = do logPlaExecArgs (prefixDebugCmd "cins") (pure a) i
                        multiWrapSend mq cols . (header :) . pure . showTxt =<< getAllChanIdNames i ms
       where
-        header = T.concat [ "All channel ID/names ", parensQuote "IM.IntMap [(Id, Text)]", " for ID ", targetIdTxt, ":" ]
+        header = T.concat [ "All channel ID/names ", "(IM.IntMap [(Id, Text)])", " for ID ", targetIdTxt, ":" ]
 debugCins p = advise p [] adviceDCinsExcessArgs
 
 -----

@@ -366,8 +366,7 @@ promptRace :: HasCallStack => MsgQueue -> Cols -> MudStack ()
 promptRace mq cols = wrapSend1Nl mq cols racePromptTxt >> anglePrompt mq
 
 racePromptTxt :: Text
-racePromptTxt = "Enter a number to make your selection, or enter the first letter" <> parensQuote (T.singleton 's') <>
-                " of the name of a race to learn more."
+racePromptTxt = "Enter a number to make your selection, or enter the first letter(s) of the name of a race to learn more."
 
 -- ==================================================
 
@@ -725,7 +724,7 @@ interpPW times targetSing cn params@(WithArgs i mq cols as) = getState >>= \ms -
                                              setInterp i . Just . interpName $ succ times
     handleBanned (T.pack . getCurrHostName i -> host) oldSing = do
         let msg = T.concat [ oldSing, " has been booted at login upon entering the correct password for ", targetSing
-                           , " ", parensQuote "player is banned", "." ]
+                           , " (player is banned)." ]
         logNotice "interpPW handleBanned" msg
         bcastAdmins . prd $ msg <> " Consider also banning host " <> dblQuote host
         sendMsgBoot mq . Just . sorryInterpPwBanned $ targetSing

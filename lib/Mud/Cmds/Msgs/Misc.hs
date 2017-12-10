@@ -37,11 +37,11 @@ bookFileErrorMsg n = "Unfortunately, the " <> n <> " book file could not be read
 bookListErrorMsg :: Text
 bookListErrorMsg = "Unfortunately, the book list could not be retrieved."
 
-corpseSmellLvl1, corpseSmellLvl2, corpseSmellLvl3, corpseSmellLvl4 :: Text
-corpseSmellLvl1 = "Due to the lack of an offensive odor, it's clear that the deceased expired recently."
-corpseSmellLvl2 = "There is an unpleasant scent akin to that of rotting fruit."
-corpseSmellLvl3 = "The multifaceted odor is truly putrid."
-corpseSmellLvl4 = ((<>) <$> ("Oh my" |&|) <*> (" so rank, so sickeningly sweet" |&|)) (thrice prd)
+corpseSmellLvl1Msg, corpseSmellLvl2Msg, corpseSmellLvl3Msg, corpseSmellLvl4Msg :: Text
+corpseSmellLvl1Msg = "Due to the lack of an offensive odor, it's clear that the deceased expired recently."
+corpseSmellLvl2Msg = "There is an unpleasant scent akin to that of rotting fruit."
+corpseSmellLvl3Msg = "The multifaceted odor is truly putrid."
+corpseSmellLvl4Msg = ((<>) <$> ("Oh my" |&|) <*> (" so rank, so sickeningly sweet" |&|)) (thrice prd)
 
 darkMsg :: Text
 darkMsg = "It's too dark to make out much at all."
@@ -87,9 +87,9 @@ enterDescMsg = T.unlines . map (lSpcs <>) $ ts
   where
     ts = [ "Enter your new description below. You may write multiple lines of text; however, multiple lines will be \
            \joined into a single line which, when displayed, will be wrapped according to one's columns setting."
-         , "You are encouraged to compose your description in an external text editor " <> parensQuote "such as \
-           \TextEdit on Mac, and gedit or kate on Linux systems" <> ", with spell checking enabled. Copy your \
-           \completed description from there and paste it into your MUD client."
+         , "You are encouraged to compose your description in an external text editor (such as TextEdit on Mac, and \
+           \gedit or kate on Linux systems) with spell checking enabled. Copy your completed description from there and \
+           \paste it into your MUD client."
          , "When you are finished, enter a " <> endCharTxt <> " on a new line." ]
     endCharTxt = dblQuote . T.singleton $ multiLineEndChar
 
@@ -141,6 +141,9 @@ lvlUpMsg = "Congratulations! You gained a level."
 motdErrorMsg :: Text
 motdErrorMsg = "Unfortunately, the message of the day could not be retrieved."
 
+msgRetainedMsg :: Text
+msgRetainedMsg = "(Message retained.)"
+
 newPlaMsg :: Text
 newPlaMsg =
     lSpcs <> "Welcome, and thank you for trying CurryMUD!\n" <>
@@ -165,7 +168,7 @@ notifyArrivalMsg :: Text -> Text
 notifyArrivalMsg n = n <> " slowly materializes out of thin air."
 
 plusRelatedMsg :: Text
-plusRelatedMsg = prd . parensQuote $ "plus related functionality"
+plusRelatedMsg = "(plus related functionality)."
 
 pwMsg :: Text -> [Text]
 pwMsg t =

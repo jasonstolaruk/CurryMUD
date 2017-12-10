@@ -530,8 +530,8 @@ adviceEmptyNoArgs = prd $ "Please specify one or more vessels to empty, as in " 
 
 adviceEnc :: Text -> Text
 adviceEnc cn =
-    T.concat [ dblQuote enc, " must either be used alone, or with a ", dblQuote "'s", " suffix "
-             , parensQuote "to create a possessive noun", ", as in "
+    T.concat [ dblQuote enc, " must either be used alone, or with a ", dblQuote "'s"
+             , " suffix (to create a possessive noun), as in "
              , let ts = [ cn, "shielding her eyes from the sun, ", enc, " looks out across the plains" ]
                in colorWith quoteColor . T.concat $ ts
              , ", or ", colorWith quoteColor $ cn <> enc <> "'s leg twitches involuntarily as she laughs with gusto"
@@ -577,7 +577,7 @@ adviceFillNoArgs = adviceFillHelper "Please specify one or more vessels to fill 
 adviceFillHelper :: Text -> Text
 adviceFillHelper t | a <- " the name of a) another vessel, or b) a source of liquid in your current room, as in "
                    , b <- colorWith quoteColor "fill waterskin jug"
-                   , c <- parensQuote "to fill your waterskin with the contents of your jug"
+                   , c <- "(to fill your waterskin with the contents of your jug)"
                    = T.concat [ t, a, b, " ", c, "." ]
 
 adviceFillNoSource :: Text
@@ -602,13 +602,10 @@ adviceLightExcessArgs :: Text
 adviceLightExcessArgs = adviceLightNoArgs
 
 adviceLightNoArgs :: Text
-adviceLightNoArgs = T.concat [ "Please specify the light source to ignite followed by a fire source, as in "
-                             , colorWith quoteColor "light torch lamp"
-                             , " "
-                             , parensQuote "to light the torch in your readied equipment using the lit oil lamp in your \
-                                           \inventory"
-                             , ". The second argument may be omitted when the fire source is a tinderbox in your \
-                               \inventory." ]
+adviceLightNoArgs = "Please specify the light source to ignite followed by a fire source, as in " <>
+                    colorWith quoteColor "light torch lamp" <>
+                    " (to light the torch in your readied equipment using the lit oil lamp in your inventory). The \
+                    \second argument may be omitted when the fire source is a tinderbox in your inventory."
 
 adviceNewChanNoArgs :: Text
 adviceNewChanNoArgs =
@@ -628,8 +625,8 @@ advicePutNoCon :: Text
 advicePutNoCon = prd $ "Please also specify where you want to put it, as in " <> advicePutEx
 
 adviceQuitExcessArgs :: Text
-adviceQuitExcessArgs = prd . T.concat $ [ "Type ", colorWith quoteColor "quit", " with no arguments to "
-                                        , dblQuote "go to sleep", spcL . parensQuote $ "quit CurryMUD" ]
+adviceQuitExcessArgs = T.concat [ "Type ", colorWith quoteColor "quit", " with no arguments to ", dblQuote "go to sleep"
+                                , " (quit CurryMUD)." ]
 
 adviceReadNoArgs :: Text
 adviceReadNoArgs =
@@ -779,6 +776,5 @@ adviceYouEmoteChar cn =
              , "." ]
 
 adviceZoomExcessArgs :: Text
-adviceZoomExcessArgs =
-    T.concat [ "Please either provide no arguments ", parensQuote $ "to zoom to the default level of " <> showTxt dfltZoom
-             , ", or a single argument: the zoom level, as in ", colorWith quoteColor "zoom 20", "." ]
+adviceZoomExcessArgs = T.concat [ "Please either provide no arguments (to zoom to the default level of ", showTxt dfltZoom
+                                , "), or a single argument: the zoom level, as in ", colorWith quoteColor "zoom 20", "." ]

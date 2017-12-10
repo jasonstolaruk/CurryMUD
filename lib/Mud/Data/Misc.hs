@@ -355,7 +355,7 @@ mkSecsTxt :: Seconds -> Text
 mkSecsTxt secs = parensQuote $ commaShow secs <> " seconds"
 
 effectValHelper :: Maybe EffectVal -> Text
-effectValHelper = maybe (parensQuote "no value") pp
+effectValHelper = maybe "(no value)" pp
 
 effectFeelingHelper :: Maybe EffectFeeling -> Text
 effectFeelingHelper = maybeEmp (spcL . pp)

@@ -416,8 +416,8 @@ adminBoot   (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
       xs       -> pmf "adminBoot" xs
   where
     dfltMsg bootId target' s = emptied $ do
-        logPla "adminBoot dfltMsg"   i      $ T.concat [ "booted ", target', " ", parensQuote "no message given", "." ]
-        logPla "adminBoot dfltMsg"   bootId $ T.concat [ "booted by ", s,    " ", parensQuote "no message given", "." ]
+        logPla "adminBoot dfltMsg" i      $ "booted "    <> target' <> " (no message given)."
+        logPla "adminBoot dfltMsg" bootId $ "booted by " <> s       <> " (no message given)."
     customMsg bootId target' s = do
         logPla "adminBoot customMsg" i      $ T.concat [ "booted ", target', "; message: ", dblQuote msg ]
         logPla "adminBoot customMsg" bootId $ T.concat [ "booted by ", s,    "; message: ", dblQuote msg ]
@@ -1258,7 +1258,7 @@ adminMsg   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= (|#| m
                         then unadulterated toTarget'
                         else [ toTarget' : hints | hints <- firstAdminMsg targetId s ]
                       dbHelper
-              | otherwise -> do multiSendFun [ formatted, parensQuote "Message retained." ]
+              | otherwise -> do multiSendFun [ formatted, msgRetainedMsg ]
                                 retainedMsg targetId ms . mkRetainedMsgFromPerson s $ toTarget
                                 dbHelper
               where
@@ -2033,7 +2033,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
         sorryType               = appendMsg . sorryAdminSetType $ targetId
         sorryOp                 = appendMsg . sorryAdminSetOp (pp op)
         value'                  = strictTxtToLazyBS value
-        mkDiffTxt isDiff        = not isDiff |?| spcL . parensQuote $ "no change"
+        mkDiffTxt isDiff        = not isDiff |?| " (no change)"
         showMaybe Nothing       = none
         showMaybe (Just x)      = showTxt x
         mkToSelfForInt k v diff = T.concat [ "Set ", k, " to ", commaShow v, " ", parensQuote diffTxt, "." ]
@@ -2060,7 +2060,7 @@ adminShutDown p                  = pmf "adminShutDown" p
 shutdownHelper :: HasCallStack => Id -> MsgQueue -> Maybe Text -> MudStack ()
 shutdownHelper i mq maybeMsg = getState >>= \ms ->
     let s    = getSing i ms
-        rest = maybeMsg |&| maybe (prd . spcL . parensQuote $ "no message given") (("; message: " <>) . dblQuote)
+        rest = maybe " (no message given)." (("; message: " <>) . dblQuote) maybeMsg
     in do logPla     fn i $ "initiating shutdown" <> rest
           massLogPla fn   $ "closing connection due to server shutdown initiated by " <> s <> rest
           logNotice  fn   $ "server shutdown initiated by "                           <> s <> rest
