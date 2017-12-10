@@ -38,8 +38,8 @@ singleQuote :: Text -> Text
 singleQuote = quoteWith "'"
 
 {-
-Code matching either of these regex may be refactored so as to utilize the "spaced" function.
-(The second regex spans lines and thus cannot be used with grep.)
+Code matching either of these regex may be refactored so as to utilize the "spaced" function. (The second regex spans
+lines and thus cannot be used with grep.)
 \" \", .*, \" \"
 " "\n.*\n *, " "
 -}
