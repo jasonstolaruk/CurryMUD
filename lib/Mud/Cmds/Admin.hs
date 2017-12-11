@@ -286,10 +286,12 @@ adminAlertMsg p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "alert_msg
 adminAnnounce :: HasCallStack => ActionFun
 adminAnnounce p@AdviseNoArgs    = advise p [ prefixAdminCmd "announce" ] adviceAAnnounceNoArgs
 adminAnnounce   (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
-    logPla    "adminAnnounce" i $          "announcing "  <> dblQuote msg
-    logNotice "adminAnnounce"   $ s <> " is announcing, " <> dblQuote msg
+    logPla    fn i $          "announcing "  <> dblQuote msg
+    logNotice fn   $ s <> " is announcing, " <> dblQuote msg
     ok mq
     massSend . colorWith announceColor $ msg
+  where
+    fn = "adminAnnounce"
 adminAnnounce p = pmf "adminAnnounce" p
 
 -----
@@ -316,7 +318,7 @@ adminAs   (WithTarget i mq cols target rest) = getState >>= \ms ->
                                                                                    fakeClientInput targetMq rest
           _ -> sorry . sorryAsType $ s
         ioHelper targetId s = do
-            let ts = [ "Executing ", dblQuote rest, " as ", aOrAnOnLower . descSingId targetId $ ms, "." ]
+            let ts = [ "executing ", dblQuote rest, " as ", aOrAnOnLower . descSingId targetId $ ms, "." ]
             logPla "adminAs ioHelper" i . T.concat $ ts
             sendFun . parensQuote . thrice prd $ "Executing as " <> aOrAnOnLower s
         sorry txt  = sendFun txt >> sendDfltPrompt mq i
@@ -415,12 +417,12 @@ adminBoot   (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                             bcastAdminsExcept [ i, bootId ] . T.concat $ [ selfSing, " booted ", strippedTarget, "." ]
       xs       -> pmf "adminBoot" xs
   where
-    dfltMsg bootId target' s = emptied $ do
-        logPla "adminBoot dfltMsg" i      $ "booted "    <> target' <> " (no message given)."
-        logPla "adminBoot dfltMsg" bootId $ "booted by " <> s       <> " (no message given)."
-    customMsg bootId target' s = do
-        logPla "adminBoot customMsg" i      $ T.concat [ "booted ", target', "; message: ", dblQuote msg ]
-        logPla "adminBoot customMsg" bootId $ T.concat [ "booted by ", s,    "; message: ", dblQuote msg ]
+    dfltMsg bootId target' s | fn <- "adminBoot dfltMsg" = emptied $ do
+        logPla fn i      $ "booted "    <> target' <> " (no message given)."
+        logPla fn bootId $ "booted by " <> s       <> " (no message given)."
+    customMsg bootId target' s | fn <- "adminBoot customMsg" = do
+        logPla fn i      $ T.concat [ "booted ", target', "; message: ", dblQuote msg ]
+        logPla fn bootId $ T.concat [ "booted by ", s,    "; message: ", dblQuote msg ]
         unadulterated msg
 adminBoot p = pmf "adminBoot" p
 
@@ -1063,12 +1065,14 @@ adminIncognito :: HasCallStack => ActionFun
 adminIncognito (NoArgs i mq cols) = modifyStateSeq $ \ms ->
     let s              = getSing i ms
         isIncog        = isIncognitoId i ms
-        fs | isIncog   = [ logPla "adminIncognito fs" i "going visible."
+        fs | isIncog   = [ logPla fn i "going visible."
                          , wrapSend mq cols "You are no longer incognito."
                          , bcastOtherAdmins i $ s <> " is no longer incognito." ]
-           | otherwise = [ logPla "adminIncognito fs" i "going incognito."
+           | otherwise = [ logPla fn i "going incognito."
                          , wrapSend mq cols "You have gone incognito."
                          , bcastOtherAdmins i $ s <> " has gone incognito." ]
+          where
+            fn = "adminIncognito fs"
     in (ms & plaTbl.ind i %~ setPlaFlag IsIncognito (not isIncog), fs)
 adminIncognito p = withoutArgs adminIncognito p
 
@@ -1087,7 +1091,7 @@ adminKill :: HasCallStack => ActionFun
 adminKill p@AdviseNoArgs            = advise p [ prefixAdminCmd "kill" ] adviceAKillNoArgs
 adminKill   (LowerNub i mq cols as) = getState >>= \ms -> do
     let (is, toSelfs) = helper ms
-        f             = logPla (prefixAdminCmd "kill")
+        f             = logPla "adminKill"
     unless (()# is) $ do f i . prd . ("killing " <>) . commas . map (`descSingId` ms) $ is
                          forM_ is . flip f $ prd ("killed by " <> getSing i ms)
     multiWrapSend mq cols toSelfs
@@ -1305,7 +1309,7 @@ adminPassword p@(WithTarget i mq cols target pw)
   | otherwise               = getState >>= \ms ->
       let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player whose password you wish to \
                                                               \change"
-          changePW            = join <$> withDbExHandler fn (lookupPW strippedTarget) >>= \case
+          changePW | fn <- "adminPassword changePW" = join <$> withDbExHandler fn (lookupPW strippedTarget) >>= \case
             Nothing    -> dbError mq cols
             Just oldPW -> let msg      = T.concat [ getSing i ms, " is changing ", strippedTarget, "'s password" ]
                               oldPwMsg = prd . spcL $ parensQuote ("was " <> dblQuote oldPW)
@@ -1326,7 +1330,6 @@ adminPassword p@(WithTarget i mq cols target pw)
                                                                  | otherwise         -> changePW
           xs         -> pmf "adminPassword" xs
   where
-    fn       = "adminPassword"
     helper f = ()# T.filter f pw
 adminPassword p = pmf "adminPassword" p
 
@@ -1335,10 +1338,11 @@ adminPassword p = pmf "adminPassword" p
 adminPeep :: HasCallStack => ActionFun
 adminPeep p@AdviseNoArgs            = advise p [ prefixAdminCmd "peep" ] adviceAPeepNoArgs
 adminPeep   (LowerNub i mq cols as) = do (msgs, unzip -> (logMsgsSelf, logMsgsOthers)) <- modifyState helper
-                                         logPla "adminPeep" i . prd . slashes $ logMsgsSelf
-                                         forM_ logMsgsOthers . uncurry . logPla $ "adminPeep"
+                                         logPla fn i . prd . slashes $ logMsgsSelf
+                                         forM_ logMsgsOthers . uncurry . logPla $ fn
                                          multiWrapSend mq cols msgs
   where
+    fn        = "adminPeep"
     helper ms =
         let s     = getSing i ms
             apiss = [ apis | apis@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
@@ -1379,7 +1383,7 @@ adminPossess   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
           where
             targetSing      = getSing targetId ms
             can'tPossess pi = sorry . sorryAlreadyPossessed targetSing . getSing pi $ ms
-            canPossess      = (ms', [ logPla "adminPossess canPossess" i logMsg
+            canPossess      = (ms', [ logPla "adminPossess possess canPossess" i logMsg
                                     , sendFun . prd $ "You are now possessing " <> aOrAnOnLower targetSing
                                     , sendDfltPrompt mq targetId
                                     , sendGmcpRmInfo Nothing targetId ms' ])
@@ -1480,7 +1484,7 @@ adminSet   (WithArgs i mq cols (target:rest)) =
                         PlaType -> retainedMsg targetId ms
                         NpcType -> bcast . mkBcast targetId
                         t       -> pmf "adminSet ioHelper f" t
-                in do logMsgs |#| logPla (prefixAdminCmd "set") i . g . slashes
+                in do logMsgs |#| logPla "adminSet helper ioHelper" i . g . slashes
                       unless (isIncognitoId i ms || targetId == i) . mapM_ f . dropBlanks $ toTargetMsgs
                       sequence_ fs
               where
@@ -2125,7 +2129,7 @@ adminSummon   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
           | destId == originId    = sorry . sorrySummonAlready $ targetSing
           | p   <- mkActionParams targetId ms []
           , res <- teleHelper p ms originId destId destName Nothing consLocPrefBcast sorry
-          = res & _2 <>+ logPla "adminSummon" i (T.concat [ "summoned ", targetSing, " to ", dblQuote rn, "." ])
+          = res & _2 <>+ logPla "adminSummon found" i (T.concat [ "summoned ", targetSing, " to ", dblQuote rn, "." ])
         notFound = sorry . sorryPCNameLoggedIn $ strippedTarget
     in findFullNameForAbbrev strippedTarget idSings |&| maybe notFound found
 adminSummon ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceASummonExcessArgs

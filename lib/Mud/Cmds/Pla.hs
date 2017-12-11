@@ -646,8 +646,8 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
                   then do
                       let msgs              = ()!# combo' ? map g combo' :? pure "You are the only person connected."
                           affixChanName txt = parensQuote cn |<>| txt
-                      logPla "chan" i . affixChanName . commas $ [ getSing i' ms <> " is " <> tunedInOut isTuned'
-                                                                 | (i', _, isTuned') <- combo' ]
+                      logPla "chan found" i . affixChanName . commas $ [ getSing i' ms <> " is " <> tunedInOut isTuned'
+                                                                       | (i', _, isTuned') <- combo' ]
                       multiWrapSend mq cols $ "Channel " <> dblQuote cn <> ":" : msgs
                   else wrapSend mq cols . sorryTunedOutICChan $ cn
         (cs, cns, s)           = mkChanBindings i ms
@@ -819,7 +819,7 @@ descHelper s i mq cols = sequence_ [ writeMsg mq . InacSecs $ maxInacSecsCompose
 interpConfirmDesc :: HasCallStack => Text -> Interp
 interpConfirmDesc desc cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True  -> getState >>= \ms -> do
-      logPla "description" i . prd $ "changing description to " <> dblQuote desc
+      logPla "interpConfirmDesc" i . prd $ "changing description to " <> dblQuote desc
       tweak $ entTbl.ind i.entDesc .~ desc
       ok mq
       sendDfltPrompt mq i
@@ -918,23 +918,24 @@ drink p@(Lower   i mq cols [amt, target]) = getState >>= \ms ->
                 -----
                 drinkRm =
                     let hookArg = head inRms <> T.cons hookArgDelimiter (showTxt x)
+                        fn      = "drink helper next drinkRm"
                     in case ((()!#) *** (()!#)) (rmInvCoins, maybeHooks) of
                       (True,  False) -> sorry sorryDrinkRmNoHooks
                       (False, True ) ->
                           let (inRms', (ms', _, bs, logMsgs), fs) = procHooks i ms v "drink" . pure $ hookArg
                               sorryMsgs                           = inRms' |!| pure sorryDrinkEmptyRmWithHooks
-                          in (ms', [ logMsgs |#| logPla "drink" i . prd . slashes
+                          in (ms', [ logMsgs |#| logPla fn i . prd . slashes
                                    , when (()!# sorryMsgs) $ multiWrapSend mq cols sorryMsgs >> sendDfltPrompt mq i
                                    , bcastIfNotIncogNl i bs
                                    , sequence_ fs ])
                       (True,  True ) ->
                           let (inRms', (ms', _, bs, logMsgs), fs) = procHooks i ms v "drink" . pure $ hookArg
                           in if ()# inRms'
-                            then (ms', [ logMsgs |#| logPla "drink" i . prd . slashes
+                            then (ms', [ logMsgs |#| logPla fn i . prd . slashes
                                        , bcastIfNotIncogNl i bs
                                        , sequence_ fs ])
                             else sorry . sorryDrinkRmWithHooks . head $ inRms
-                      a -> pmf "drink helper next drinkRm" a
+                      a -> pmf fn a
             in if | ()!# inEqs                      -> sorry sorryDrinkInEq
                   | ()!# inInvs,    ()#  myInvCoins -> sorry dudeYourHandsAreEmpty
                   | ()!# inInvs,    ()!# myInvCoins -> drinkInv
@@ -1218,7 +1219,7 @@ feeling :: HasCallStack => ActionFun
 feeling (NoArgs i mq cols) = spiritHelper i a b
   where
     a ms     = let txts = f . dropEmpties $ [ g i ms | g <- descFuns ] ++ mkFeelingDescs i ms
-               in sequence_ [ logPla "feeling" i . dropANSI . slashes $ txts, multiWrapSend mq cols txts ]
+               in sequence_ [ logPla "feeling a" i . dropANSI . slashes $ txts, multiWrapSend mq cols txts ]
     f ts     = ()# ts ? pure "You feel fine." :? ts
     descFuns = [ mkHpDesc, mkMpDesc, mkPpDesc, mkFpDesc, mkEffStDesc, mkEffDxDesc, mkEffHtDesc, mkEffMaDesc, mkEffPsDesc
                , mkFullDesc ]
@@ -1420,7 +1421,7 @@ help (NoArgs i mq cols) = liftIO (T.readFile =<< mkMudFilePath rootHeplFileFun) 
   where
     handler e          = fileIOExHandler "help" e >> wrapSend mq cols helpRootErrorMsg
     helper rootHelpTxt = ((,) <$> getState <*> getServerSettings) >>= \(ms, s) -> do
-        logPla "help" i "reading the root help file."
+        logPla "help helper" i "reading the root help file."
         let (is, ia, ls) = mkHelpTriple i ms
         hs <- sortBy (compare `on` helpName) <$> liftIO (mkHelpData ls is ia)
         let zipped                 = zip (styleAbbrevs Don'tQuote [ helpName h | h <- hs ]) hs
@@ -1638,7 +1639,7 @@ leave p@(WithArgs i mq cols (nub -> as)) =
                          , otherIds <- views chanConnTbl g c
                          = (bs ++) <$> forM otherIds (\i' -> [ (leftChanMsg n cn, pure i')
                                                              | n <- getRelativePCName ms (i', i) ])
-          in do chanNames |#| logPla "leave" i . commas
+          in do chanNames |#| logPla "leave next" i . commas
                 multiWrapSend mq cols msgs
                 bcastNl =<< foldM f [] chanIds
                 ts <- liftIO mkTimestamp
@@ -1770,7 +1771,7 @@ link p@(LowerNub i mq cols as) = getState >>= \ms -> if
   | isIncognitoId i ms -> wrapSend mq cols . sorryIncog $ "link"
   | isSpiritId    i ms -> wrapSend mq cols   sorryLinkSpirit
   | otherwise          -> let f                   = helper |&| modifyState >=> g
-                              g (bs, logMsgs, fs) = logMsgs |#| (logPla "link" i . slashes) >> bcast bs >> sequence_ fs
+                              g (bs, logMsgs, fs) = logMsgs |#| (logPla "link g" i . slashes) >> bcast bs >> sequence_ fs
                           in checkActing p ms (Right "establish a link") (pure Sacrificing) f
   where
     helper ms = let (inInvs, inEqs, inRms)  = sortArgsInvEqRm InRm as
@@ -1957,7 +1958,7 @@ newChan p@(WithArgs i mq cols (nub -> as)) = getState >>= \ms ->
         let (sorryMsgs', otherMsgs) = (intersperse "" sorryMsgs, mkNewChanMsg newChanNames)
             msgs | ()# otherMsgs    = sorryMsgs'
                  | otherwise        = otherMsgs ++ (sorryMsgs' |!| "" : sorryMsgs')
-        in do newChanNames |#| logPla "newChan" i . commas
+        in do newChanNames |#| logPla "newChan next" i . commas
               multiWrapSend mq cols msgs
               ts <- liftIO mkTimestamp
               let f cr = withDbExHandler_ "newChan" . insertDbTblChan $ (cr { dbTimestamp = ts } :: ChanRec)
@@ -2242,7 +2243,7 @@ readAction p@(LowerNub i mq cols as) = checkDark p $ (,) <$> getState <*> mkRndm
         helperEitherInv   acc (Right is  ) = readHelper i cols ms d acc is
         helperEitherCoins acc (Left  msgs) = acc & _1 <>~ multiWrapNl cols (intersperse "" msgs)
         helperEitherCoins acc (Right _   ) = acc & _1 <>~ wrapUnlinesNl cols sorryReadCoins
-    ioHelper (toSelf, bs, logMsgs) = do logMsgs |#| logPla "read" i . prd . slashes
+    ioHelper (toSelf, bs, logMsgs) = do logMsgs |#| logPla "readAction ioHelper" i . prd . slashes
                                         send mq toSelf
                                         bcastIfNotIncogNl i bs
     wrapper = T.unlines . map (multiWrap cols . T.lines)
@@ -2570,7 +2571,7 @@ refuel p@(Lower i mq cols [lamp, vessel]) = getState >>= \ms ->
             d  = mkStdDesig i ms DoCap
             (vo1, vo2) = (lampSing, vesselSing) & both %~ mkSerVerbObj . aOrAn
             logMsg     = T.concat [ "refueled ", aOrAn lampSing, " with ", aOrAn vesselSing, b |?| ", emptying it", "." ]
-        in [ wrapSend mq cols toSelf, bcastIfNotIncogNl i bs, logPla "refuel helper refuelerHelper" i logMsg ]
+        in [ wrapSend mq cols toSelf, bcastIfNotIncogNl i bs, logPla "refuel ioHelper" i logMsg ]
 refuel p = advise p ["refuel"] adviceRefuelExcessArgs
 
 -----
@@ -2934,7 +2935,8 @@ showAction p@(Lower i mq cols as) = checkDark p $ getState >>= \ms ->
                            else do
                                let logMsg = slashes . dropBlanks $ [ invLogMsg |!| "(inv) " <> invLogMsg
                                                                    , eqLogMsg  |!| "(eq) "  <> eqLogMsg ]
-                               logMsg |#| logPla "show" i . (T.concat [ "showing to ", theSing theTarget, ": " ] <>)
+                                   txt    = T.concat [ "showing to ", theSing theTarget, ": " ]
+                               logMsg |#| logPla "showAction next" i . (txt <>)
                                multiWrapSend mq cols . dropBlanks $ sorryRmMsg : [ parseDesig Nothing i ms msg
                                                                                  | msg <- invToSelfs ++ eqToSelfs ]
                                bcastNl $ invBs ++ eqBs
@@ -3110,7 +3112,7 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
             (False, True ) -> let helper v ms' | tuple <- procHooks i ms' v "smell" . pure $ target
                                                , (targets', (ms'', hooksToSelfs, hooksBs, hooksLogMsgs), fs) <- tuple
                                                , sorryMsgs <- targets' |!| pure sorrySmellEmptyRmWithHooks
-                                               = (ms'', [ hooksLogMsgs |#| logPla "smell" i . prd . slashes
+                                               = (ms'', [ hooksLogMsgs |#| logPla fn i . prd . slashes
                                                         , sorryMsgs    |#| multiWrapSend mq cols
                                                         , hooksToSelfs |#| multiWrapSend mq cols
                                                         , bcastIfNotIncogNl i hooksBs
@@ -3119,14 +3121,15 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
             (True,  True ) -> let helper v ms' | tuple <- procHooks i ms' v "smell" . pure $ target
                                                , (targets', (ms'', hooksToSelfs, hooksBs, hooksLogMsgs), fs) <- tuple
                                                = if ()# targets'
-                                                   then (ms'', [ hooksLogMsgs |#| logPla "smell" i . prd . slashes
+                                                   then (ms'', [ hooksLogMsgs |#| logPla fn i . prd . slashes
                                                                , hooksToSelfs |#| multiWrapSend mq cols
                                                                , bcastIfNotIncogNl i hooksBs
                                                                , sequence_ fs ])
                                                    else (ms', pure . smellRmHelper $ eis)
                               in mkRndmVector >>= \v -> helper v |&| modifyState >=> sequence_
-            x              -> pmf "smell smellRm" x
+            x              -> pmf fn x
       where
+        fn            = "smell smellRm"
         smellRmHelper = \case
           Left  msg        -> sorry msg
           Right [targetId] ->
@@ -3212,8 +3215,8 @@ stop p@(OneArgLower i mq cols a) = getState >>= \ms ->
 stop p = advise p ["stop"] adviceStopExcessArgs
 
 stopLogHelper :: HasCallStack => Id -> [ActType] -> MudStack ()
-stopLogHelper i [actType] = logPla "stop" i . prd $ "stopped " <> pp actType
-stopLogHelper i actTypes  = logPla "stop" i . prd $ "stopped " <> T.intercalate (spaced "and") (map pp actTypes)
+stopLogHelper i [actType] = logPla "stopLogHelper" i . prd $ "stopped " <> pp actType
+stopLogHelper i actTypes  = logPla "stopLogHelper" i . prd $ "stopped " <> T.intercalate (spaced "and") (map pp actTypes)
 
 mkStopTuples :: HasCallStack => ActionParams -> MudState -> [(Text, ActType, Bool, MudStack ())]
 mkStopTuples p@ActionParams { myId } ms = map (\(a, b, c) -> (pp a, a, uncurry b (myId, ms), uncurry c (p, ms))) xs
@@ -3424,9 +3427,8 @@ unlink p@(LowerNub i mq cols as) = getState >>= \ms ->
                                in a & _1 .~  ms''
                                     & _2 <>~ (nlnl srcMsg, pure i) : targetBs
                                     & _3 <>+ targetSing
-            in helper |&| modifyState >=> \(bs, logMsgs) -> do
-                logMsgs |#| logPla "unlink" i . slashes
-                bcast . onFalse (()# guessWhat) ((guessWhat, pure i) :) $ bs
+            in helper |&| modifyState >=> \(bs, logMsgs) -> do logMsgs |#| logPla "unlink" i . slashes
+                                                               bcast . onFalse (()# guessWhat) ((guessWhat, pure i) :) $ bs
 unlink p = pmf "unlink" p
 
 -----

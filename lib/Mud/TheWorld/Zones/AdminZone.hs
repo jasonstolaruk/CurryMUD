@@ -660,7 +660,7 @@ createAdminZone = do
             zeroBits
             [ StdLink West iHallwayEast 1 ]
             (3, 0, 0)
-            InsideUnlitEnv -- TODO: InsideLitEnv
+            InsideLitEnv
             (Just "Atrium")
             (M.fromList [ ("drink", [ drinkPoolHook      ])
                         , ("fill",  [ fillPoolHook       ])

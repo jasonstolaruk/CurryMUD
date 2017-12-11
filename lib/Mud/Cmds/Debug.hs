@@ -29,7 +29,7 @@ import           Mud.Interp.Pause
 import           Mud.Misc.ANSI
 import           Mud.Misc.CurryTime
 import           Mud.Misc.Logging (writeLog)
-import qualified Mud.Misc.Logging as L (logAndDispIOEx, logNotice, logPlaExec, logPlaExecArgs)
+import qualified Mud.Misc.Logging as L (logAndDispIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs)
 import           Mud.Misc.Misc
 import           Mud.Misc.Persist
 import           Mud.TheWorld.Liqs
@@ -62,7 +62,7 @@ import           Control.Concurrent.Async (asyncThreadId, poll)
 import           Control.Exception (ArithException(..), IOException)
 import           Control.Exception.Lifted (throwIO, try)
 import           Control.Lens (Optical, both, views)
-import           Control.Lens.Operators ((%~), (&))
+import           Control.Lens.Operators ((%~), (&), (.~))
 import           Control.Monad ((>=>), replicateM_, void)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Bits (zeroBits)
@@ -100,6 +100,9 @@ logAndDispIOEx mq cols = L.logAndDispIOEx mq cols "Mud.Cmds.Debug"
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Cmds.Debug"
 
+logPla :: Text -> Id -> Text -> MudStack ()
+logPla = L.logPla "Mud.Cmds.Debug"
+
 logPlaExec :: CmdName -> Id -> MudStack ()
 logPlaExec = L.logPlaExec "Mud.Cmds.Debug"
 
@@ -123,6 +126,7 @@ debugCmds =
     , mkDebugCmd "cores"       debugCores       "Display the number of processor cores."
     , mkDebugCmd "cpu"         debugCPU         "Display the CPU time."
     , mkDebugCmd "currytime"   debugCurryTime   "Display a given number of seconds in Curry Time."
+    , mkDebugCmd "darken"      debugDarken      "Change a room's environment to \"InsideUnlitEnv\"."
     , mkDebugCmd "echowill"    debugEchoWill    "Send IAC WILL ECHO (hide user input)."
     , mkDebugCmd "echowon't"   debugEchoWon't   "Send IAC WON'T ECHO (show user input)."
     , mkDebugCmd "effect"      debugEffect      "Add 10-20 to your ST for 30 seconds."
@@ -319,6 +323,21 @@ debugCurryTime (OneArg i mq cols a) = case reads . T.unpack $ a of
              | otherwise = do logPlaExecArgs (prefixDebugCmd "currytime") (pure a) i
                               multiWrapSend mq cols . showCurryTime . secsToCurryTime $ x
 debugCurryTime p = advise p [] adviceDCurryTimeExcessArgs
+
+-----
+
+debugDarken :: HasCallStack => ActionFun
+debugDarken p@AdviseNoArgs         = advise p [] adviceDDarkenNoArgs
+debugDarken   (OneArg i mq cols a) = case reads . T.unpack $ a of [(targetId, "")] -> helper targetId =<< getState
+                                                                  _                -> wrapSend mq cols . sorryParseId $ a
+  where
+    helper targetId ms
+      | targetId < 0                              = wrapSend mq cols sorryWtf
+      | targetId `notElem` views rmTbl IM.keys ms = wrapSend mq cols . sorryNonexistentId targetId . pure $ "room"
+      | otherwise = do logPla "debugDarken helper" i . prd $ "darkening room " <> showTxt targetId
+                       tweak $ rmTbl.ind targetId.rmEnv .~ InsideUnlitEnv
+                       ok mq
+debugDarken p = advise p [] adviceDDarkenExcessArgs
 
 -----
 

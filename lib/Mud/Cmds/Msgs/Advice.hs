@@ -62,6 +62,8 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceDCinsExcessArgs
                             , adviceDCinsNoArgs
                             , adviceDCurryTimeExcessArgs
+                            , adviceDDarkenExcessArgs
+                            , adviceDDarkenNoArgs
                             , adviceDIdExcessArgs
                             , adviceDIdNoArgs
                             , adviceDLiqExcessArgs
@@ -105,8 +107,8 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceGiveNoArgs
                             , adviceGiveNoName
                             , adviceLeaveNoArgs
-                            , adviceLightNoArgs
                             , adviceLightExcessArgs
+                            , adviceLightNoArgs
                             , adviceNewChanNoArgs
                             , advicePickNoArgs
                             , advicePutNoArgs
@@ -372,6 +374,14 @@ adviceDCinsNoArgs = adviceDCinsExcessArgs
 adviceDCurryTimeExcessArgs :: Text
 adviceDCurryTimeExcessArgs = prd $ "Please provide one argument: the number of seconds to display in Curry Time, as in " <>
                                    colorWith quoteColor (prefixDebugCmd "currytime" <> " 60")
+
+adviceDDarkenExcessArgs :: Text
+adviceDDarkenExcessArgs = prd $ "Please provide one argument: the ID of the room to darken, as in " <>
+                                colorWith quoteColor (prefixDebugCmd "darken" <> " 100")
+
+adviceDDarkenNoArgs :: Text
+adviceDDarkenNoArgs = adviceDDarkenExcessArgs
+
 
 adviceDIdExcessArgs :: Text
 adviceDIdExcessArgs = prd $ "Please provide one argument: the ID to search for, as in " <>
