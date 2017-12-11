@@ -18,10 +18,10 @@ CurryMUD will have the following features:
 * Content will be created and development will proceed with the aim of supporting a small community of players.
 * Role-playing will be strictly enforced.
 * Classless/skill-based.
-* Permadeath. (When player characters die, they really die.)
+* Permadeath (when player characters die, they really die).
 * Some degree of player-created content will be allowed and encouraged.
 * The state of the virtual world will be highly persisted upon server shutdown.
-* As is common with most textual MUDs, client connections will be supported with a loose implementation of the telnet protocol.
+* As is common with most MUDs, client connections will be supported with a loose implementation of the telnet protocol.
 * CurryMUD will always be free to play. No pay-to-win.
 
 ## What I have so far
