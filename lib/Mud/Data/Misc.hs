@@ -700,9 +700,10 @@ data ExpCmdType = NoTarget  ToSelf ToOthers
 
 type ExpCmdFun = Id -> MsgQueue -> Cols -> ExpCmdName -> (Text, [Broadcast], MobRmDesc, Text) -> MudStack ()
 
-data ExpCmd = ExpCmd { expCmdName :: ExpCmdName
-                     , expCmdType :: ExpCmdType
-                     , expDesc    :: MobRmDesc }
+data ExpCmd = ExpCmd { expCmdName            :: ExpCmdName
+                     , expCmdType            :: ExpCmdType
+                     , expCmdIsVisibleInDark :: Bool
+                     , expDesc               :: MobRmDesc }
 
 instance Eq ExpCmd where
   (==) = (==) `on` expCmdName
