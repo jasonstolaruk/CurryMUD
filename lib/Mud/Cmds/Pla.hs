@@ -549,8 +549,7 @@ bars (LowerNub i mq cols as) = getState >>= \ms ->
           (match:_) -> Right . uncurry (mkBar . calcBarLen $ cols) $ match
     in logPlaExecArgs "bars" as i >> multiWrapSend mq cols mkBars
   where
-    hint | a <- commas . map dblQuote $ [ "hp", "mp", "pp" ]
-         = T.concat [ "Please specify any of the following: ", a, ", or ", dblQuote "fp", "." ]
+    hint = "Please specify any of the following: \"hp\", \"mp\", \"pp\", or \"fp\"."
 bars p = pmf "bars" p
 
 mkBar :: HasCallStack => Int -> Text -> (Int, Int) -> Text
@@ -2198,7 +2197,7 @@ razzle p@(ActionParams i mq cols [ "dazzle", "root", "beer" ]) = mIf (hasRazzled
                          , plaTbl.ind i     %~ setPlaFlag HasRazzled      True ]
                , fs ++ [ runBiodegAsync potId
                        , wrapSend mq cols "A potion flask materializes in your hands."
-                       , bcastOtherAdmins i . prd $ s <> " has executed " <> dblQuote "razzle dazzle root beer" ] ))
+                       , bcastOtherAdmins i $ s <> " has executed \"razzle dazzle root beer\"." ] ))
 razzle p = cmdNotFoundAction p
 
 -----

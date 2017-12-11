@@ -296,10 +296,10 @@ mkSlotTxt = colorWith quoteColor . dblQuote . T.cons slotChar
 
 ringHelp :: Text
 ringHelp = T.concat [ "For rings, specify ", mkSlotTxt "r", " or ", mkSlotTxt "l", nl " immediately followed by:"
-                    , colorWith quoteColor (dblQuote "i") <> nl " for index finger,"
-                    , colorWith quoteColor (dblQuote "m") <> nl " for middle finger,"
-                    , colorWith quoteColor (dblQuote "r") <> nl " for ring finger, or"
-                    , colorWith quoteColor (dblQuote "p") <> nl " for pinky finger." ]
+                    , colorWith quoteColor "\"i\"" <> nl " for index finger,"
+                    , colorWith quoteColor "\"m\"" <> nl " for middle finger,"
+                    , colorWith quoteColor "\"r\"" <> nl " for ring finger, or"
+                    , colorWith quoteColor "\"p\"" <> nl " for pinky finger." ]
 
 procGecrMisMobEq :: (GetEntsCoinsRes, Maybe Inv) -> Either Text Inv
 procGecrMisMobEq DupIdsEmpty        | res <- dupIdsRes              = res

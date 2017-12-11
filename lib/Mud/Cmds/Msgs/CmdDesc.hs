@@ -4,7 +4,6 @@ module Mud.Cmds.Msgs.CmdDesc where
 
 import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Lang
-import           Mud.Util.Quoting
 import           Mud.Util.Text
 
 import           Data.Monoid ((<>))
@@ -130,7 +129,7 @@ cmdDescLook :: Text
 cmdDescLook = "Display a description of your current room, or examine one or more things in your current room."
 
 cmdDescLookSelf :: Text
-cmdDescLookSelf = "Verify what others see when they " <> dblQuote "look" <> " at your character."
+cmdDescLookSelf = "Verify what others see when they \"look\" at your character."
 
 cmdDescMotd :: Text
 cmdDescMotd = "Display the message of the day."
@@ -139,7 +138,7 @@ cmdDescPut :: Text
 cmdDescPut = "Put one or more items into a) a container in your inventory, or b) a container in your current room."
 
 cmdDescQuit :: Text
-cmdDescQuit = dblQuote "Go to sleep" <> " (quit playing CurryMUD)."
+cmdDescQuit = "\"Go to sleep\" (quit playing CurryMUD)."
 
 cmdDescRead :: Text
 cmdDescRead = "Read the text that is written on a) an item in your inventory, or b) a fixture of your current room."
@@ -207,7 +206,7 @@ cmdDescWhisper :: Text
 cmdDescWhisper = "Whisper something to someone in your current room."
 
 cmdDescWho :: Text
-cmdDescWho = "Display or search a list of who is currently " <> dblQuote "awake" <> " (logged in)."
+cmdDescWho = "Display or search a list of who is currently \"awake\" (logged in)."
 
 cmdDescWhoAmI :: Text
 cmdDescWhoAmI = "Confirm your name, sex, and race."

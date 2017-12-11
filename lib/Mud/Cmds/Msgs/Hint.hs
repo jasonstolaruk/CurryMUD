@@ -21,15 +21,9 @@ specifyFullHelper t = parensQuote . prd $ "Note that you must specify the full "
 -----
 
 hintAMsg :: Sing -> Text
-hintAMsg s = hintHelper [ "the above is a message from "
-                        , s
-                        , ", a CurryMUD administrator. To reply, type "
+hintAMsg s = hintHelper [ "the above is a message from ", s, ", a CurryMUD administrator. To reply, type "
                         , colorWith quoteColor $ "admin " <> uncapitalize s <> " msg"
-                        , ", where "
-                        , dblQuote "msg"
-                        , " is the message you want to send to "
-                        , s
-                        , "." ]
+                        , ", where \"msg\" is the message you want to send to ", s, "." ]
 
 hintABan :: Text
 hintABan = specifyFullHelper "name of the PC you wish to ban"
@@ -49,19 +43,20 @@ hintDisconnect :: Text
 hintDisconnect = specifyFullHelper "name of the person you would like to disconnect"
 
 hintGet :: Text
-hintGet = hintHelper [ "it appears that you want to remove an object from a container. In that case, please use the "
-                     , dblQuote "remove", " command. For example, to remove a ring from your sack, type "
+hintGet = hintHelper [ "it appears that you want to remove an object from a container. In that case, please use the \
+                       \\"remove\" command. For example, to remove a ring from your sack, type "
                      , colorWith quoteColor "remove ring sack", "." ]
 
 hintSay :: Text
-hintSay = hintHelper [ "when communicating with non-player characters, you may also try the ", dblQuote "ask"
-                     , " command. For example, to ask a city guard about crime, type "
+hintSay = hintHelper [ "when communicating with non-player characters, you may also try the \"ask\" command. For \
+                       \example, to ask a city guard about crime, type "
                      , colorWith quoteColor "ask guard crime", "." ]
 
 hintSpiritCmdNotFound :: Text
 hintSpiritCmdNotFound =
-    hintHelper [ "you have died and become a disembodied spirit. As a spirit, the commands that you may use are limited. Type "
-               , dblQuote "?", " to see a list of the commands available to you." ]
+    let t = "you have died and become a disembodied spirit. As a spirit, the commands that you may use are limited. \
+            \Type \"?\" to see a list of the commands available to you."
+    in hintHelper . pure $ t
 
 hintUnlink :: Text
 hintUnlink = specifyFullHelper "name of the person with whom you would like to unlink"

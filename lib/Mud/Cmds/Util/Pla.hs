@@ -1553,8 +1553,8 @@ readHelper i cols ms d = foldl' helper
                        , "I humbly offer myself to You,"
                        , "that your Light may guide me"
                        , "through all darkness and calamity." ]
-        rumialysOK   = T.concat [ "The following is etched upon the surface of the metal ring in ", pp NymphLang, ": "
-                                , dblQuote "Mother of Life, Architect of All." ]
+        rumialysOK   = "The following is etched upon the surface of the metal ring in " <> pp NymphLang <>
+                       ": \"Mother of Life, Architect of All.\""
         rumialysNG   = "You recognize that the language etched on upon the metal ring is " <> pp NymphLang <>
                        ", but you can't read the words."
     mkMagicMsgHeader s b lang =

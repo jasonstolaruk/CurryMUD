@@ -99,10 +99,9 @@ lookSundialHookName = "Loplenko_iLoplenkoWelcome_lookSundial"
 lookSundialHookFun :: HookFun
 lookSundialHookFun = mkGenericHookFun t "looks at the sundial." "looked at sundial"
   where
-    t = T.concat [ "The sundial is inlaid into a 3-foot-high square base of white marble. A triangle affixed \
-                   \perpendicular to the sundial's flat plate casts a shadow when the sun's light hits it; the time can \
-                   \be determined based on where that shadow falls on the plate."
-                 , nlTxt, "You can ", dblQuote "read", " the sundial to tell the time." ]
+    t = "The sundial is inlaid into a 3-foot-high square base of white marble. A triangle affixed perpendicular to the \
+        \sundial's flat plate casts a shadow when the sun's light hits it; the time can be determined based on where \
+        \that shadow falls on the plate." <> nlTxt <> "You can \"read\" the sundial to tell the time."
 
 -----
 

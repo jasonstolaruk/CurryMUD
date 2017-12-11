@@ -443,7 +443,7 @@ sorryAdminPasswordAdmin :: Text
 sorryAdminPasswordAdmin = can't "change an admin's password."
 
 sorryAdminPasswordSelf :: Text
-sorryAdminPasswordSelf = "Please use the " <> dblQuote "password" <> " command to change your own password."
+sorryAdminPasswordSelf = "Please use the \"password\" command to change your own password."
 
 -----
 
@@ -481,7 +481,7 @@ can'tTarget :: Text -> Text
 can'tTarget = can't . ("target " <>)
 
 withAs :: Text
-withAs = " with the " <> dblQuote (prefixAdminCmd "as") <> " command."
+withAs = " with the \"" <> prefixAdminCmd "as" <> "\" command."
 
 sorryAsSelf :: Text
 sorryAsSelf = can'tTarget "yourself" <> withAs
@@ -710,8 +710,10 @@ sorryEmptyCon :: Text
 sorryEmptyCon = sorryEmptyHelper "container"
 
 sorryEmptyHelper :: Text -> Text
-sorryEmptyHelper t = butCan't . T.concat $ [ "empty a ", t, " with the ", dblQuote "empty", " command. Please use the "
-                                           , dblQuote "remove", " command to remove items from a ", t, "." ]
+sorryEmptyHelper t = butCan't . T.concat $ [ "empty a ", t
+                                           , " with the \"empty\" command. Please use the \"remove\" command to remove \
+                                             \items from a "
+                                           , t, "." ]
 
 sorryEmptyCorpse :: Text
 sorryEmptyCorpse = sorryEmptyHelper "corpse"
@@ -872,7 +874,7 @@ sorryGetEnc = "You are too encumbered to carry "
 
 sorryGetInEq :: Text
 sorryGetInEq = butCan't "get an item in your readied equipment. If you want to move a readied item to your inventory, \
-                        \use the " <> dblQuote "unready" <> " command."
+                        \use the \"unready\" command."
 
 sorryGetInInv :: Text
 sorryGetInInv = can't "get an item that's already in your inventory. If you're intent on picking it up, try dropping \
@@ -994,9 +996,7 @@ sorryInterpNewPwUpper = "Passwords must contain at least one uppercase character
 -----
 
 sorryInterpPager :: Text
-sorryInterpPager
-  | a <- dblQuote "n", b <- dblQuote "b", c <- dblQuote "q"
-  = T.concat [ "Enter a blank line or ", a, " for the next page, ", b, " for the previous page, or ", c, " to stop reading." ]
+sorryInterpPager = "Enter a blank line or \"n\" for the next page, \"b\" for the previous page, or \"q\" to stop reading."
 
 -----
 
@@ -1241,9 +1241,8 @@ sorryParseId a = dblQuote a <> " is not a valid ID."
 
 sorryParseInOut :: Text -> Text -> Text
 sorryParseInOut value n = T.concat [ dblQuote value, " is not a valid value for the ", dblQuote n
-                                   , " setting. Please specify one of the following: ", inOutOrOnOff, "." ]
-  where
-    inOutOrOnOff = T.concat [ dblQuote "in", "/", dblQuote "out", " or ", dblQuote "on", "/", dblQuote "off" ]
+                                   , " setting. Please specify one of the following: \"in\"/\"out\" or \"on\"/\"off\"." ]
+
 
 sorryParseIndent :: Text -> Text
 sorryParseIndent a = dblQuote a <> " is not a valid width amount."
@@ -1259,7 +1258,7 @@ sorryParseNum numTxt base = T.concat [ dblQuote numTxt, " is not a valid number 
 
 sorryParseOnOff :: Text -> Text -> Text
 sorryParseOnOff value n = T.concat [ dblQuote value, " is not a valid value for the ", dblQuote n
-                                   , " setting. Please specify ", dblQuote "on", " or ", dblQuote "off", "." ]
+                                   , " setting. Please specify \"on\" or \"off\"." ]
 
 sorryParseSeconds :: Text -> Text
 sorryParseSeconds a = dblQuote a <> " is not a valid number of seconds."
@@ -1331,8 +1330,7 @@ sorryPutVol = the' . (<> " is too full to contain ")
 -----
 
 sorryQuitCan'tAbbrev :: Text
-sorryQuitCan'tAbbrev = T.concat [ "The ", dblQuote "quit", " command may not be abbreviated. Type ", dblQuote "quit"
-                                , " with no arguments to quit CurryMUD." ]
+sorryQuitCan'tAbbrev = "The \"quit\" command may not be abbreviated. Type \"quit\" with no arguments to quit CurryMUD."
 
 -----
 

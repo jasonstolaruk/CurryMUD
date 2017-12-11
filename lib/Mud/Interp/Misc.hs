@@ -48,7 +48,7 @@ promptChangeIt mq cols = wrapSendPrompt mq cols $ "Would you like to change it? 
 -----
 
 promptRetryYesNo :: MsgQueue -> Cols -> MudStack ()
-promptRetryYesNo mq cols = wrapSendPrompt mq cols . T.concat $ [ "Please answer ", dblQuote "yes", " or ", dblQuote "no", "." ]
+promptRetryYesNo mq cols = wrapSendPrompt mq cols "Please answer \"yes\" or \"no\"."
 
 -----
 

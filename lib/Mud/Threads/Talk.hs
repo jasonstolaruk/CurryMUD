@@ -22,7 +22,6 @@ import           Mud.TopLvlDefs.FilePaths
 import           Mud.TopLvlDefs.Misc
 import           Mud.TopLvlDefs.Telnet.Chars
 import           Mud.Util.Misc
-import           Mud.Util.Quoting
 import           Mud.Util.Text
 
 import           Control.Arrow ((***))
@@ -66,10 +65,10 @@ threadTalk h host = helper `finally` cleanUp
                     logNotice "threadTalk helper" . prd $ "new PC name for incoming player: " <> s
                     liftIO configBuffer
                     telnetHelper mq
-                    send         mq . nl       $ "CurryMUD " <> ver
+                    send         mq . nl   $ "CurryMUD " <> ver
                     dumpTitle    mq
-                    send         mq . nlnl     $ helloRulesMsg
-                    send         mq . nl . prd $ "If you are new to CurryMUD, please enter " <> dblQuote "new"
+                    send         mq . nlnl $ helloRulesMsg
+                    send         mq . nl   $ "If you are new to CurryMUD, please enter \"new\"."
                     sendPrompt   mq "What is your character's name?"
                     bcastAdmins . prd $ "A new player has connected: " <> s
                     onNewThread   . threadInacTimer i   mq $ tq

@@ -172,7 +172,7 @@ advise :: ActionParams -> [HelpName] -> Text -> MudStack ()
 advise (Advising mq cols) []  msg = wrapSend mq cols msg
 advise (Advising mq cols) [h] msg | ts <- [ msg, prd $ "For more information, type " <> colorWith quoteColor ("help " <> h) ]
                                   = multiWrapSend mq cols ts
-advise (Advising mq cols) (dblQuote . T.intercalate (dblQuote ", ") -> helpTopics) msg =
+advise (Advising mq cols) (dblQuote . T.intercalate "\", \"" -> helpTopics) msg =
     multiWrapSend mq cols [ msg, prd $ "For more information, see the following help articles: " <> helpTopics ]
 advise p _ _ = pmf "advise" p
 
@@ -311,7 +311,7 @@ adviceASecurityNoArgs = "Please specify the PC names of one or more players whos
 adviceASetInvalid :: Text
 adviceASetInvalid | a <- "Please specify the key you want to change, followed immediately by "
                   , b <- ", followed immediately by the new value you want to assign, as in "
-                  = T.concat [ a, dblQuote "=", b, adviceASetEx, "." ]
+                  = T.concat [ a, "\"=\"", b, adviceASetEx, "." ]
 
 adviceASetEx :: Text
 adviceASetEx = colorWith quoteColor $ prefixAdminCmd "set" <> " 100 curhp=50"
@@ -530,8 +530,7 @@ adviceEmptyNoArgs = prd $ "Please specify one or more vessels to empty, as in " 
 
 adviceEnc :: Text -> Text
 adviceEnc cn =
-    T.concat [ dblQuote enc, " must either be used alone, or with a ", dblQuote "'s"
-             , " suffix (to create a possessive noun), as in "
+    T.concat [ dblQuote enc, " must either be used alone, or with a \"'s\" suffix (to create a possessive noun), as in "
              , let ts = [ cn, "shielding her eyes from the sun, ", enc, " looks out across the plains" ]
                in colorWith quoteColor . T.concat $ ts
              , ", or ", colorWith quoteColor $ cn <> enc <> "'s leg twitches involuntarily as she laughs with gusto"
@@ -542,14 +541,14 @@ adviceEtc cn = T.concat [ dblQuote etc
                         , " must be immediately followed by the name of the person you wish to target, as in "
                         , let ts = [ cn, "slowly turns her head to look directly at ", etc, "taro" ]
                           in colorWith quoteColor . T.concat $ ts
-                        , ". To create a possessive noun, append ", dblQuote "'s", " to the target name, as in "
+                        , ". To create a possessive noun, append \"'s\" to the target name, as in "
                         , let ts = [ cn, "places her hand firmly on ", etc, "taro's shoulder" ]
                           in colorWith quoteColor . T.concat $ ts
                         , "." ]
 
 adviceEtcBlankPoss :: Text
 adviceEtcBlankPoss = T.concat [ "You must specify the name of the person you want to target between ", dblQuote etc
-                              , " and ", dblQuote "'s", "." ]
+                              , " and \"'s\"." ]
 
 adviceEtcHead :: Text
 adviceEtcHead = "You can't begin an emote with a target."
@@ -559,9 +558,7 @@ adviceEtcInTwoWay cn cn' = T.concat [ "Sorry, but you can't use "
                                     , dblQuote etc
                                     , " in private two-way communication, as with the "
                                     , dblQuote cn
-                                    ,  " command. It is legal to use forms of the word "
-                                    , dblQuote "you"
-                                    , " here, so instead of "
+                                    ,  " command. It is legal to use forms of the word \"you\" here, so instead of "
                                     , let ts = [ cn', "gives ", etc, "hanako a smooch!" ]
                                       in colorWith quoteColor . T.concat $ ts
                                     , ", you should type "
@@ -625,8 +622,7 @@ advicePutNoCon :: Text
 advicePutNoCon = prd $ "Please also specify where you want to put it, as in " <> advicePutEx
 
 adviceQuitExcessArgs :: Text
-adviceQuitExcessArgs = T.concat [ "Type ", colorWith quoteColor "quit", " with no arguments to ", dblQuote "go to sleep"
-                                , " (quit CurryMUD)." ]
+adviceQuitExcessArgs = "Type " <> colorWith quoteColor "quit" <> " with no arguments to \"go to sleep\" (quit CurryMUD)."
 
 adviceReadNoArgs :: Text
 adviceReadNoArgs =
@@ -677,9 +673,9 @@ adviceSayToNoUtterance l = T.concat [ "Please also specify what you'd like to sa
                                     , "." ]
 
 adviceSettingsInvalid :: Text
-adviceSettingsInvalid = T.concat [ " Please specify the setting you want to change, followed immediately by "
-                                 , dblQuote "=", ", followed immediately by the new value you want to assign, as in "
-                                 , colorWith quoteColor "set columns=80", "." ]
+adviceSettingsInvalid = prd $ " Please specify the setting you want to change, followed immediately by \"=\", followed \
+                              \immediately by the new value you want to assign, as in " <>
+                              colorWith quoteColor "set columns=80"
 
 adviceShowNoArgs :: Text
 adviceShowNoArgs = prd $ "Please specify one or more items to show followed by the name of a person, as in " <> adviceShowEx
@@ -727,15 +723,9 @@ adviceTrashNoArgs :: Text
 adviceTrashNoArgs = prd $ "Please specify one or more items to dispose of, as in " <> colorWith quoteColor "trash sword"
 
 adviceTuneInvalid :: Text
-adviceTuneInvalid = T.concat [ " Please specify the name of the connection you want to tune, followed immediately by "
-                             , dblQuote "="
-                             , ", followed immediately by "
-                             , inOutOrOnOff
-                             , ", as in "
-                             , colorWith quoteColor "tune taro=in"
-                             , "." ]
-  where
-    inOutOrOnOff = T.concat [ dblQuote "in", "/", dblQuote "out", " or ", dblQuote "on", "/", dblQuote "off" ]
+adviceTuneInvalid = prd $ " Please specify the name of the connection you want to tune, followed immediately by \"=\", \
+                          \followed immediately by \"in\"/\"out\" or \"on\"/\"off\", as in " <>
+                          colorWith quoteColor "tune taro=in"
 
 adviceTypoNoArgs :: Text
 adviceTypoNoArgs = prd $ "Please describe the typo you've found, as in " <>
@@ -759,18 +749,17 @@ adviceWhisperNoMsg :: Text
 adviceWhisperNoMsg = "Please also provide what you'd like to whisper, as in " <> adviceWhisperEx
 
 adviceYouEmote :: Text
-adviceYouEmote = T.concat [ "Sorry, but you can't use a form of the word "
-                          , dblQuote "you"
-                          , " in an emote. Instead, you must specify who you wish to target using "
-                          , dblQuote etc
-                          , ", as in "
+adviceYouEmote = T.concat [ "Sorry, but you can't use a form of the word \"you\" in an emote. Instead, you must specify \
+                            \who you wish to target using "
+                          , dblQuote etc, ", as in "
                           , colorWith quoteColor $ "emote slowly turns her head to look directly at " <> etc <> "taro"
                           , "." ]
 
 adviceYouEmoteChar :: Text -> Text
 adviceYouEmoteChar cn =
-    T.concat [ "Sorry, but you can't use a form of the word ", dblQuote "you"
-             , " in an emote. Instead, you must specify who you wish to target using ", dblQuote etc, ", as in "
+    T.concat [ "Sorry, but you can't use a form of the word \"you\" in an emote. Instead, you must specify who you wish \
+               \to target using "
+             , dblQuote etc, ", as in "
              , let ts = [ cn, " ", T.singleton emoteChar, "slowly turns her head to look directly at ", etc, "taro" ]
                in colorWith quoteColor . T.concat $ ts
              , "." ]

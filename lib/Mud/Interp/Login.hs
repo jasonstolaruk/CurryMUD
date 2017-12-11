@@ -325,8 +325,7 @@ interpSex ncb (T.toLower -> cn) (NoArgs i mq cols)
 interpSex _ _ ActionParams { .. } = promptRetrySex plaMsgQueue plaCols
 
 promptRetrySex :: HasCallStack => MsgQueue -> Cols -> MudStack ()
-promptRetrySex mq cols =
-    wrapSendPrompt mq cols . T.concat $ [ "Please answer ", dblQuote "male", " or ", dblQuote "female", "." ]
+promptRetrySex mq cols = wrapSendPrompt mq cols "Please answer \"male\" or \"female\"."
 
 promptReadymade :: HasCallStack => NewCharBundle -> MsgQueue -> Cols -> MudStack ()
 promptReadymade (NewCharBundle _ s _) mq cols = multiWrapSend1Nl mq cols ts >> anglePrompt mq
@@ -349,8 +348,7 @@ interpReadymade ncb@(NewCharBundle _ s _) cn (NoArgs i mq cols) = case cn of
 interpReadymade _ _ ActionParams { .. } = promptRetryReadymade plaMsgQueue plaCols
 
 promptRetryReadymade :: HasCallStack => MsgQueue -> Cols -> MudStack ()
-promptRetryReadymade mq cols =
-    wrapSendPrompt mq cols . T.concat $ [ "Please answer ", dblQuote "1", " or ", dblQuote "2", "." ]
+promptRetryReadymade mq cols = wrapSendPrompt mq cols "Please answer \"1\" or \"2\"."
 
 raceTxt :: [Text]
 raceTxt | f <- colorWith abbrevColor = [ "1) " <> f "D"  <> "warf"

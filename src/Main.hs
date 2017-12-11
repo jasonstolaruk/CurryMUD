@@ -50,7 +50,7 @@ welcome = (,) <$> getEnv "USER" <*> what'sMyName >>= \(userName, progName) ->
     T.putStrLn . T.concat $ [ "Hello, ", T.pack userName, "! Welcome to ", progName, " ver ", ver, "." ]
   where
     what'sMyName = mIf ((== "<interactive>") <$> getProgName)
-      (return . dblQuote $ "Y U NO COMPILE ME?")
+      (return "\"Y U NO COMPILE ME?\"")
       (return "CurryMUD")
 
 loadServerSettings :: HasCallStack => IO ServerSettings
