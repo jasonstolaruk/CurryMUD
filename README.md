@@ -4,7 +4,7 @@
 
 A Multi-User Dungeon ("MUD") server in Haskell. (If you are unfamiliar with the term "MUD," please refer to [this Wikipedia article](http://en.wikipedia.org/wiki/MUD).)
 
-CurryMUD is essentially the hobby project and brainchild of a single developer. It's been in active development for 4 years, but is still very much a work in progress.
+CurryMUD is the hobby project and brainchild of a single developer. It's been in active development for 4 years, but is still very much a work in progress.
 
 ## My goals
 
@@ -34,9 +34,9 @@ CurryMUD will have the following features:
 * Nearly everything may be abbreviated. :abc:
 * Logging. :scroll:
 * ANSI color. :red_circle:
-* Character creation with optonal readymade templates. :runner:
+* Character creation with optional readymade templates. :runner:
 * The virtual world is automatically persisted at regular intervals and at shutdown. :floppy_disk:
-* Systems for reporting bugs and typos. :bug:
+* Commands for reporting bugs and typos. :bug:
 * Commands to aid in the process of resetting a forgotten password. :passport_control:
 * NPCs can execute commands, either from within code or via the ":as" administrator command. :performing_arts:
 * PCs can introduce themselves to each other. :bow:
