@@ -1170,11 +1170,8 @@ mkLeatherTaste :: Text -> Maybe Text
 mkLeatherTaste t = Just $ "You chew on the " <> t <> ". It tastes like leather."
 
 mkLeatherTasteSalty :: Text -> Text -> Maybe Text
-mkLeatherTasteSalty a b = Just . T.concat $ [ "You chew on the "
-                                            , a
-                                            , ". The leather tastes a bit salty. Probably from "
-                                            , b
-                                            , " sweat." ]
+mkLeatherTasteSalty a b = Just . T.concat $ [ "You chew on the ", a, ". The leather tastes a bit salty. Probably from "
+                                            , b, " sweat." ]
 
 mkPotionFlask :: Bool -> Id -> Maybe VesselCont -> MudStack ()
 mkPotionFlask isLrg i mc = putVessel i

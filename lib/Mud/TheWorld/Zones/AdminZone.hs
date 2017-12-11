@@ -224,7 +224,7 @@ lookCeilingHookFun = mkGenericHookFun ceilingDesc "looks up at the ceiling." "lo
 
 -----
 
-lookFlowerbedHook :: Hook -- TODO: Here.
+lookFlowerbedHook :: Hook
 lookFlowerbedHook = Hook lookFlowerbedHookName [ "flowerbed", "flower", "flowers" ]
 
 lookFlowerbedHookName :: HookName
@@ -336,7 +336,7 @@ smellFlowerbedHookName :: HookName
 smellFlowerbedHookName = "AdminZone_iAtrium_smellFlowerbed"
 
 smellFlowerbedHookFun :: HookFun
-smellFlowerbedHookFun = mkGenericHookFun smellDesc "smells the flowerbed." "smelled flowerbed"
+smellFlowerbedHookFun = mkGenericHookFun smellDesc (prd $ "smells " <> mkSerVerbObj "the flowerbed") "smelled flowerbed"
   where
     smellDesc = "You are greeted by the gentle organic scents of florets and soil."
 
@@ -759,7 +759,7 @@ createAdminZone = do
         []
         mempty
         (mkRm (RmTemplate "Portal"
-            "Floating before you is a large round portal in which dazzling shapes and colors spin and dance. You feel \
+            "Floating before you is a large, round portal in which dazzling shapes and colors spin and dance. You feel \
             \a peculiar pulling sensation in your abdomen, as if the portal is attempting to draw you towards itself.\n\
             \A wooden sign is suspended above the portal."
             voidListen
