@@ -129,7 +129,7 @@ expCmdSet = S.fromList
                                        "You bow before @."
                                        "% bows before you."
                                        "% bows before @.")
-                            False -- TODO: ?
+                            True
                             Nothing
     , ExpCmd "burp"         (Versatile "You burp."
                                        "% burps."
@@ -226,7 +226,7 @@ expCmdSet = S.fromList
                                        "You cower in fear before @."
                                        "% cowers in fear before you."
                                        "% cowers in fear before @.")
-                            False -- TODO: ?
+                            False
                             Nothing
     , ExpCmd "cringe"       (Versatile "You cringe."
                                        "% cringes."
@@ -333,7 +333,7 @@ expCmdSet = S.fromList
                                        "You duck away from @."
                                        "% ducks away from you."
                                        "% ducks away from @.")
-                            False -- TODO: ?
+                            True
                             Nothing
     , ExpCmd "embrace"      (HasTarget "You warmly embrace @."
                                        "% embraces you warmly."
@@ -350,7 +350,7 @@ expCmdSet = S.fromList
                             Nothing
     , ExpCmd "faint"        (NoTarget  "You faint."
                                        "% faints.")
-                            True -- TODO: ?
+                            True
                             (Just "fainted")
     , ExpCmd "fistpump"     (NoTarget  "You pump your fist in the air triumphantly."
                                        "% pumps & fist in the air triumphantly.")
@@ -369,7 +369,7 @@ expCmdSet = S.fromList
                             Nothing
     , ExpCmd "flop"         (NoTarget  "You flop down on the ground."
                                        "% flops down on the ground.")
-                            True -- TODO: ?
+                            True
                             (Just "on the ground")
     , ExpCmd "flustered"    (NoTarget  "You look entirely flustered."
                                        "% looks entirely flustered.")
@@ -461,7 +461,7 @@ expCmdSet = S.fromList
     , ExpCmd "grovel"       (HasTarget "You grovel before @."
                                        "% grovels before you."
                                        "% grovels before @.")
-                            True -- TODO: ?
+                            True
                             Nothing
     , ExpCmd "growl"        (Versatile "You growl menacingly."
                                        "% growls menacingly."
@@ -513,7 +513,7 @@ expCmdSet = S.fromList
                             Nothing
     , ExpCmd "hop"          (NoTarget  "You hop up and down excitedly."
                                        "% hops up and down excitedly.")
-                            True -- TODO: ?
+                            True
                             Nothing
     , ExpCmd "howllaugh"    (Versatile "You howl with laughter."
                                        "% howls with laughter."
@@ -555,7 +555,7 @@ expCmdSet = S.fromList
                             Nothing
     , ExpCmd "jump"         (NoTarget  "You jump up and down excitedly."
                                        "% jumps up and down excitedly.")
-                            True -- TODO: ?
+                            True
                             Nothing
     , ExpCmd "kiss"         (HasTarget "You kiss @."
                                        "% kisses you."
@@ -577,7 +577,7 @@ expCmdSet = S.fromList
                                        "You kneel down before @."
                                        "% kneels down before you."
                                        "% kneels down before @.")
-                            True -- TODO: ?
+                            True
                             (Just "kneeling down")
     , ExpCmd "laugh"        (Versatile "You laugh."
                                        "% laughs."
@@ -598,11 +598,11 @@ expCmdSet = S.fromList
                                        "You lay down next to @."
                                        "% lays down next to you."
                                        "% lays down next to @.")
-                            True -- TODO: ?
+                            True
                             (Just "laying down")
     , ExpCmd "leap"         (NoTarget  "You leap into the air."
                                        "% leaps into the air.")
-                            True -- TODO: ?
+                            True
                             Nothing
     , ExpCmd "leer"         (HasTarget "You leer at @."
                                        "% leers at you."
@@ -697,7 +697,7 @@ expCmdSet = S.fromList
                             Nothing
     , ExpCmd "pace"         (NoTarget  "You pace around nervously."
                                        "% paces around nervously.")
-                            True -- TODO: ?
+                            True
                             (Just "")
     , ExpCmd "pant"         (NoTarget  "You pant."
                                        "% pants.")
@@ -762,7 +762,7 @@ expCmdSet = S.fromList
                                        "You strike a pose before @."
                                        "% strikes a pose before you."
                                        "% strikes a pose before @.")
-                            False -- TODO: ?
+                            False
                             Nothing
     , ExpCmd "pounce"       (HasTarget "You pounce on @."
                                        "% pounces on you."
@@ -781,7 +781,7 @@ expCmdSet = S.fromList
                                        "You prance around @."
                                        "% prances around you."
                                        "% prances around @.")
-                            False -- TODO: ?
+                            True
                             Nothing
     , ExpCmd "purr"         (NoTarget  "You purr."
                                        "% purrs.")
@@ -920,7 +920,7 @@ expCmdSet = S.fromList
                                        "You sit down next to @."
                                        "% sits down next to you."
                                        "% sit down next to @.")
-                            True -- TODO: ?
+                            True
                             (Just "sitting down")
     , ExpCmd "sleepy"       (NoTarget  "You look sleepy."
                                        "% looks sleepy.")
@@ -1008,7 +1008,7 @@ expCmdSet = S.fromList
                             Nothing
     , ExpCmd "stagger"      (NoTarget  "You stagger around."
                                        "% staggers around.")
-                            True -- TODO: ?
+                            True
                             Nothing
     , ExpCmd "stamp"        (NoTarget  "Your stamp your feet."
                                        "% stamps & feet.")
@@ -1016,7 +1016,7 @@ expCmdSet = S.fromList
                             Nothing
     , ExpCmd "stand"        (NoTarget  "You stand up."
                                        "% stands up.")
-                            True -- TODO: ?
+                            True
                             (Just "")
     , ExpCmd "stare"        (HasTarget "You stare at @."
                                        "% stares at you."
@@ -1029,7 +1029,7 @@ expCmdSet = S.fromList
                             Nothing
     , ExpCmd "stifletears"  (NoTarget  "You try hard to stifle your tears."
                                        "% tries hard to stifle & tears.")
-                            True -- TODO: ?
+                            False
                             Nothing
     , ExpCmd "stomach"      (NoTarget  "Your stomach growls."
                                        "%'s stomach growls.")
@@ -1050,11 +1050,11 @@ expCmdSet = S.fromList
                             Nothing
     , ExpCmd "strut"        (NoTarget  "Your strut your stuff."
                                        "% struts & stuff.")
-                            True -- TODO: ?
+                            True
                             Nothing
     , ExpCmd "stumble"      (NoTarget  "You stumble and almost fall over."
                                        "% stumbles and almost falls over.")
-                            True -- TODO: ?
+                            True
                             Nothing
     , ExpCmd "suckthumb"    (NoTarget  "You suck your thumb."
                                        "% sucks & thumb.")
@@ -1076,7 +1076,7 @@ expCmdSet = S.fromList
     , ExpCmd "taunt"        (HasTarget "You taunt @."
                                        "% taunts you."
                                        "% taunts @.")
-                            False -- TODO: ?
+                            False
                             Nothing
     , ExpCmd "think"        (NoTarget  "You say, \"Hmm...\" and think about it."
                                        "% says, \"Hmm...\" and thinks about it.")
@@ -1130,7 +1130,7 @@ expCmdSet = S.fromList
                             Nothing
     , ExpCmd "twirl"        (NoTarget  "You twirl around."
                                        "% twirls around.")
-                            True -- TODO: ?
+                            True
                             Nothing
     , ExpCmd "twitch"       (NoTarget  "You twitch nervously."
                                        "% twitches nervously.")
@@ -1175,7 +1175,7 @@ expCmdSet = S.fromList
                             Nothing
     , ExpCmd "wiggle"       (NoTarget  "You wiggle around."
                                        "% wiggles around.")
-                            False -- TODO: ?
+                            False
                             Nothing
     , ExpCmd "wince"        (NoTarget  "You wince in pain."
                                        "% winces in pain.")
