@@ -1229,32 +1229,33 @@ getExpCmdByName cn = head . S.toList . S.filter (\(ExpCmd cn' _ _ _) -> cn' == c
 -----
 
 expCmd :: HasCallStack => ExpCmd -> ActionFun
-expCmd (ExpCmd ecn HasTarget {} _ _   ) p@NoArgs {}        = advise p [] . sorryExpCmdRequiresTarget $ ecn
-expCmd (ExpCmd ecn ect          _ desc) (NoArgs i mq cols) = getState >>= \ms -> case ect of
+expCmd (ExpCmd ecn HasTarget {} _     _   ) p@NoArgs {}        = advise p [] . sorryExpCmdRequiresTarget $ ecn
+expCmd (ExpCmd ecn ect          isVis desc) (NoArgs i mq cols) = getStateTime >>= \pair@(ms, _) -> case ect of
   (NoTarget  toSelf toOthers      ) | isPla i ms
                                     , r <- getRace i ms
                                     , r `elem` furRaces
                                     , ecn == "blush" -> wrapSend mq cols . sorryExpCmdBlush . pp $ r
-                                    | otherwise      -> helper ms toSelf toOthers
-  (Versatile toSelf toOthers _ _ _)                  -> helper ms toSelf toOthers
+                                    | otherwise      -> helper pair toSelf toOthers
+  (Versatile toSelf toOthers _ _ _)                  -> helper pair toSelf toOthers
   _                                                  -> pmf "expCmd" ect
   where
     furRaces                  = [ Felinoid, Lagomorph, Vulpenoid ]
-    helper ms toSelf toOthers =
+    helper (ms, ct) toSelf toOthers =
         let d                           = mkStdDesig i ms DoCap
             serialized                  = serializeDesigHelper d toOthers
             (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
             substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
-            toOthersBcast               = pure (nlnl . replace substitutions $ toOthers, desigOtherIds d)
+            toOthersBcast               = isLit || isVis |?| pure (nlnl . replace substitutions $ toOthers, desigOtherIds d)
+            isLit                       = isMobRmLit ct i ms
             tuple                       = (toSelf, toOthersBcast, desc, toSelf)
         in expCmdHelper i mq cols ecn tuple
-expCmd (ExpCmd ecn NoTarget {} _ _   ) p@(WithArgs     _ _  _    (_:_) ) = advise p [] . sorryExpCmdIllegalTarget $ ecn
-expCmd (ExpCmd ecn ect         _ desc)   (OneArgNubbed i mq cols target) = case ect of
+expCmd (ExpCmd ecn NoTarget {} _     _   ) p@(WithArgs     _ _  _    (_:_) ) = advise p [] . sorryExpCmdIllegalTarget $ ecn
+expCmd (ExpCmd ecn ect         isVis desc)   (OneArgNubbed i mq cols target) = case ect of
   (HasTarget     toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   (Versatile _ _ toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   _                                        -> pmf "expCmd" ect
   where
-    helper toSelf toTarget toOthers = getState >>= \ms -> case singleArgInvEqRm InRm target of
+    helper toSelf toTarget toOthers = getStateTime >>= \(ms, ct) -> case singleArgInvEqRm InRm target of
       (InRm, target') ->
           let d                                = mkStdDesig i ms DoCap
               (first (i `delete`) -> invCoins) = getMobRmInvCoins i ms
@@ -1270,7 +1271,8 @@ expCmd (ExpCmd ecn ect         _ desc)   (OneArgNubbed i mq cols target) = case 
                             toTarget'     = replace substitutions toTarget
                             toTargetBcast = (nlnl toTarget', pure targetId)
                             toOthersBcast = (nlnl toOthers', targetId `delete` desigOtherIds d)
-                            tuple         = (toSelf', [ toTargetBcast, toOthersBcast ], desc, logMsg)
+                            tuple         = (toSelf', isLit || isVis |?| [ toTargetBcast, toOthersBcast ], desc, logMsg)
+                            isLit         = isMobRmLit ct i ms
                         in expCmdHelper i mq cols ecn tuple
                     mkBindings targetTxt = let msg                         = replace (pure ("@", targetTxt)) toSelf
                                                toSelf'                     = parseDesig Nothing i ms msg
