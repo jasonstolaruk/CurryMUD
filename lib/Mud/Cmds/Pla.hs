@@ -1847,18 +1847,23 @@ listen p = withoutArgs listen p
 
 -----
 
-look :: HasCallStack => ActionFun -- TODO: Use "IsHintedSpiritSeeInDark".
-look p@(NoArgs i mq cols) = checkDark p $ getState >>= \ms ->
+look :: HasCallStack => ActionFun
+look p@(NoArgs i mq cols) = checkDark p $ getStateTime >>= \pair@(ms, _) ->
     let ri        = getRmId i ms
         r         = getRm ri ms
         top       = fillerToSpcs . multiWrap cols $ theRmName : theRmDesc
         theRmName = views rmName (underline . quoteWith filler) r
         theRmDesc = views rmDesc formatRmDesc r
         bottom    = [ mkExitsSummary cols r, mkRmInvCoinsDesc i cols ms ri ]
-    in send mq . nl . T.concat $ top : bottom
+    in send mq =<< (spiritSeeInDarkHelper pair . nl . T.concat $ top : bottom)
   where
     filler       = T.singleton indentFiller
     formatRmDesc = map (T.replicate rmDescIndentAmt filler <>) . T.lines
+    spiritSeeInDarkHelper (ms, ct) txt | not . isSpiritId i $ ms        = return txt
+                                       | isMobRmLit ct i ms             = return txt
+                                       | isHintedSpiritSeeInDarkId i ms = return txt
+                                       | otherwise = do tweak $ plaTbl.ind i %~ setPlaFlag IsHintedSpiritSeeInDark True -- TODO: Test.
+                                                        return $ colorWith spiritMsgColor (nlnl hintSpiritSeeInDark) <> txt
 look p@(LowerNub i mq cols as) = checkDark p $ mkRndmVector >>= \v ->
     helper v |&| modifyState >=> \(toSelf, bs, hookLogMsg, maybeTargetDesigs, fs) -> do
         ms <- getState
@@ -2775,7 +2780,7 @@ sayHelper _ p = pmf "sayHelper" p
 
 firstMobSay :: HasCallStack => Id -> PlaTbl -> (PlaTbl, [Text])
 firstMobSay i pt | pt^.ind i.to isHintedMobSay = (pt, [])
-                 | otherwise                   = (pt & ind i %~ setPlaFlag IsHintedMobSay True, [ "", hintSay ])
+                 | otherwise                   = (pt & ind i %~ setPlaFlag IsHintedMobSay True, [ "", hintMobSay ])
 
 -----
 

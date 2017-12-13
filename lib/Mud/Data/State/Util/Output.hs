@@ -93,8 +93,7 @@ bcast [] = unit
 bcast bs = liftIO . atomically . forM_ bs . sendBcast =<< getStateTime
   where
     sendBcast (ms, ct) (msg, is) = forM_ is $ \i ->
-        let helper f i' = case parseForSpiritOnlyMarker msg of Nothing   -> sendIt msg
-                                                               Just msg' -> when (isSpiritId i' ms) . sendIt $ msg'
+        let helper f i' = maybe (sendIt msg) (when (isSpiritId i' ms) . sendIt) . parseForSpiritOnlyMarker $ msg
               where
                 sendIt msg' = let parsed = parseDesig (Just ct) i ms . parseVerbObj ct i ms $ msg' -- Parse verb objects before desigs: a verb object may contain a corpse desig.
                               in writeTQueue mq . f . T.unlines . concatMap (wrap cols) . T.lines $ parsed
