@@ -38,20 +38,22 @@ ansiSGRDelimiter = '\x6D' -- 109
 -- ============================================================
 -- Delimiters:
 
-corpseDesigDelimiter, nonStdDesigDelimiter, sectionDelimiter, stdDesigDelimiter, verbObjDelimiter :: Char
+corpseDesigDelimiter, hookArgDelimiter, nonStdDesigDelimiter, plaIdDelimiter, sectionDelimiter, stdDesigDelimiter, verbObjDelimiter :: Char
 corpseDesigDelimiter = '\128'
-nonStdDesigDelimiter = '\129'
-sectionDelimiter     = '\130'
-stdDesigDelimiter    = '\131'
-verbObjDelimiter     = '\132'
+hookArgDelimiter     = '\129'
+nonStdDesigDelimiter = '\130'
+plaIdDelimiter       = '\131'
+sectionDelimiter     = '\132'
+stdDesigDelimiter    = '\133'
+verbObjDelimiter     = '\134'
 
 -- ==================================================
 -- Characters concerning word wrapping:
 
 breakMarker, indentFiller, leadingSpaceChar :: Char
-breakMarker      = '\133'
-indentFiller     = '\134'
-leadingSpaceChar = '\135'
+breakMarker      = '\135'
+indentFiller     = '\136'
+leadingSpaceChar = '\137'
 
 -- ==================================================
 -- Denotative characters used in text files:
@@ -68,13 +70,10 @@ styleTokenDelimiter = '\\'
 -- Other:
 
 corpseNameMarker :: Char
-corpseNameMarker = '\136'
+corpseNameMarker = '\138'
 
 fromPersonMarker :: Char
-fromPersonMarker = '\137'
+fromPersonMarker = '\139'
 
-hookArgDelimiter :: Char
-hookArgDelimiter = '\138'
-
-plaIdDelimiter :: Char
-plaIdDelimiter = '\139'
+forSpiritOnlyMarker :: Char
+forSpiritOnlyMarker = '\140'

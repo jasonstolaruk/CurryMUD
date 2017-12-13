@@ -64,7 +64,7 @@ import           Control.Concurrent.STM (atomically)
 import           Control.Concurrent.STM.TQueue (writeTQueue)
 import           Control.Lens (each, to, views)
 import           Control.Lens.Operators ((.~), (&), (%~), (^.))
-import           Control.Monad (forM_, unless)
+import           Control.Monad (forM_, unless, when)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.List ((\\), delete, elemIndex)
 import           Data.Maybe (fromMaybe)
@@ -93,10 +93,17 @@ bcast [] = unit
 bcast bs = liftIO . atomically . forM_ bs . sendBcast =<< getStateTime
   where
     sendBcast (ms, ct) (msg, is) = forM_ is $ \i ->
-        let f g i' | (mq, cols) <- getMsgQueueColumns i' ms
-                   = writeTQueue mq . g . T.unlines . concatMap (wrap cols) . T.lines $ parsed
-            parsed = parseDesig (Just ct) i ms . parseVerbObj ct i ms $ msg -- Parse verb objects before desigs: a verb object may contain a corpse desig.
-        in isNpc i ms ? (maybeVoid (f ToNpc) . getPossessor i $ ms) :? f FromServer i
+        let helper f i' = case parseForSpiritOnlyMarker msg of Nothing   -> sendIt msg
+                                                               Just msg' -> when (isSpiritId i' ms) . sendIt $ msg'
+              where
+                sendIt msg' = let parsed = parseDesig (Just ct) i ms . parseVerbObj ct i ms $ msg' -- Parse verb objects before desigs: a verb object may contain a corpse desig.
+                              in writeTQueue mq . f . T.unlines . concatMap (wrap cols) . T.lines $ parsed
+                (mq, cols)  = getMsgQueueColumns i' ms
+        in isNpc i ms ? (maybeVoid (helper ToNpc) . getPossessor i $ ms) :? helper FromServer i
+
+parseForSpiritOnlyMarker :: Text -> Maybe Text
+parseForSpiritOnlyMarker (T.uncons -> Just (c, rest)) | c == forSpiritOnlyMarker = Just rest
+parseForSpiritOnlyMarker _ = Nothing
 
 -----
 
@@ -208,7 +215,6 @@ ok mq = send mq . nlnl $ "OK!"
 
 -----
 
--- TODO: Spirits can see in the dark.
 parseDesig :: HasCallStack => Maybe CurryTime -> Id -> MudState -> Text -> Text
 parseDesig = parseDesigHelper (const id)
 
@@ -227,22 +233,22 @@ parseDesigHelper suffixer mct i ms = loop
                                       = left <> expander i ms d <> loop right
                                       | otherwise = helper xs
         helper []                     = txt
-    pairs = [ (stdDesigDelimiter,    expandStdDesig    suffixer isLit)
-            , (nonStdDesigDelimiter, expandNonStdDesig suffixer isLit)
-            , (corpseDesigDelimiter, expandCorpseDesig               ) ] |&| map (first T.singleton)
-    isLit = maybe True (\ct -> isMobRmLit ct i ms) mct
+    pairs  = [ (stdDesigDelimiter,    expandStdDesig    suffixer canSee)
+             , (nonStdDesigDelimiter, expandNonStdDesig suffixer canSee)
+             , (corpseDesigDelimiter, expandCorpseDesig                ) ] |&| map (first T.singleton)
+    canSee = isSpiritId i ms || maybe True (\ct -> isMobRmLit ct i ms) mct
 
 extractDelimited :: (HasCallStack, Serializable a) => Text -> Text -> (Text, a, Text)
 extractDelimited delim (T.breakOn delim -> (left, T.breakOn delim . T.tail -> (txt, T.tail -> right))) =
     (left, deserialize . quoteWith delim $ txt, right)
 
 expandStdDesig :: HasCallStack => Suffixer -> Bool -> Id -> MudState -> Desig -> Text
-expandStdDesig f isLit i ms d@StdDesig { .. }
-  | isLit, desigDoExpandSing = x
-  | isLit                    = y
-  | desigDoMaskInDark        = f s . mkCapsFun desigCap $ "someone"
-  | desigDoExpandSing        = x
-  | otherwise                = y
+expandStdDesig f canSee i ms d@StdDesig { .. }
+  | canSee, desigDoExpandSing = x
+  | canSee                    = y
+  | desigDoMaskInDark         = f s . mkCapsFun desigCap $ "someone"
+  | desigDoExpandSing         = x
+  | otherwise                 = y
   where
     x      = s `elem` intros ? s :? (y |&| if isPla desigId ms then f s else id)
     y      = expandEntName i ms d intros
@@ -266,8 +272,8 @@ expandEntName i ms StdDesig { .. } intros | f      <- mkCapsFun desigCap
 expandEntName _ _ d _ = pmf "expandEntName" d
 
 expandNonStdDesig :: HasCallStack => Suffixer -> Bool -> Id -> MudState -> Desig -> Text
-expandNonStdDesig f isLit i ms NonStdDesig { .. }
-  | isLit     = dEntSing `elem` getIntroduced i ms ? dEntSing :? dDesc
+expandNonStdDesig f canSee i ms NonStdDesig { .. }
+  | canSee    = dEntSing `elem` getIntroduced i ms ? dEntSing :? dDesc
   | otherwise = f dEntSing . mkCapsFun dCap $ "someone"
 expandNonStdDesig _ _ _ _ d = pmf "expandNonStdDesig" d
 
@@ -282,8 +288,8 @@ parseVerbObj ct i ms = loop
                                          in left <> expander vo <> loop right
              | otherwise               = txt
     delim                   = T.singleton verbObjDelimiter
-    expander VerbObj { .. } = isLit ? verbObjTxt :? mkCapsFun verbObjCap "something"
-    isLit                   = isMobRmLit ct i ms
+    expander VerbObj { .. } = canSee ? verbObjTxt :? mkCapsFun verbObjCap "something"
+    canSee                  = ((||) <$> uncurry isSpiritId <*> uncurry (isMobRmLit ct)) (i, ms)
 
 -----
 
@@ -311,16 +317,16 @@ sendCmdNotFound i mq cols = isSpiritId i <$> getState >>= \case
       let helperA pt   = ms & plaTbl .~ pt
           helperB []   = pure f
           helperB msgs = pure . multiWrapSend mq cols $ sorryCmdNotFound : msgs
-      in (helperA *** helperB) . views plaTbl (firstSpiritCmdNotFound i) $ ms
+      in (helperA *** helperB) . views plaTbl (spiritCmdNotFoundHelper i) $ ms
   False -> f
   where
     f = send mq . nlnl $ sorryCmdNotFound
 
-firstSpiritCmdNotFound :: HasCallStack => Id -> PlaTbl -> (PlaTbl, [Text])
-firstSpiritCmdNotFound i pt
-  | pt^.ind i.to isNotFirstSpiritCmdNotFound = (pt, [])
-  | otherwise                                = ( pt & ind i %~ setPlaFlag IsNotFirstSpiritCmdNotFound True
-                                               , [ "", hintSpiritCmdNotFound ] )
+spiritCmdNotFoundHelper :: HasCallStack => Id -> PlaTbl -> (PlaTbl, [Text])
+spiritCmdNotFoundHelper i pt
+  | pt^.ind i.to isHintedSpiritCmdNotFound = (pt, [])
+  | otherwise                              = ( pt & ind i %~ setPlaFlag IsHintedSpiritCmdNotFound True
+                                             , [ "", hintSpiritCmdNotFound ] )
 
 -----
 

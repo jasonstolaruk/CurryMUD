@@ -766,13 +766,14 @@ data Pla = Pla { _currHostName   :: HostName
                , _bonusTime      :: Maybe UTCTime
                , _spiritAsync    :: Maybe SpiritAsync } deriving (Eq, Generic)
 
-data PlaFlags = HasRazzled
-              | IsAdmin
+data PlaFlags = IsAdmin -- Type "Flags" is a type synonym for "Int16".
               | IsGmcp
+              | IsHintedAdminMsg
+              | IsHintedMobSay
+              | IsHintedSpiritCmdNotFound
+              | IsHintedSpiritSeeInDark
               | IsIncognito
-              | IsNotFirstAdminMsg
-              | IsNotFirstMobSay
-              | IsNotFirstSpiritCmdNotFound
+              | IsRazzled
               | IsShowingFp
               | IsShowingHp
               | IsShowingMp

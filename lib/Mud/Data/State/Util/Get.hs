@@ -127,28 +127,30 @@ module Mud.Data.State.Util.Get ( getActMap
                                , getWritMessage
                                , getWritRecip
                                , getWritable
-                               , hasRazzled
-                               , hasRazzledId
                                , isAdmin
                                , isAdminId
                                , isBiodegradable
                                , isBiodegradableId
                                , isGmcp
                                , isGmcpId
+                               , isHintedAdminMsg
+                               , isHintedAdminMsgId
+                               , isHintedMobSay
+                               , isHintedModSayId
+                               , isHintedSpiritCmdNotFound
+                               , isHintedSpiritCmdNotFoundId
+                               , isHintedSpiritSeeInDark
+                               , isHintedSpiritSeeInDarkId
                                , isHolySymbol
                                , isHumming
                                , isHummingId
                                , isIncognito
                                , isIncognitoId
-                               , isNotFirstAdminMsg
-                               , isNotFirstAdminMsgId
-                               , isNotFirstMobSay
-                               , isNotFirstModSayId
-                               , isNotFirstSpiritCmdNotFound
-                               , isNotFirstSpiritCmdNotFoundId
                                , isNpc
                                , isNpcPla
                                , isPla
+                               , isRazzled
+                               , isRazzledId
                                , isShowingFp
                                , isShowingFpId
                                , isShowingHp
@@ -885,14 +887,6 @@ plaFlagHelper flag i = getPlaFlag flag . getPla i
 
 -----
 
-hasRazzled :: Pla -> Bool
-hasRazzled = getPlaFlag HasRazzled
-
-hasRazzledId :: HasCallStack => Id -> MudState -> Bool
-hasRazzledId = onPla hasRazzled False
-
------
-
 isAdmin :: Pla -> Bool
 isAdmin = getPlaFlag IsAdmin
 
@@ -909,6 +903,38 @@ isGmcpId = onPla isGmcp False
 
 -----
 
+isHintedAdminMsg :: Pla -> Bool
+isHintedAdminMsg = getPlaFlag IsHintedAdminMsg
+
+isHintedAdminMsgId :: HasCallStack => Id -> MudState -> Bool
+isHintedAdminMsgId = onPla isHintedAdminMsg True
+
+-----
+
+isHintedMobSay :: Pla -> Bool
+isHintedMobSay = getPlaFlag IsHintedMobSay
+
+isHintedModSayId :: HasCallStack => Id -> MudState -> Bool
+isHintedModSayId = onPla isHintedMobSay True
+
+-----
+
+isHintedSpiritCmdNotFound :: Pla -> Bool
+isHintedSpiritCmdNotFound = getPlaFlag IsHintedSpiritCmdNotFound
+
+isHintedSpiritCmdNotFoundId :: HasCallStack => Id -> MudState -> Bool
+isHintedSpiritCmdNotFoundId = onPla isHintedSpiritCmdNotFound True
+
+-----
+
+isHintedSpiritSeeInDark :: Pla -> Bool
+isHintedSpiritSeeInDark = getPlaFlag IsHintedSpiritSeeInDark
+
+isHintedSpiritSeeInDarkId :: HasCallStack => Id -> MudState -> Bool
+isHintedSpiritSeeInDarkId = onPla isHintedSpiritSeeInDark True
+
+-----
+
 isIncognito :: Pla -> Bool
 isIncognito = getPlaFlag IsIncognito
 
@@ -917,27 +943,11 @@ isIncognitoId = onPla isIncognito False
 
 -----
 
-isNotFirstAdminMsg :: Pla -> Bool
-isNotFirstAdminMsg = getPlaFlag IsNotFirstAdminMsg
+isRazzled :: Pla -> Bool
+isRazzled = getPlaFlag IsRazzled
 
-isNotFirstAdminMsgId :: HasCallStack => Id -> MudState -> Bool
-isNotFirstAdminMsgId = onPla isNotFirstAdminMsg True
-
------
-
-isNotFirstMobSay :: Pla -> Bool
-isNotFirstMobSay = getPlaFlag IsNotFirstMobSay
-
-isNotFirstModSayId :: HasCallStack => Id -> MudState -> Bool
-isNotFirstModSayId = onPla isNotFirstMobSay True
-
------
-
-isNotFirstSpiritCmdNotFound :: Pla -> Bool
-isNotFirstSpiritCmdNotFound = getPlaFlag IsNotFirstSpiritCmdNotFound
-
-isNotFirstSpiritCmdNotFoundId :: HasCallStack => Id -> MudState -> Bool
-isNotFirstSpiritCmdNotFoundId = onPla isNotFirstSpiritCmdNotFound True
+isRazzledId :: HasCallStack => Id -> MudState -> Bool
+isRazzledId = onPla isRazzled False
 
 -----
 

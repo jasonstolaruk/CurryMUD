@@ -890,20 +890,20 @@ examinePla i ms = let p = getPla i ms
                      , "Bonus time: "        <> p^.bonusTime.to (maybe none showTxt) ]
   where
     descFlags p | p^.plaFlags == zeroBits = none
-                | otherwise               = let pairs = [ (hasRazzled,                  "has razzled"                   )
-                                                        , (isAdmin,                     "admin"                         )
-                                                        , (isGmcp,                      "gmcp"                          )
-                                                        , (isIncognito,                 "incognito"                     )
-                                                        , (isNotFirstAdminMsg,          "not first admin msg"           )
-                                                        , (isNotFirstMobSay,            "not first mob say"             )
-                                                        , (isNotFirstSpiritCmdNotFound, "not first spirit cmd not found")
-                                                        , (isShowingFp,                 "showing FP"                    )
-                                                        , (isShowingHp,                 "showing HP"                    )
-                                                        , (isShowingMp,                 "showing MP"                    )
-                                                        , (isShowingPp,                 "showing PP"                    )
-                                                        , (isSpirit,                    "spirit"                        )
-                                                        , (isTunedAdmin,                "tuned admin"                   )
-                                                        , (isTunedQuestion,             "tuned question"                ) ]
+                | otherwise               = let pairs = [ (isAdmin,                   "admin"                      )
+                                                        , (isGmcp,                    "gmcp"                       )
+                                                        , (isHintedAdminMsg,          "hinted admin msg"           )
+                                                        , (isHintedMobSay,            "hinted mob say"             )
+                                                        , (isHintedSpiritCmdNotFound, "hinted spirit cmd not found")
+                                                        , (isIncognito,               "incognito"                  )
+                                                        , (isRazzled,                 "is razzled"                 )
+                                                        , (isShowingFp,               "showing FP"                 )
+                                                        , (isShowingHp,               "showing HP"                 )
+                                                        , (isShowingMp,               "showing MP"                 )
+                                                        , (isShowingPp,               "showing PP"                 )
+                                                        , (isSpirit,                  "spirit"                     )
+                                                        , (isTunedAdmin,              "tuned admin"                )
+                                                        , (isTunedQuestion,           "tuned question"             ) ]
                                             in [ f p |?| t | (f, t) <- pairs ]
     helper = noneOnNull . commas . map (`descSingId` ms)
 
@@ -1258,7 +1258,7 @@ adminMsg   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= (|#| m
                       toTarget'              = quoteWith "__" me |<>| toTarget
                   in do
                       sendFun formatted
-                      (multiWrapSend targetMq targetCols =<<) $ if not (isAdHoc targetId ms) && isNotFirstAdminMsg targetPla
+                      (multiWrapSend targetMq targetCols =<<) $ if not (isAdHoc targetId ms) && isHintedAdminMsg targetPla
                         then unadulterated toTarget'
                         else [ toTarget' : hints | hints <- firstAdminMsg targetId s ]
                       dbHelper
@@ -1279,7 +1279,7 @@ adminMsg p = pmf "adminMsg" p
 
 firstAdminMsg :: HasCallStack => Id -> Sing -> MudStack [Text]
 firstAdminMsg i adminSing =
-    modifyState $ (, [ "", hintAMsg adminSing ]) . (plaTbl.ind i %~ setPlaFlag IsNotFirstAdminMsg True)
+    modifyState $ (, [ "", hintAMsg adminSing ]) . (plaTbl.ind i %~ setPlaFlag IsHintedAdminMsg True)
 
 -----
 

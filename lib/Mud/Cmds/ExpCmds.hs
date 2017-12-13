@@ -18,6 +18,7 @@ import           Mud.Data.State.Util.Misc
 import           Mud.Data.State.Util.Output
 import           Mud.Misc.LocPref
 import qualified Mud.Misc.Logging as L (logPlaOut)
+import           Mud.TopLvlDefs.Chars
 import qualified Mud.Util.Misc as U (pmf)
 import           Mud.Util.Misc hiding (pmf)
 import           Mud.Util.Operators
@@ -1245,9 +1246,10 @@ expCmd (ExpCmd ecn ect          isVis desc) (NoArgs i mq cols) = getStateTime >>
             serialized                  = serializeDesigHelper d toOthers
             (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
             substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
-            toOthersBcast               = isLit || isVis |?| pure (nlnl . replace substitutions $ toOthers, desigOtherIds d)
+            toOthersBcast               = ( markForSpiritOnly isLit isVis . nlnl . replace substitutions $ toOthers
+                                          , desigOtherIds d )
             isLit                       = isMobRmLit ct i ms
-            tuple                       = (toSelf, toOthersBcast, desc, toSelf)
+            tuple                       = (toSelf, pure toOthersBcast, desc, toSelf)
         in expCmdHelper i mq cols ecn tuple
 expCmd (ExpCmd ecn NoTarget {} _     _   ) p@(WithArgs     _ _  _    (_:_) ) = advise p [] . sorryExpCmdIllegalTarget $ ecn
 expCmd (ExpCmd ecn ect         isVis desc)   (OneArgNubbed i mq cols target) = case ect of
@@ -1271,8 +1273,10 @@ expCmd (ExpCmd ecn ect         isVis desc)   (OneArgNubbed i mq cols target) = c
                             toTarget'     = replace substitutions toTarget
                             toTargetBcast = (nlnl toTarget', pure targetId)
                             toOthersBcast = (nlnl toOthers', targetId `delete` desigOtherIds d)
-                            tuple         = (toSelf', isLit || isVis |?| [ toTargetBcast, toOthersBcast ], desc, logMsg)
-                            isLit         = isMobRmLit ct i ms
+                            bs    = [ (markForSpiritOnly isLit isVis txt, is)
+                                    | (txt, is) <- [ toTargetBcast, toOthersBcast ] ]
+                            isLit = isMobRmLit ct i ms
+                            tuple = (toSelf', bs, desc, logMsg)
                         in expCmdHelper i mq cols ecn tuple
                     mkBindings targetTxt = let msg                         = replace (pure ("@", targetTxt)) toSelf
                                                toSelf'                     = parseDesig Nothing i ms msg
@@ -1293,6 +1297,11 @@ expCmd (ExpCmd ecn ect         isVis desc)   (OneArgNubbed i mq cols target) = c
             else wrapSend mq cols sorryNoOneHere
       (x, _) -> wrapSend mq cols . sorryExpCmdInInvEq $ x
 expCmd _ p = advise p [] adviceExpCmdExcessArgs
+
+markForSpiritOnly :: Bool -> Bool -> Text -> Text
+markForSpiritOnly isLit isVis | isLit || isVis = id
+                              | otherwise      = (forSpiritOnlyMarker `T.cons`) -- Spirits can see in the dark.
+
 
 expCmdHelper :: HasCallStack => ExpCmdFun
 expCmdHelper i mq cols ecn (toSelf, bs, desc, logMsg) = do logPlaOut ecn i . pure $ logMsg

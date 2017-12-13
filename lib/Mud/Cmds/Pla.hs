@@ -146,7 +146,6 @@ regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 -- TODO: "ask".
 -- TODO: "buy" and "sell".
 -- TODO: "shout". Consider indoor vs. outdoor. Update the "communication" help topic.
--- TODO: Spirits can see in the dark.
 regularCmdTuples :: HasCallStack => [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
     [ ("?",          plaDispCmdList,     True,  cmdDescDispCmdList)
@@ -1848,7 +1847,7 @@ listen p = withoutArgs listen p
 
 -----
 
-look :: HasCallStack => ActionFun
+look :: HasCallStack => ActionFun -- TODO: Use "IsHintedSpiritSeeInDark".
 look p@(NoArgs i mq cols) = checkDark p $ getState >>= \ms ->
     let ri        = getRmId i ms
         r         = getRm ri ms
@@ -2189,14 +2188,14 @@ quitCan'tAbbrev p                  = withoutArgs quitCan'tAbbrev p
 -----
 
 razzle :: HasCallStack => ActionFun
-razzle p@(ActionParams i mq cols [ "dazzle", "root", "beer" ]) = mIf (hasRazzledId i <$> getState)
+razzle p@(ActionParams i mq cols [ "dazzle", "root", "beer" ]) = mIf (isRazzledId i <$> getState)
     (cmdNotFoundAction p)
     (do logPlaExec "razzle" i
         modifyStateSeq $ \ms ->
             let s                  = getSing i ms
                 ([potId], ms', fs) = clone i ([], ms, []) . pure $ iPotTinnitus
             in ( upd ms' [ objTbl.ind potId %~ setObjFlag IsBiodegradable True
-                         , plaTbl.ind i     %~ setPlaFlag HasRazzled      True ]
+                         , plaTbl.ind i     %~ setPlaFlag IsRazzled       True ]
                , fs ++ [ runBiodegAsync potId
                        , wrapSend mq cols "A potion flask materializes in your hands."
                        , bcastOtherAdmins i $ s <> " has executed \"razzle dazzle root beer\"." ] ))
@@ -2775,8 +2774,8 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms ->
 sayHelper _ p = pmf "sayHelper" p
 
 firstMobSay :: HasCallStack => Id -> PlaTbl -> (PlaTbl, [Text])
-firstMobSay i pt | pt^.ind i.to isNotFirstMobSay = (pt, [])
-                 | otherwise                     = (pt & ind i %~ setPlaFlag IsNotFirstMobSay True, [ "", hintSay ])
+firstMobSay i pt | pt^.ind i.to isHintedMobSay = (pt, [])
+                 | otherwise                   = (pt & ind i %~ setPlaFlag IsHintedMobSay True, [ "", hintSay ])
 
 -----
 

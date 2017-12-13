@@ -252,7 +252,8 @@ genericCheckActing i ms attempting ngActs a = maybe a (genericSorry ms) . checkA
 -----
 
 checkDark :: HasCallStack => ActionParams -> Fun -> MudStack ()
-checkDark (ActionParams i mq cols _) f = getStateTime >>= \(ms, ct) -> isMobRmLit ct i ms ? f :? wrapSend mq cols darkMsg
+checkDark (ActionParams i mq cols _) f = getStateTime >>= \(ms, ct) ->
+  ((||) <$> uncurry isSpiritId <*> uncurry (isMobRmLit ct)) (i, ms) ? f :? wrapSend mq cols darkMsg
 
 -----
 
