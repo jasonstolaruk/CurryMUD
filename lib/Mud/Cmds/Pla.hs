@@ -1859,11 +1859,12 @@ look p@(NoArgs i mq cols) = checkDark p $ getStateTime >>= \pair@(ms, _) ->
   where
     filler       = T.singleton indentFiller
     formatRmDesc = map (T.replicate rmDescIndentAmt filler <>) . T.lines
-    spiritSeeInDarkHelper (ms, ct) txt | not . isSpiritId i $ ms        = return txt
-                                       | isMobRmLit ct i ms             = return txt
-                                       | isHintedSpiritSeeInDarkId i ms = return txt
-                                       | otherwise = do tweak $ plaTbl.ind i %~ setPlaFlag IsHintedSpiritSeeInDark True -- TODO: Test.
-                                                        return $ colorWith spiritMsgColor (nlnl hintSpiritSeeInDark) <> txt
+    spiritSeeInDarkHelper (ms, ct) txt
+      | not . isSpiritId i $ ms        = return txt
+      | isMobRmLit ct i ms             = return txt
+      | isHintedSpiritSeeInDarkId i ms = return txt
+      | otherwise = do tweak $ plaTbl.ind i %~ setPlaFlag IsHintedSpiritSeeInDark True
+                       return $ txt <> colorWith spiritMsgColor (wrapUnlinesNl cols hintSpiritSeeInDark)
 look p@(LowerNub i mq cols as) = checkDark p $ mkRndmVector >>= \v ->
     helper v |&| modifyState >=> \(toSelf, bs, hookLogMsg, maybeTargetDesigs, fs) -> do
         ms <- getState
