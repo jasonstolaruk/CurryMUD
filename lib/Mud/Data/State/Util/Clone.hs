@@ -90,7 +90,7 @@ clone destId = foldl' helper
           LightType      | light <- getLight targetId ms & lightIsLit .~ False
                          -> f . newLight      ms mkEntTemplate mkObjTemplate light                       $ destId
           NpcType        -> -- When cloning an NPC, the caller is responsible for running "runNpcServerAsync" before
-                            -- the functions returned in the tuple by "clone". See "adminClone".
+                            -- the functions returned in the tuple by "clone".
               let ((is, coins), em) = (getInvCoins `fanUncurry` getEqMap) (targetId, ms)
                   (newId, ms', fs)  = newNpc ms
                                              mkEntTemplate
