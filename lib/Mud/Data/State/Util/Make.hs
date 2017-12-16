@@ -35,7 +35,6 @@ import           Mud.Data.State.Util.Misc
 import           Mud.Threads.Biodegrader
 import           Mud.Threads.CorpseDecomposer
 import           Mud.Threads.Digester
--- import           Mud.Threads.NpcServer -- TODO
 import           Mud.Threads.Regen
 import           Mud.TopLvlDefs.Seconds
 import           Mud.Util.Misc
@@ -271,14 +270,14 @@ createMob ms et (is, c) em mt = let (i, ms') = createEnt ms et
 -- ==================================================
 -- NPC
 
-createNpc :: MudState
+createNpc :: MudState  -- The caller is responsible for running "runNpcServerAsync" before "runDigesterAsync" and "runRegenAsync".
           -> EntTemplate
           -> (Inv, Coins)
           -> EqMap
           -> MobTemplate
           -> (Id, MudState, Funs)
 createNpc ms et ic em mt = let (i, ms') = createMob ms et ic em mt
-                           in (i, ms', map (i |&|) [ {-runNpcServerAsync,-} runDigesterAsync, runRegenAsync ]) -- TODO: Fix import cycle.
+                           in (i, ms', map (i |&|) [ runDigesterAsync, runRegenAsync ])
 
 newNpc :: MudState
        -> EntTemplate

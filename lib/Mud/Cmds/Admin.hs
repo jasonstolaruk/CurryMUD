@@ -37,23 +37,24 @@ import           Mud.Misc.ANSI
 import           Mud.Misc.CurryTime
 import           Mud.Misc.Database
 import           Mud.Misc.Gods
-import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
 import           Mud.Misc.Misc
 import           Mud.Misc.Persist
 import           Mud.TheWorld.Foods
 import           Mud.TheWorld.Liqs
 import           Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iNecropolis, iWelcome)
 import           Mud.Threads.DbTblPurger
+import           Mud.Threads.NpcServer
 import           Mud.TopLvlDefs.FilePaths
 import           Mud.TopLvlDefs.Misc
 import           Mud.Util.List
-import qualified Mud.Util.Misc as U (pmf)
 import           Mud.Util.Misc hiding (pmf)
 import           Mud.Util.Operators
 import           Mud.Util.Padding
 import           Mud.Util.Quoting
 import           Mud.Util.Text
 import           Mud.Util.Wrapping
+import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
+import qualified Mud.Util.Misc as U (pmf)
 
 import           Control.Arrow ((***), (&&&), first, second)
 import           Control.Concurrent.Async (asyncThreadId)
@@ -472,9 +473,11 @@ adminClone   (LowerNub i mq cols as) = modifyStateSeq $ \ms ->
             | t `elem` [ CorpseType, PlaType, RmType ] -> sorry . sorryCloneType $ t
             | otherwise                                ->
                 let ([newId], ms'', fs') = clone (getRmId i ms') ([], ms', fs) . pure $ targetId
-                    msg                  = T.concat [ aOrAnOnLower . descSingId targetId $ ms, " ", bracketQuote . pp $ t
-                                                    , ": ", showTxt newId ]
-                in (ms'', fs' ++ pure (wrapSend1Nl mq cols . prd $ "Cloning " <> msg), logMsgs ++ pure msg)
+                    funs = concat [ isNpc newId ms'' |?| pure (runNpcServerAsync newId) -- Must appear before "fs'".
+                                  , fs', pure (wrapSend1Nl mq cols . prd $ "Cloned " <> msg) ]
+                    msg  = T.concat [ aOrAnOnLower . descSingId targetId $ ms, " ", bracketQuote . pp $ t, ": "
+                                    , showTxt newId ]
+                in (ms'', funs, logMsgs ++ pure msg)
           _ -> sorryId
           where
             sorry msg = tuple & _2 <>+ wrapSend1Nl mq cols msg
@@ -1375,7 +1378,7 @@ adminPersist p              = withoutArgs adminPersist p
 
 -----
 
-adminPossess :: HasCallStack => ActionFun
+adminPossess :: HasCallStack => ActionFun -- TODO: "The Curry is a player and cannot be possessed."
 adminPossess p@(NoArgs' i mq) = advise p [ prefixAdminCmd "possess" ] adviceAPossessNoArgs >> sendDfltPrompt mq i
 adminPossess   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the NPC you wish to possess"

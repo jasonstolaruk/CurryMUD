@@ -39,9 +39,9 @@ dispatch f cn p@ActionParams { .. } = getState >>= \ms -> maybe notFound found =
 findActionHelper :: HasCallStack => Id -> MudState -> CmdName -> [Cmd] -> MudStack (Maybe Action)
 findActionHelper i ms cn cmds =
     let r     = getMobRm i ms
-        cmds' = sort . concat $ [ mkNonStdRmLinkCmds r -- Exit "in" should be prioritized over the "intro" cmd abbreviation.
+        cmds' = sort . concat $ [ mkNonStdRmLinkCmds r -- Nonstandard room links first: exit "in" should be prioritized over the "intro" cmd abbreviation.
                                 , cmds
-                                , mkRacialLangCmds i ms ]
+                                , mkRacialLangCmds i ms ] -- TODO: Haven't the racial lang cmds already been added at this point?
     in return $ case [ ra | ra <- view rmActions r, cn == rmActionCmdName ra ] of
       []   -> cmdAction . fst <$> findFullNameForAbbrev cn [ (cmd, cmdName cmd) | cmd <- cmds' ]
       [ra] -> Just . Action (getRmActionFun (rmActionFunName ra) ms) $ True

@@ -143,10 +143,10 @@ helperFillWaterRmEitherInv i srcDesig (eis:eiss) a = helperFillWaterRmEitherInv 
         sorryEnc  = sorryGetEnc <> "any more water."
         (vs, vmm) = (getSing `fanUncurry` getMaxMouthfuls) (vi, ms)
         calcCanCarryMouthfuls amt = let (myWeight, myMaxEnc) = (calcWeight `fanUncurry` calcMaxEnc) (i, ms)
-                                    in if | myWeight + (amt * mouthfulWeight) > myMaxEnc
-                                          , margin <- myMaxEnc - myWeight
-                                          -> floor (margin `divide` mouthfulWeight :: Double)
-                                          | otherwise -> amt
+                                    in if myWeight + (amt * mouthfulWeight) > myMaxEnc
+                                      then let margin = myMaxEnc - myWeight
+                                           in floor (margin `divide` mouthfulWeight :: Double)
+                                      else amt
         fillUp                    = a' & _1.vesselTbl.ind vi.vesselCont ?~ (waterLiq, vmm)
                                        & _2 <>+ mkFillUpMsg
                                        & _3 <>+ bcastHelper
@@ -584,7 +584,7 @@ createAdminZone = do
         []
         mempty
         (mkRm (RmTemplate "Clone room"
-            "Cloned items are temporarily placed here when a PC dies."
+            "Cloned items are temporarily placed here."
             Nothing
             Nothing
             zeroBits

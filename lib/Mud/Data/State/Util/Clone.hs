@@ -89,14 +89,16 @@ clone destId = foldl' helper
           HolySymbolType -> f . newHolySymbol ms mkEntTemplate mkObjTemplate (getHolySymbol targetId ms) $ destId
           LightType      | light <- getLight targetId ms & lightIsLit .~ False
                          -> f . newLight      ms mkEntTemplate mkObjTemplate light                       $ destId
-          NpcType        ->
+          NpcType        -> -- When cloning an NPC, the caller is responsible for running "runNpcServerAsync" before
+                            -- the functions returned in the tuple by "clone". See "adminClone".
               let ((is, coins), em) = (getInvCoins `fanUncurry` getEqMap) (targetId, ms)
                   (newId, ms', fs)  = newNpc ms
                                              mkEntTemplate
                                              mempties
                                              M.empty
                                              mkMobTemplate
-                                             destId
+                                             destId & _2.mobTbl.ind newId.rmId     .~ destId
+                                                    & _2.mobTbl.ind newId.lastRmId .~ destId
               in h newId coins . cloneEqMap em . clone newId ([], ms', fs) $ is
           ObjType        -> f . newObj ms mkEntTemplate mkObjTemplate $ destId
           PlaType        -> p -- You can't clone a player.
