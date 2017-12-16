@@ -35,7 +35,6 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryChanNoOneListening
                            , sorryChanTargetName
                            , sorryChanTargetNameFromContext
-                           , sorryCloneSelf
                            , sorryCloneType
                            , sorryCmdNotFound
                            , sorryCon
@@ -170,7 +169,6 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryKillAdmin
                            , sorryKillAsleep
                            , sorryKillDead
-                           , sorryKillSelf
                            , sorryKillSpirit
                            , sorryKillType
                            , sorryLightCoins
@@ -204,6 +202,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryMkHolyAmt
                            , sorryMkHolyGodName
                            , sorryMsgIncog
+                           , sorryNeat
                            , sorryNewChanExisting
                            , sorryNewChanName
                            , sorryNoAdmins
@@ -328,6 +327,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorrySudoerDemoteRoot
                            , sorrySudoerDemoteSelf
                            , sorrySudoerSpirit
+                           , sorrySuicide
                            , sorrySummonAdHoc
                            , sorrySummonAdmin
                            , sorrySummonAlready
@@ -560,9 +560,6 @@ sorryChanTargetNameFromContext n ChanContext { .. } = sorryChanTargetName effCha
     effChanName = maybe someCmdName dblQuote someChanName
 
 -----
-
-sorryCloneSelf :: Text
-sorryCloneSelf = "That would be neat, wouldn't it?"
 
 sorryCloneType :: Type -> Text
 sorryCloneType t = prd . can't $ "clone " <> aOrAn (pp t)
@@ -1052,9 +1049,6 @@ sorryKillAsleep t = t <> " is presently asleep " <> can'tKill
 sorryKillDead :: Text -> Text
 sorryKillDead t = t <> " is already dead."
 
-sorryKillSelf :: Text
-sorryKillSelf = can't "kill yourself."
-
 sorryKillSpirit :: Text -> Text
 sorryKillSpirit t = t <> " has already died (and is presently a spirit)."
 
@@ -1169,6 +1163,11 @@ sorryMkHolyGodName a = dblQuote a <> " is not a valid god name."
 
 sorryMsgIncog :: Text
 sorryMsgIncog = can't "send a message to a player who is logged in while you are incognito."
+
+-----
+
+sorryNeat :: Text
+sorryNeat = "That would be neat, wouldn't it?"
 
 -----
 
@@ -1294,7 +1293,7 @@ sorryPossessRm :: Text
 sorryPossessRm = can't "possess a room."
 
 sorryPossessType :: Sing -> Type -> Text
-sorryPossessType s t = T.concat [ "The ", s, " is a ", pp t, " and cannot be possessed." ]
+sorryPossessType s t = T.concat [ theOnLower s, " is a ", pp t, " and cannot be possessed." ]
 
 -----
 
@@ -1633,6 +1632,11 @@ sorrySudoerDemoteSelf = can't "demote yourself."
 
 sorrySudoerSpirit :: Text -> Text
 sorrySudoerSpirit t = t <> " is a spirit and cannot be promoted."
+
+-----
+
+sorrySuicide :: Text
+sorrySuicide = "Feeling suicidal?"
 
 -----
 

@@ -468,7 +468,7 @@ adminClone   (LowerNub i mq cols as) = modifyStateSeq $ \ms ->
     let f tuple@(ms', fs, logMsgs) a = case reads . T.unpack $ a of
           [(targetId@((`getType` ms) -> t), "")]
             | targetId < 0                             -> sorry sorryWtf
-            | targetId == i                            -> sorry sorryCloneSelf
+            | targetId == i                            -> sorry sorryNeat
             | not . hasType targetId $ ms              -> sorryId
             | t `elem` [ CorpseType, PlaType, RmType ] -> sorry . sorryCloneType $ t
             | otherwise                                ->
@@ -613,7 +613,7 @@ adminDestroy p@AdviseNoArgs            = advise p [ prefixAdminCmd "destroy" ] a
 adminDestroy   (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a of
           [(targetId, "")] | targetId < 0                -> sorry sorryWtf
-                           | targetId == i               -> sorry "Feeling suicidal?"
+                           | targetId == i               -> sorry sorrySuicide
                            | not . hasType targetId $ ms -> sorryId
                            | otherwise                   -> adminDestroyHelper i mq cols targetId
           _                                              -> sorryId
@@ -1110,7 +1110,7 @@ adminKill   (LowerNub i mq cols as) = getState >>= \ms -> do
           where
             sorryHelper msg = pair & _2 <>+ msg
             sorry           = sorryHelper . sorryParseId $ a
-            go targetId     | targetId == i     = sorryHelper sorryKillSelf
+            go targetId     | targetId == i     = sorryHelper sorrySuicide
                             | isNpc targetId ms = kill
                             | isPla targetId ms =
                                 if | isAdminId     targetId   ms -> sorryHelper . sorryKillAdmin  $ singId
@@ -1378,7 +1378,7 @@ adminPersist p              = withoutArgs adminPersist p
 
 -----
 
-adminPossess :: HasCallStack => ActionFun -- TODO: "The Curry is a player and cannot be possessed."
+adminPossess :: HasCallStack => ActionFun
 adminPossess p@(NoArgs' i mq) = advise p [ prefixAdminCmd "possess" ] adviceAPossessNoArgs >> sendDfltPrompt mq i
 adminPossess   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the NPC you wish to possess"
@@ -1397,6 +1397,7 @@ adminPossess   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
     in case reads . T.unpack $ strippedTarget of
       [(targetId, "")]
         | targetId < 0                -> sorry sorryWtf
+        | targetId == i               -> sorry sorryNeat
         | not . hasType targetId $ ms -> sorry . sorryParseId $ strippedTarget'
         | otherwise                   -> case getType targetId ms of
           NpcType -> maybe (possess targetId) (sorry . sorryAlreadyPossessing . (`getSing` ms)) . getPossessing i $ ms
