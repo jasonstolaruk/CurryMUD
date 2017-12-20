@@ -60,8 +60,8 @@ library
                        Mud.Data.State.Util.Destroy
                        Mud.Data.State.Util.Effect
                        Mud.Data.State.Util.Egress
-                       Mud.Data.State.Util.Get
                        Mud.Data.State.Util.GMCP
+                       Mud.Data.State.Util.Get
                        Mud.Data.State.Util.Hierarchy
                        Mud.Data.State.Util.Lang
                        Mud.Data.State.Util.Locks
@@ -91,6 +91,10 @@ library
                        Mud.Misc.NameResolution
                        Mud.Misc.Persist
                        Mud.Misc.Readymade
+                       Mud.Service.Logging
+                       Mud.Service.Main
+                       Mud.Service.Server
+                       Mud.Service.Types
                        Mud.TheWorld.FoodIds
                        Mud.TheWorld.Foods
                        Mud.TheWorld.Kits
@@ -177,6 +181,8 @@ library
                        , random
                        , regex-pcre
                        , resourcet
+                       , servant
+                       , servant-server
                        , split
                        , sqlite-simple
                        , stm
@@ -187,6 +193,8 @@ library
                        , transformers-base
                        , unix
                        , vector
+                       , wai
+                       , warp
                        , yaml
   hs-source-dirs:      lib
 

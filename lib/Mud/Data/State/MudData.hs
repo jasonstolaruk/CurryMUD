@@ -76,6 +76,7 @@ data MudState = MudState { _armTbl                 :: ArmTbl
                          , _pickPtsTbl             :: PickPtsTbl
                          , _plaLogTbl              :: PlaLogTbl
                          , _plaTbl                 :: PlaTbl
+                         , _restServiceLogService  :: Maybe LogService
                          , _rmActionFunTbl         :: RmActionFunTbl
                          , _rmTbl                  :: RmTbl
                          , _rmTeleNameTbl          :: RmTeleNameTbl
@@ -952,6 +953,7 @@ type RndmNamesTbl = M.Map Sing Sing
 data ServerSettings = ServerSettings { settingDebug     :: Bool
                                      , settingEKG       :: Bool
                                      , settingLog       :: Bool
+                                     , settingRest      :: Bool
                                      , settingZBackDoor :: Bool } deriving (Eq, Generic, Show)
 
 -- ==================================================
@@ -1139,6 +1141,7 @@ jsonToServerSettings :: Value -> Parser ServerSettings
 jsonToServerSettings (Object o) = ServerSettings <$> o .: "debug"
                                                  <*> o .: "ekg"
                                                  <*> o .: "log"
+                                                 <*> o .: "rest"
                                                  <*> o .: "zBackDoor"
 jsonToServerSettings _          = empty
 
@@ -1146,6 +1149,7 @@ serverSettingsToJSON :: ServerSettings -> Value
 serverSettingsToJSON ServerSettings { .. } = object [ "debug"     .= settingDebug
                                                     , "ekg"       .= settingEKG
                                                     , "log"       .= settingLog
+                                                    , "rest"      .= settingRest
                                                     , "zBackDoor" .= settingZBackDoor ]
 
 instance FromJSONKey GodName

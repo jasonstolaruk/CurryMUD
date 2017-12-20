@@ -16,7 +16,7 @@ import           Test.QuickCheck.Monadic (PropertyM, run)
 inWorld :: MudStack a -> PropertyM IO a
 inWorld f = run helper
   where
-    helper = runReaderT (initWorld >> f) =<< (liftIO . initMudData . ServerSettings False False False $ False)
+    helper = runReaderT (initWorld >> f) =<< (liftIO . initMudData . ServerSettings False False False False $ False)
 
 genAsciiAlphaNum :: Gen Char
 genAsciiAlphaNum = chr <$> choose (32, 126)

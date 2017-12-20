@@ -56,4 +56,4 @@ welcome = (,) <$> getEnv "USER" <*> what'sMyName >>= \(userName, progName) ->
 loadServerSettings :: HasCallStack => IO ServerSettings
 loadServerSettings = maybeRet helper =<< decodeFile =<< mkMudFilePath serverSettingsFun
   where
-    helper = T.putStrLn "Error reading the server settings file." >> return (ServerSettings True True True True)
+    helper = T.putStrLn "Error reading the server settings file." >> return (ServerSettings False False False False False)

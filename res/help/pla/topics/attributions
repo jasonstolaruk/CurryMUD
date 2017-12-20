@@ -115,6 +115,14 @@ resourcet
 Copyright Michael Snoyman.
 https://github.com/snoyberg/conduit
 
+servant
+Copyright Zalora South East Asia Pte Ltd, Servant Contributors.
+https://github.com/haskell-servant/servant
+
+servant-server
+Copyright Zalora South East Asia Pte Ltd, Servant Contributors.
+https://github.com/haskell-servant/servant
+
 split
 Copyright Brent Yorgey, Louis Wasserman.
 http://hub.darcs.net/byorgey/split
@@ -166,6 +174,14 @@ https://github.com/haskell/unix
 vector
 Copyright Roman Leshchinskiy.
 https://github.com/haskell/vector
+
+wai
+Copyright Michael Snoyman.
+https://github.com/yesodweb/wai
+
+warp
+Copyright Michael Snoyman, Kazu Yamamoto, Matt Brown.
+https://github.com/yesodweb/wai
 
 \uSEE ALSO\n
 about
