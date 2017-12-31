@@ -139,8 +139,8 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
     findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
   where
     found match =
-        let ExpCmd _ ct _ _ = getExpCmdByName match
-            tunedIds        = select _1 triples
+        let ExpCmd _ ct _ _ _ = getExpCmdByName match
+            tunedIds          = select _1 triples
         in case ct of
           NoTarget toSelf toOthers -> if ()# target
             then Right . dupFirst (((format Nothing toOthers, tunedIds) :) . mkBcast i) $ toSelf
@@ -270,7 +270,7 @@ adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, targ
     findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
   where
     found match =
-        let ExpCmd _ ct _ _ = getExpCmdByName match
+        let ExpCmd _ ct _ _ _ = getExpCmdByName match
         in case ct of
           NoTarget toSelf toOthers -> if ()# target
             then Right . dupFirst (((format Nothing toOthers, i `delete` tunedIds) :) . mkBcast i) $ toSelf
