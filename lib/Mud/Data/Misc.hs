@@ -93,7 +93,6 @@ import           Data.Bits (clearBit, setBit, testBit)
 import           Data.Bool (bool)
 import           Data.Char (ord)
 import           Data.Function (on)
-import           Data.List.NonEmpty (NonEmpty(..))
 import           Data.Monoid ((<>))
 import           Data.String (fromString)
 import           Data.Text (Text)
@@ -701,7 +700,7 @@ data ExpCmdType = NoTarget  ToSelf ToOthers
 
 type ExpCmdFun = Id -> MsgQueue -> Cols -> ExpCmdName -> (Text, [Broadcast], MobRmDesc, Text) -> MudStack ()
 
-type ExpCmdActs = (Maybe (NonEmpty ActType), Maybe (NonEmpty ActType))
+type ExpCmdActs = ([ActType], [ActType])
 
 data ExpCmd = ExpCmd { expCmdName            :: ExpCmdName
                      , expCmdType            :: ExpCmdType
