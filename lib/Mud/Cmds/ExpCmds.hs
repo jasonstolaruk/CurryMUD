@@ -44,7 +44,7 @@ logPlaOut = L.logPlaOut "Mud.Cmds.ExpCmds"
 
 -- ==================================================
 
--- TODO: Consider "ActType". For example, you shouldn't be able to kiss someone who is eating, or if you yourself are eating.
+-- TODO: "ExpCmdActs".
 expCmdSet :: HasCallStack => S.Set ExpCmd
 expCmdSet = S.fromList
     [ ExpCmd "admire"
