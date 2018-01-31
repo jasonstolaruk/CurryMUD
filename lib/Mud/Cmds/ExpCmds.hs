@@ -12,6 +12,7 @@ import           Mud.Cmds.Util.Misc
 import           Mud.Cmds.Util.Pla
 import           Mud.Data.Misc
 import           Mud.Data.State.ActionParams.ActionParams
+import           Mud.Data.State.MsgQueue
 import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Get
 import           Mud.Data.State.Util.Misc
@@ -28,7 +29,7 @@ import           Mud.Util.Text
 import           Control.Arrow (first)
 import           Control.Lens.Operators ((?~), (.~))
 import           Data.Bool
-import           Data.List (delete)
+import           Data.List (delete, intersect)
 import qualified Data.Set as S (Set, filter, foldr, fromList, map, toList)
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -1668,8 +1669,8 @@ getExpCmdByName cn = head . S.toList . S.filter (\(ExpCmd cn' _ _ _ _) -> cn' ==
 -----
 
 expCmd :: HasCallStack => ExpCmd -> ActionFun
-expCmd (ExpCmd ecn HasTarget {} _ _     _   ) p@NoArgs {}        = advise p [] . sorryExpCmdRequiresTarget $ ecn
-expCmd (ExpCmd ecn ect          _ isVis desc) (NoArgs i mq cols) = getStateTime >>= \pair@(ms, _) -> case ect of
+expCmd (ExpCmd ecn HasTarget {} _   _     _   ) p@NoArgs {}          = advise p [] . sorryExpCmdRequiresTarget $ ecn
+expCmd (ExpCmd ecn ect          eas isVis desc)   (NoArgs i mq cols) = getStateTime >>= \pair@(ms, _) -> case ect of
   (NoTarget  toSelf toOthers      ) | isPla i ms
                                     , r <- getRace i ms
                                     , r `elem` furRaces
@@ -1678,7 +1679,7 @@ expCmd (ExpCmd ecn ect          _ isVis desc) (NoArgs i mq cols) = getStateTime 
   (Versatile toSelf toOthers _ _ _)                  -> helper pair toSelf toOthers
   _                                                  -> pmf "expCmd" ect
   where
-    furRaces                  = [ Felinoid, Lagomorph, Vulpenoid ]
+    furRaces                        = [ Felinoid, Lagomorph, Vulpenoid ]
     helper (ms, ct) toSelf toOthers =
         let d                           = mkStdDesig i ms DoCap
             serialized                  = serializeDesigHelper d toOthers
@@ -1688,9 +1689,9 @@ expCmd (ExpCmd ecn ect          _ isVis desc) (NoArgs i mq cols) = getStateTime 
                                           , desigOtherIds d )
             isLit                       = isMobRmLit ct i ms
             tuple                       = (toSelf, pure toOthersBcast, desc, toSelf)
-        in expCmdHelper i mq cols ecn tuple
-expCmd (ExpCmd ecn NoTarget {} _ _     _   ) p@(WithArgs     _ _  _    (_:_) ) = advise p [] . sorryExpCmdIllegalTarget $ ecn
-expCmd (ExpCmd ecn ect         _ isVis desc)   (OneArgNubbed i mq cols target) = case ect of
+        in expCmdHelper i ms mq cols ecn eas Nothing tuple
+expCmd (ExpCmd ecn NoTarget {} _   _     _   ) p@(WithArgs     _ _  _    (_:_) ) = advise p [] . sorryExpCmdIllegalTarget $ ecn
+expCmd (ExpCmd ecn ect         eas isVis desc)   (OneArgNubbed i mq cols target) = case ect of
   (HasTarget     toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   (Versatile _ _ toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   _                                        -> pmf "expCmd" ect
@@ -1715,7 +1716,7 @@ expCmd (ExpCmd ecn ect         _ isVis desc)   (OneArgNubbed i mq cols target) =
                                     | (txt, is) <- [ toTargetBcast, toOthersBcast ] ]
                             isLit = isMobRmLit ct i ms
                             tuple = (toSelf', bs, desc, logMsg)
-                        in expCmdHelper i mq cols ecn tuple
+                        in expCmdHelper i ms mq cols ecn eas (Just targetId) tuple
                     mkBindings targetTxt = let msg                         = replace (pure ("@", targetTxt)) toSelf
                                                toSelf'                     = parseDesig Nothing i ms msg
                                                logMsg                      = parseDesigSuffix   i ms msg
@@ -1740,12 +1741,26 @@ markForSpiritOnly :: Bool -> Bool -> Text -> Text
 markForSpiritOnly isLit isVis | isLit || isVis = id
                               | otherwise      = (forSpiritOnlyMarker `T.cons`) -- Spirits can see in the dark.
 
-
-expCmdHelper :: HasCallStack => ExpCmdFun
-expCmdHelper i mq cols ecn (toSelf, bs, desc, logMsg) = do logPlaOut ecn i . pure $ logMsg
-                                                           wrapSend mq cols toSelf
-                                                           bcastIfNotIncog i bs
-                                                           mobRmDescHelper i desc
+expCmdHelper :: HasCallStack => Id -- TODO: Review.
+                             -> MudState
+                             -> MsgQueue
+                             -> Cols
+                             -> ExpCmdName
+                             -> ExpCmdActs
+                             -> Maybe Id
+                             -> (Text, [Broadcast], MobRmDesc, Text)
+                             -> MudStack ()
+expCmdHelper i ms mq cols ecn eas target (toSelf, bs, desc, logMsg) = case getActs i ms `intersect` fst eas of
+  []      -> case target of Nothing       -> ioHelper
+                            Just targetId -> case getActs targetId ms `intersect` snd eas of
+                                               []      -> ioHelper
+                                               (act:_) -> wrapSend mq cols . sorryExpCmdTargetActing $ act
+  (act:_) -> wrapSend mq cols . sorryExpCmdActing $ act
+  where
+    ioHelper = do logPlaOut ecn i . pure $ logMsg
+                  wrapSend mq cols toSelf
+                  bcastIfNotIncog i bs
+                  mobRmDescHelper i desc
 
 mobRmDescHelper :: HasCallStack => Id -> MobRmDesc -> MudStack ()
 mobRmDescHelper _ Nothing    = unit

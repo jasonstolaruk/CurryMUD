@@ -25,7 +25,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , EmptyNoneSome(..)
                      , EquipInvLookCmd(..)
                      , ExpCmd(..)
-                     , ExpCmdFun
+                     , ExpCmdActs
                      , ExpCmdName
                      , ExpCmdType(..)
                      , FromRol
@@ -697,8 +697,6 @@ type ToOthersWithTarget = Text
 data ExpCmdType = NoTarget  ToSelf ToOthers
                 | HasTarget                 ToSelfWithTarget ToTarget ToOthersWithTarget
                 | Versatile ToSelf ToOthers ToSelfWithTarget ToTarget ToOthersWithTarget deriving (Eq, Ord, Show)
-
-type ExpCmdFun = Id -> MsgQueue -> Cols -> ExpCmdName -> (Text, [Broadcast], MobRmDesc, Text) -> MudStack ()
 
 type ExpCmdActs = ([ActType], [ActType])
 

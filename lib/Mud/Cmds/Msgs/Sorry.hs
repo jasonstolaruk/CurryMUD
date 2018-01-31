@@ -78,6 +78,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryEmptyType
                            , sorryEquipCoins
                            , sorryEquipInvLook
+                           , sorryExpCmdActing
                            , sorryExpCmdBlush
                            , sorryExpCmdCoins
                            , sorryExpCmdIllegalTarget
@@ -85,6 +86,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryExpCmdLen
                            , sorryExpCmdName
                            , sorryExpCmdRequiresTarget
+                           , sorryExpCmdTargetActing
                            , sorryExpCmdTargetType
                            , sorryExtinguishCoins
                            , sorryExtinguishInRm
@@ -748,6 +750,9 @@ sorryEquipInvLook a b = T.concat [ "You can only use the "
 
 -----
 
+sorryExpCmdActing :: ActType -> Text
+sorryExpCmdActing act = prd . can't $ "do that while " <> pp act
+
 sorryExpCmdBlush :: Text -> Text
 sorryExpCmdBlush r = but $ r <> "s can't visibly blush (the fur gets in the way)."
 
@@ -772,6 +777,9 @@ sorryExpCmdIllegalTarget = the' . (<> " expressive command cannot be used with a
 
 sorryExpCmdRequiresTarget :: ExpCmdName -> Text
 sorryExpCmdRequiresTarget = the' . (<> " expressive command requires a single target.") . dblQuote
+
+sorryExpCmdTargetActing :: ActType -> Text
+sorryExpCmdTargetActing act = prd . can't $ "do that to a person who is " <> pp act
 
 sorryExpCmdTargetType :: Text
 sorryExpCmdTargetType = but "expressive commands can only target people."
