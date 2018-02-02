@@ -27,9 +27,10 @@ import           Mud.Util.Operators
 import           Mud.Util.Text
 
 import           Control.Arrow (first)
-import           Control.Lens.Operators ((?~), (.~))
+import           Control.Lens (both)
+import           Control.Lens.Operators ((?~), (.~), (&), (%~))
 import           Data.Bool
-import           Data.List (delete, intersect)
+import           Data.List ((\\), delete, intersect)
 import qualified Data.Set as S (Set, filter, foldr, fromList, map, toList)
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -1741,7 +1742,7 @@ markForSpiritOnly :: Bool -> Bool -> Text -> Text
 markForSpiritOnly isLit isVis | isLit || isVis = id
                               | otherwise      = (forSpiritOnlyMarker `T.cons`) -- Spirits can see in the dark.
 
-expCmdHelper :: HasCallStack => Id -- TODO: Review.
+expCmdHelper :: HasCallStack => Id
                              -> MudState
                              -> MsgQueue
                              -> Cols
@@ -1750,13 +1751,14 @@ expCmdHelper :: HasCallStack => Id -- TODO: Review.
                              -> Maybe Id
                              -> (Text, [Broadcast], MobRmDesc, Text)
                              -> MudStack ()
-expCmdHelper i ms mq cols ecn eas target (toSelf, bs, desc, logMsg) = case getActs i ms `intersect` fst eas of
+expCmdHelper i ms mq cols ecn eas target (toSelf, bs, desc, logMsg) = case getActs i ms `intersect` ngActsSelf of
   []      -> case target of Nothing       -> ioHelper
-                            Just targetId -> case getActs targetId ms `intersect` snd eas of
+                            Just targetId -> case getActs targetId ms `intersect` ngActsTarget of
                                                []      -> ioHelper
                                                (act:_) -> wrapSend mq cols . sorryExpCmdTargetActing $ act
   (act:_) -> wrapSend mq cols . sorryExpCmdActing $ act
   where
+    (ngActsSelf, ngActsTarget) = eas & both %~ (allValues \\)
     ioHelper = do logPlaOut ecn i . pure $ logMsg
                   wrapSend mq cols toSelf
                   bcastIfNotIncog i bs
