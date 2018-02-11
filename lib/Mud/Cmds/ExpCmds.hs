@@ -1,4 +1,4 @@
-{-# LANGUAGE NamedFieldPuns, OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE NamedFieldPuns, OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
 module Mud.Cmds.ExpCmds ( expCmdNames
                         , expCmdSet
@@ -1887,8 +1887,8 @@ getExpCmdByName cn = head . S.toList . S.filter (\ExpCmd { expCmdName } -> expCm
 -----
 
 expCmd :: HasCallStack => ExpCmd -> ActionFun
-expCmd (ExpCmd ecn HasTarget {} _   _ _     _   ) p@NoArgs {}          = advise p [] . sorryExpCmdRequiresTarget $ ecn
-expCmd (ExpCmd ecn ect          eas _ isVis desc)   (NoArgs i mq cols) = getStateTime >>= \pair@(ms, _) -> case ect of
+expCmd    (ExpCmd ecn HasTarget {} _ _ _     _) p@NoArgs {}          = advise p [] . sorryExpCmdRequiresTarget $ ecn
+expCmd ec@(ExpCmd ecn ect          _ _ isVis _)   (NoArgs i mq cols) = getStateTime >>= \pair@(ms, _) -> case ect of
   (NoTarget  toSelf toOthers      ) | isPla i ms
                                     , r <- getRace i ms
                                     , r `elem` furRaces
@@ -1906,10 +1906,10 @@ expCmd (ExpCmd ecn ect          eas _ isVis desc)   (NoArgs i mq cols) = getStat
             toOthersBcast               = ( markForSpiritOnly isLit isVis . nlnl . replace substitutions $ toOthers
                                           , desigOtherIds d )
             isLit                       = isMobRmLit ct i ms
-            tuple                       = (toSelf, pure toOthersBcast, desc, toSelf)
-        in expCmdHelper i ms mq cols ecn eas Nothing tuple
-expCmd (ExpCmd ecn NoTarget {} _   _ _     _   ) p@(WithArgs     _ _  _    (_:_) ) = advise p [] . sorryExpCmdIllegalTarget $ ecn
-expCmd (ExpCmd ecn ect         eas _ isVis desc)   (OneArgNubbed i mq cols target) = case ect of
+            tuple                       = (toSelf, pure toOthersBcast, toSelf)
+        in expCmdHelper i ms mq cols ec Nothing tuple
+expCmd    (ExpCmd ecn NoTarget {} _ _ _     _) p@(WithArgs     _ _  _    (_:_) ) = advise p [] . sorryExpCmdIllegalTarget $ ecn
+expCmd ec@(ExpCmd _   ect         _ _ isVis _)   (OneArgNubbed i mq cols target) = case ect of
   (HasTarget     toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   (Versatile _ _ toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   _                                        -> pmf "expCmd" ect
@@ -1920,21 +1920,21 @@ expCmd (ExpCmd ecn ect         eas _ isVis desc)   (OneArgNubbed i mq cols targe
               (first (i `delete`) -> invCoins) = getMobRmInvCoins i ms
           in if ()!# invCoins
             then case uncurry (resolveRmInvCoins i ms . pure $ target') invCoins of
-              (_,                    [Left [sorryMsg]]) -> wrapSend mq cols sorryMsg
-              (_,                    Right _:_        ) -> wrapSend mq cols sorryExpCmdCoins
-              ([Left sorryMsg   ], _                  ) -> wrapSend mq cols sorryMsg
-              ([Right (_:_:_)   ], _                  ) -> wrapSend mq cols adviceExpCmdExcessArgs
-              ([Right [targetId]], _                  ) ->
+              (_,                  [Left [sorryMsg]]) -> wrapSend mq cols sorryMsg
+              (_,                  Right _:_        ) -> wrapSend mq cols sorryExpCmdCoins
+              ([Left sorryMsg   ], _                ) -> wrapSend mq cols sorryMsg
+              ([Right (_:_:_)   ], _                ) -> wrapSend mq cols adviceExpCmdExcessArgs
+              ([Right [targetId]], _                ) ->
                 let ioHelper targetDesigTxt =
                         let (toSelf', toOthers', logMsg, substitutions) = mkBindings targetDesigTxt
                             toTarget'     = replace substitutions toTarget
                             toTargetBcast = (nlnl toTarget', pure targetId)
                             toOthersBcast = (nlnl toOthers', targetId `delete` desigOtherIds d)
-                            bs    = [ (markForSpiritOnly isLit isVis txt, is)
-                                    | (txt, is) <- [ toTargetBcast, toOthersBcast ] ]
-                            isLit = isMobRmLit ct i ms
-                            tuple = (toSelf', bs, desc, logMsg)
-                        in expCmdHelper i ms mq cols ecn eas (Just targetId) tuple
+                            bs            = [ (markForSpiritOnly isLit isVis txt, is)
+                                          | (txt, is) <- [ toTargetBcast, toOthersBcast ] ]
+                            isLit         = isMobRmLit ct i ms
+                            tuple         = (toSelf', bs, logMsg)
+                        in expCmdHelper i ms mq cols ec (Just targetId) tuple
                     mkBindings targetTxt = let msg                         = replace (pure ("@", targetTxt)) toSelf
                                                toSelf'                     = parseDesig Nothing i ms msg
                                                logMsg                      = parseDesigSuffix   i ms msg
@@ -1963,23 +1963,22 @@ expCmdHelper :: HasCallStack => Id
                              -> MudState
                              -> MsgQueue
                              -> Cols
-                             -> ExpCmdName
-                             -> ExpCmdActs
+                             -> ExpCmd
                              -> Maybe Id
-                             -> (Text, [Broadcast], MobRmDesc, Text)
+                             -> (Text, [Broadcast], Text)
                              -> MudStack ()
-expCmdHelper i ms mq cols ecn eas target (toSelf, bs, desc, logMsg) = case getActs i ms `intersect` ngActsSelf of
+expCmdHelper i ms mq cols ExpCmd { .. } target (toSelf, bs, logMsg) = case getActs i ms `intersect` ngActsSelf of
   []      -> case target of Nothing       -> ioHelper
                             Just targetId -> case getActs targetId ms `intersect` ngActsTarget of
                                                []      -> ioHelper
                                                (act:_) -> wrapSend mq cols . sorryExpCmdTargetActing $ act
   (act:_) -> wrapSend mq cols . sorryExpCmdActing $ act
   where
-    (ngActsSelf, ngActsTarget) = eas & both %~ (allValues \\)
-    ioHelper = do logPlaOut ecn i . pure $ logMsg
-                  wrapSend mq cols toSelf
-                  bcastIfNotIncog i bs
-                  mobRmDescHelper i desc
+    (ngActsSelf, ngActsTarget) = expCmdActs & both %~ (allValues \\)
+    ioHelper                   = do logPlaOut expCmdName i . pure $ logMsg
+                                    wrapSend mq cols toSelf
+                                    bcastIfNotIncog i bs
+                                    mobRmDescHelper i expDesc
 
 mobRmDescHelper :: HasCallStack => Id -> MobRmDesc -> MudStack ()
 mobRmDescHelper _ Nothing    = unit
