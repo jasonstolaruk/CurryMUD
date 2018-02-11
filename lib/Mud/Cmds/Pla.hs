@@ -1164,21 +1164,21 @@ mkExpCmdListTxt i ms =
                                                       , let matches = findMatches cn
                                                       , length matches == 1 ]
   where
-    findMatches cn = S.toList . S.filter (\(ExpCmd ecn _ _ _ _) -> ecn == cn) $ expCmdSet
-    mkExpCmdTxt (styled, ExpCmd ecn ect _ _ mrd) = dropEmpties $ case ect of
-      (NoTarget  toSelf _  ) -> [ paddedName <> mkInitialTxt  ecn <> toSelf
+    findMatches cn = S.toList . S.filter ((== cn) . expCmdName) $ expCmdSet
+    mkExpCmdTxt (styled, ExpCmd { .. }) = dropEmpties $ case expCmdType of
+      (NoTarget  toSelf _  ) -> [ paddedName <> mkInitialTxt  expCmdName <> toSelf
                                 , mobRmDescHelper ]
-      (HasTarget toSelf _ _) -> [ paddedName <> mkInitialTxt (ecn <> " hanako") <> T.replace "@" "Hanako" toSelf
+      (HasTarget toSelf _ _) -> [ paddedName <> mkInitialTxt (expCmdName <> " hanako") <> T.replace "@" "Hanako" toSelf
                                 , mobRmDescHelper ]
-      (Versatile toSelf _ toSelfWithTarget _ _) -> [ paddedName <> mkInitialTxt ecn <> toSelf
-                                                   , indent <> mkInitialTxt (ecn <> " hanako") <>
+      (Versatile toSelf _ toSelfWithTarget _ _) -> [ paddedName <> mkInitialTxt  expCmdName <> toSelf
+                                                   , indent     <> mkInitialTxt (expCmdName <> " hanako") <>
                                                      T.replace "@" "Hanako" toSelfWithTarget
                                                    , mobRmDescHelper ]
       where
         paddedName         = padCmdName styled
         mkInitialTxt input = colorWith quoteColor input <> spaced (colorWith arrowColor "->")
         indent             = T.replicate cmdNamePadding (T.singleton indentFiller)
-        mobRmDescHelper    = let ecn' = colorWith quoteColor ecn in case mrd of
+        mobRmDescHelper    = let ecn' = colorWith quoteColor expCmdName in case expDesc of
           Nothing    -> ""
           (Just "" ) -> (indent <>) . parensQuote $ ecn' <> " clears room description."
           (Just txt) -> (indent <>) . parensQuote $ T.concat [ ecn', " sets room description to ", dblQuote txt, "." ]

@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiWayIf, OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE MultiWayIf, NamedFieldPuns, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp ( emotifyTwoWay
                                              , expCmdifyTwoWay ) where
@@ -77,7 +77,7 @@ procExpCmdTwoWay _ _  _        _          (_:_:_:_)                             
 procExpCmdTwoWay i ms targetId targetSing (map T.toLower . unmsg -> [cn, target]) =
     findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
   where
-    found match = let ExpCmd _ ct _ _ _ = getExpCmdByName match in (_1 %~ angleBracketQuote) `fmap2` case ct of
+    found match = let ExpCmd { expCmdType } = getExpCmdByName match in (_1 %~ angleBracketQuote) `fmap2` case expCmdType of
       NoTarget toSelf toOthers -> if ()# target
         then Right [ (toSelf,                  pure i       )
                    , (format Nothing toOthers, pure targetId) ]

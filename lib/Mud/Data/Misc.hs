@@ -700,9 +700,14 @@ data ExpCmdType = NoTarget  ToSelf ToOthers
 
 type ExpCmdActs = ([ActType], [ActType])
 
+type StopsDrinking = Bool
+
+type StopsEating = Bool
+
 data ExpCmd = ExpCmd { expCmdName            :: ExpCmdName
                      , expCmdType            :: ExpCmdType
                      , expCmdActs            :: ExpCmdActs
+                     , expCmdStopsActing     :: (StopsDrinking, StopsEating)
                      , expCmdIsVisibleInDark :: Bool
                      , expDesc               :: MobRmDesc }
 

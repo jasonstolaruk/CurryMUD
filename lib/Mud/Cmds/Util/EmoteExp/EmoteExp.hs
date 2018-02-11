@@ -138,29 +138,26 @@ procExpCmd _ _  _  _       (_:_:_:_)                               = Left sorryE
 procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
     findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
   where
-    found match =
-        let ExpCmd _ ct _ _ _ = getExpCmdByName match
-            tunedIds          = select _1 triples
-        in case ct of
-          NoTarget toSelf toOthers -> if ()# target
-            then Right . dupFirst (((format Nothing toOthers, tunedIds) :) . mkBcast i) $ toSelf
-            else Left . sorryExpCmdIllegalTarget $ match
-          HasTarget toSelf toTarget toOthers -> if ()# target
-            then Left . sorryExpCmdRequiresTarget $ match
-            else case findTarget of
-              Nothing -> Left . sorryChanTargetNameFromContext target $ cc
-              Just n  -> let targetId = getIdForMatch n
-                             f        = ((colorizeYous . format Nothing $ toTarget, pure targetId             ) :)
-                             g        = ((format (Just targetId) toOthers,          targetId `delete` tunedIds) :)
-                         in Right . dupFirst (f . g . mkBcast i) . format (Just targetId) $ toSelf
-          Versatile toSelf toOthers toSelfWithTarget toTarget toOthersWithTarget -> if ()# target
-            then Right . dupFirst (((format Nothing toOthers, tunedIds) :) . mkBcast i) $ toSelf
-            else case findTarget of
-              Nothing -> Left . sorryChanTargetNameFromContext target $ cc
-              Just n  -> let targetId          = getIdForMatch n
-                             f                 = ((colorizeYous . format Nothing $ toTarget,  pure targetId             ) :)
-                             g                 = ((format (Just targetId) toOthersWithTarget, targetId `delete` tunedIds) :)
-                         in Right . dupFirst (f . g . mkBcast i) . format (Just targetId) $ toSelfWithTarget
+    found match | tunedIds <- select _1 triples = case expCmdType . getExpCmdByName $ match of
+      NoTarget toSelf toOthers -> if ()# target
+        then Right . dupFirst (((format Nothing toOthers, tunedIds) :) . mkBcast i) $ toSelf
+        else Left . sorryExpCmdIllegalTarget $ match
+      HasTarget toSelf toTarget toOthers -> if ()# target
+        then Left . sorryExpCmdRequiresTarget $ match
+        else case findTarget of
+          Nothing -> Left . sorryChanTargetNameFromContext target $ cc
+          Just n  -> let targetId = getIdForMatch n
+                         f        = ((colorizeYous . format Nothing $ toTarget, pure targetId             ) :)
+                         g        = ((format (Just targetId) toOthers,          targetId `delete` tunedIds) :)
+                     in Right . dupFirst (f . g . mkBcast i) . format (Just targetId) $ toSelf
+      Versatile toSelf toOthers toSelfWithTarget toTarget toOthersWithTarget -> if ()# target
+        then Right . dupFirst (((format Nothing toOthers, tunedIds) :) . mkBcast i) $ toSelf
+        else case findTarget of
+          Nothing -> Left . sorryChanTargetNameFromContext target $ cc
+          Just n  -> let targetId          = getIdForMatch n
+                         f                 = ((colorizeYous . format Nothing $ toTarget,  pure targetId             ) :)
+                         g                 = ((format (Just targetId) toOthersWithTarget, targetId `delete` tunedIds) :)
+                     in Right . dupFirst (f . g . mkBcast i) . format (Just targetId) $ toSelfWithTarget
     notFound             = Left . sorryExpCmdName $ cn
     findTarget           = findFullNameForAbbrev target . selects _2 T.toLower $ triples
     getIdForMatch match  = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
@@ -269,30 +266,28 @@ adminChanProcExpCmd _ _ _ _ (_:_:_:_) = Left sorryExpCmdLen
 adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, target]) =
     findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
   where
-    found match =
-        let ExpCmd _ ct _ _ _ = getExpCmdByName match
-        in case ct of
-          NoTarget toSelf toOthers -> if ()# target
-            then Right . dupFirst (((format Nothing toOthers, i `delete` tunedIds) :) . mkBcast i) $ toSelf
-            else Left . sorryExpCmdIllegalTarget $ match
-          HasTarget toSelf toTarget toOthers -> if ()# target
-            then Left . sorryExpCmdRequiresTarget $ match
-            else case findTarget of
-              Nothing -> Left . sorryAdminChanTargetName $ target
-              Just n  -> let targetId = getIdForPCSing n ms
-                             toSelf'  = format (Just n) toSelf
-                             f        = ((colorizeYous . format Nothing $ toTarget, pure targetId              ) :)
-                             g        = ((format (Just n) toOthers,                 tunedIds \\ [ i, targetId ]) :)
-                         in Right . dupFirst (f . g . mkBcast i) $ toSelf'
-          Versatile toSelf toOthers toSelfWithTarget toTarget toOthersWithTarget -> if ()# target
-            then Right . dupFirst (((format Nothing toOthers, i `delete` tunedIds) :) . mkBcast i) $ toSelf
-            else case findTarget of
-              Nothing -> Left . sorryAdminChanTargetName $ target
-              Just n  -> let targetId          = getIdForPCSing n ms
-                             toSelfWithTarget' = format (Just n) toSelfWithTarget
-                             f                 = ((colorizeYous . format Nothing $ toTarget, pure targetId              ) :)
-                             g                 = ((format (Just n) toOthersWithTarget,       tunedIds \\ [ i, targetId ]) :)
-                         in Right . dupFirst (f . g . mkBcast i) $ toSelfWithTarget'
+    found match = case expCmdType . getExpCmdByName $ match of
+      NoTarget toSelf toOthers -> if ()# target
+        then Right . dupFirst (((format Nothing toOthers, i `delete` tunedIds) :) . mkBcast i) $ toSelf
+        else Left . sorryExpCmdIllegalTarget $ match
+      HasTarget toSelf toTarget toOthers -> if ()# target
+        then Left . sorryExpCmdRequiresTarget $ match
+        else case findTarget of
+          Nothing -> Left . sorryAdminChanTargetName $ target
+          Just n  -> let targetId = getIdForPCSing n ms
+                         toSelf'  = format (Just n) toSelf
+                         f        = ((colorizeYous . format Nothing $ toTarget, pure targetId              ) :)
+                         g        = ((format (Just n) toOthers,                 tunedIds \\ [ i, targetId ]) :)
+                     in Right . dupFirst (f . g . mkBcast i) $ toSelf'
+      Versatile toSelf toOthers toSelfWithTarget toTarget toOthersWithTarget -> if ()# target
+        then Right . dupFirst (((format Nothing toOthers, i `delete` tunedIds) :) . mkBcast i) $ toSelf
+        else case findTarget of
+          Nothing -> Left . sorryAdminChanTargetName $ target
+          Just n  -> let targetId          = getIdForPCSing n ms
+                         toSelfWithTarget' = format (Just n) toSelfWithTarget
+                         f                 = ((colorizeYous . format Nothing $ toTarget, pure targetId              ) :)
+                         g                 = ((format (Just n) toOthersWithTarget,       tunedIds \\ [ i, targetId ]) :)
+                     in Right . dupFirst (f . g . mkBcast i) $ toSelfWithTarget'
     notFound   = Left . sorryExpCmdName $ cn
     findTarget = findFullNameForAbbrev (capitalize target) $ getSing i ms `delete` tunedSings
     format maybeTargetSing =
