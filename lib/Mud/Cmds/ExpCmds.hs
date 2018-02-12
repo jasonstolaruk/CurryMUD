@@ -29,6 +29,7 @@ import           Mud.Util.Text
 import           Control.Arrow (first)
 import           Control.Lens (both)
 import           Control.Lens.Operators ((?~), (.~), (&), (%~))
+import           Control.Monad (when)
 import           Data.Bool
 import           Data.List ((\\), delete, intersect)
 import qualified Data.Set as S (Set, filter, foldr, fromList, map, toList)
@@ -1931,7 +1932,7 @@ expCmd ec@(ExpCmd _   ect         _ _ isVis _)   (OneArgNubbed i mq cols target)
                             toTargetBcast = (nlnl toTarget', pure targetId)
                             toOthersBcast = (nlnl toOthers', targetId `delete` desigOtherIds d)
                             bs            = [ (markForSpiritOnly isLit isVis txt, is)
-                                          | (txt, is) <- [ toTargetBcast, toOthersBcast ] ]
+                                            | (txt, is) <- [ toTargetBcast, toOthersBcast ] ]
                             isLit         = isMobRmLit ct i ms
                             tuple         = (toSelf', bs, logMsg)
                         in expCmdHelper i ms mq cols ec (Just targetId) tuple
@@ -1967,18 +1968,24 @@ expCmdHelper :: HasCallStack => Id
                              -> Maybe Id
                              -> (Text, [Broadcast], Text)
                              -> MudStack ()
-expCmdHelper i ms mq cols ExpCmd { .. } target (toSelf, bs, logMsg) = case getActs i ms `intersect` ngActsSelf of
-  []      -> case target of Nothing       -> ioHelper
+expCmdHelper i ms mq cols ExpCmd { .. } target (toSelf, bs, logMsg) = case myActs `intersect` ngActsSelf of
+  []      -> case target of Nothing       -> next
                             Just targetId -> case getActs targetId ms `intersect` ngActsTarget of
-                                               []      -> ioHelper
+                                               []      -> next
                                                (act:_) -> wrapSend mq cols . sorryExpCmdTargetActing $ act
   (act:_) -> wrapSend mq cols . sorryExpCmdActing $ act
   where
+    myActs                     = getActs i ms
     (ngActsSelf, ngActsTarget) = expCmdActs & both %~ (allValues \\)
-    ioHelper                   = do logPlaOut expCmdName i . pure $ logMsg
-                                    wrapSend mq cols toSelf
-                                    bcastIfNotIncog i bs
-                                    mobRmDescHelper i expDesc
+    next     = let f (b, act, stopper)          = when (b && act `elem` myActs) . stopper p $ ms -- TODO: Test this.
+                   p                            = ActionParams i mq cols []
+                   (stopsDrinking, stopsEating) = expCmdStopsActing
+               in (>> ioHelper) .  mapM_ f $ [ (stopsDrinking, Drinking, stopDrinking)
+                                             , (stopsEating,   Eating,   stopEating  ) ]
+    ioHelper = do logPlaOut expCmdName i . pure $ logMsg
+                  wrapSend mq cols toSelf
+                  bcastIfNotIncog i bs
+                  mobRmDescHelper i expDesc
 
 mobRmDescHelper :: HasCallStack => Id -> MobRmDesc -> MudStack ()
 mobRmDescHelper _ Nothing    = unit
