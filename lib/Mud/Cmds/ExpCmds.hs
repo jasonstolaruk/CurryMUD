@@ -57,14 +57,24 @@ expCmdSet = S.fromList
              (dup False)
              False
              Nothing
+    , ExpCmd "anger"
+             (Versatile "You cry out in anger."
+                        "% cries out in anger."
+                        "You cry out in anger at @."
+                        "% cries out in anger at you."
+                        "% cries out in anger at @.")
+             ([ Attacking, Drinking, Eating ], allValues)
+             (True, False)
+             True
+             Nothing
     , ExpCmd "applaud"
              (Versatile "You applaud enthusiastically."
                         "% applauds enthusiastically."
                         "You applaud enthusiastically for @."
                         "% applauds enthusiastically for you."
                         "% applauds enthusiastically for @.")
-             (pure Eating, allValues)
-             (dup False)
+             ([ Drinking, Eating ], allValues)
+             (True, False)
              True
              Nothing
     , ExpCmd "astonished"
@@ -322,7 +332,7 @@ expCmdSet = S.fromList
                         "You cower in fear before @."
                         "% cowers in fear before you."
                         "% cowers in fear before @.")
-             ([ Attacking, Drinking, Eating ], allValues)
+             ([ Drinking, Eating ], allValues)
              (dup True)
              False
              Nothing
@@ -402,7 +412,7 @@ expCmdSet = S.fromList
                         "% curtseys to you."
                         "% curtseys to @.")
              ([ Drinking, Eating ], allValues)
-             (dup False)
+             (True, False)
              False
              Nothing
     , ExpCmd "curtsy"
@@ -412,7 +422,7 @@ expCmdSet = S.fromList
                         "% curtsies to you."
                         "% curtsies to @.")
              ([ Drinking, Eating ], allValues)
-             (dup False)
+             (True, False)
              False
              Nothing
     , ExpCmd "dance"
@@ -422,7 +432,7 @@ expCmdSet = S.fromList
                         "% dances with you."
                         "% dances with @.")
              ([ Drinking, Eating ], [ Drinking, Eating ])
-             (dup False)
+             (True, False)
              True
              (Just "")
     , ExpCmd "daydream"
@@ -1977,7 +1987,7 @@ expCmdHelper i ms mq cols ExpCmd { .. } target (toSelf, bs, logMsg) = case myAct
   where
     myActs                     = getActs i ms
     (ngActsSelf, ngActsTarget) = expCmdActs & both %~ (allValues \\)
-    next     = let f (b, act, stopper)          = when (b && act `elem` myActs) . stopper p $ ms -- TODO: Test this.
+    next     = let f (b, act, stopper)          = when (b && act `elem` myActs) . stopper p $ ms
                    p                            = ActionParams i mq cols []
                    (stopsDrinking, stopsEating) = expCmdStopsActing
                in (>> ioHelper) .  mapM_ f $ [ (stopsDrinking, Drinking, stopDrinking)
