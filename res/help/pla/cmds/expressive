@@ -6,7 +6,7 @@
 \uDESCRIPTION\n
 Display a list of available expressive commands and their results. Optionally, search the list for one or more terms.
 
-Note that certain expressive commands will set or clear your room description for you (this is noted in the expressive command list). \qexpressive room\d will display those expressive commands that set room description. (Please see \qhelp roomdesc\d for more information.)
+Note that certain expressive commands will set or clear your room description for you (this is noted in the expressive command list). \qexpressive room\d will display those expressive commands that affect room description. (Please see \qhelp roomdesc\d for more information.)
 
 Furthermore, keep in mind that many expressive commands do not produce any visible results when one is in an unlit room. (While nothing will stop you from typing \qblush\d to make your character blush in the dark, it doesn't mean that anyone will notice!)
 
