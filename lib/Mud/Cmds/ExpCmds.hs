@@ -1112,10 +1112,10 @@ expCmdSet = S.fromList
              (dup False)
              False
              Nothing
-    , ExpCmd "perplexed" -- TODO: Here.
+    , ExpCmd "perplexed"
              (NoTarget  "You are truly perplexed by the situation."
                         "% is truly perplexed by the situation.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [])
+             ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
              Nothing
@@ -1123,18 +1123,18 @@ expCmdSet = S.fromList
              (HasTarget "You pet @."
                         "% pets you."
                         "% pets @.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [ Attacking, Drinking, Eating, Sacrificing ])
+             ([ Drinking, Eating ], [ Drinking, Eating, Sacrificing ])
              (dup False)
              True
              Nothing
     , ExpCmd "picknose"
              (NoTarget  "You pick your nose."
                         "% picks & nose.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [])
-             (dup False)
+             ([ Attacking, Drinking, Eating ], [])
+             (True, False)
              False
              Nothing
-    , ExpCmd "pinch"
+    , ExpCmd "pinch" -- TODO: Here.
              (HasTarget "You pinch @."
                         "% pinches you."
                         "% pinches @.")
