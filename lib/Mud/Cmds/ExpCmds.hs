@@ -1035,7 +1035,7 @@ expCmdSet = S.fromList
              (HasTarget "You nudge @."
                         "% nudges you."
                         "% nudges @.")
-             ([ Attacking, Drinking, Eating ], allValues)
+             ([ Drinking, Eating ], [ Drinking, Eating, Sacrificing ])
              (dup False)
              True
              Nothing
@@ -1134,15 +1134,15 @@ expCmdSet = S.fromList
              (True, False)
              False
              Nothing
-    , ExpCmd "pinch" -- TODO: Here.
+    , ExpCmd "pinch"
              (HasTarget "You pinch @."
                         "% pinches you."
                         "% pinches @.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [ Attacking, Drinking, Eating, Sacrificing ])
+             ([ Drinking, Eating ], [ Drinking, Eating, Sacrificing ])
              (dup False)
              True
              Nothing
-    , ExpCmd "point"
+    , ExpCmd "point" -- TODO: Here.
              (HasTarget "You point to @."
                         "% points to you."
                         "% points to @.")
