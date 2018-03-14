@@ -22,7 +22,7 @@ import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Trans.Resource (runResourceT)
 import           Data.Aeson (encode, toJSON)
 import qualified Data.ByteString.Lazy as LB (toStrict)
-import           Data.Conduit (($$), (=$), yield)
+import           Data.Conduit ((.|), runConduit, yield)
 import qualified Data.Conduit.Binary as CB (sinkFile)
 import qualified Data.Conduit.List as CL (map)
 import qualified Data.IntMap.Strict as IM (fromList, map)
@@ -87,7 +87,7 @@ persistHelper l ms = withLock l $ do
     getNonExistingPath path = mIf (doesDirectoryExist path)
                                   (getNonExistingPath $ path ++ "_")
                                   (return path)
-    write tbl file          = yield (toJSON tbl) $$ CL.map (LB.toStrict . encode) =$ CB.sinkFile file
+    write tbl file          = runConduit $ yield (toJSON tbl) .| CL.map (LB.toStrict . encode) .| CB.sinkFile file
     eqTblHelper             = views eqTbl (IM.map (IM.fromList . map swap . M.toList)) ms
 
 persistExHandler :: HasCallStack => SomeException -> MudStack ()
