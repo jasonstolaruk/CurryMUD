@@ -1210,13 +1210,13 @@ expCmdSet = S.fromList
              (True, False)
              True
              Nothing
-    , ExpCmd "questioning" -- TODO: Here.
+    , ExpCmd "questioning"
              (Versatile "You have a questioning expression on your face."
                         "% has a questioning expression on & face."
                         "You flash a questioning expression at @."
                         "% flashes a questioning expression at you."
                         "% flashes a questioning expression at @.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [ Attacking, Drinking, Eating, Sacrificing ])
+             ([ Attacking, Drinking, Eating ], allValues)
              (dup False)
              False
              Nothing
@@ -1226,36 +1226,36 @@ expCmdSet = S.fromList
                         "You raise an eyebrow at @."
                         "% raises an eyebrow at you."
                         "% raises an eyebrow at @.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [ Attacking, Drinking, Eating, Sacrificing ])
+             ([ Attacking, Drinking, Eating ], allValues)
              (dup False)
              False
              Nothing
     , ExpCmd "raisehand"
              (NoTarget  "You raise your hand."
                         "% raises & hand.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [])
+             ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
              Nothing
     , ExpCmd "reeling"
              (NoTarget  "Dizzy and reeling, you look as though you might pass out."
                         "Dizzy and reeling, % looks as though ^ might pass out.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [])
+             (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
              Nothing
     , ExpCmd "relieved"
              (NoTarget  "You look relieved."
                         "% looks relieved.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [])
+             (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
              Nothing
     , ExpCmd "rock"
              (NoTarget  "You rock back and forth."
                         "% rocks back and forth.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [])
-             (dup False)
+             (allValues, []) -- TODO: Can sacrifice.
+             (True, False)
              False
              Nothing
     , ExpCmd "rolleyes"
@@ -1264,22 +1264,22 @@ expCmdSet = S.fromList
                         "You roll your eyes at @."
                         "% rolls & eyes at you."
                         "% rolls & eyes at @.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [ Attacking, Drinking, Eating, Sacrificing ])
+             ([ Attacking, Drinking, Eating ], allValues)
              (dup False)
              False
              Nothing
     , ExpCmd "rubeyes"
              (NoTarget  "You rub your eyes."
                         "% rubs & eyes.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [])
-             (dup False)
+             ([ Drinking, Eating ], [])
+             (True, False)
              False
              Nothing
     , ExpCmd "ruffle"
              (HasTarget "You ruffle @'s hair."
                         "% ruffles your hair."
                         "% ruffles @'s hair.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [ Attacking, Drinking, Eating, Sacrificing ])
+             ([ Drinking, Eating ], [ Drinking, Eating, Sacrificing ])
              (dup False)
              True
              Nothing
@@ -1287,14 +1287,14 @@ expCmdSet = S.fromList
              (HasTarget "You salute @."
                         "% salutes you."
                         "% salutes @.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [ Attacking, Drinking, Eating, Sacrificing ])
+             ([ Drinking, Eating ], allValues)
              (dup False)
              False
              Nothing
     , ExpCmd "satisfied"
              (NoTarget  "You look satisfied."
                         "% looks satisfied.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [])
+             (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
              Nothing
