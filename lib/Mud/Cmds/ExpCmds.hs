@@ -518,7 +518,7 @@ expCmdSet = S.fromList
     , ExpCmd "facepalm"
              (NoTarget  "You facepalm."
                         "% facepalms.")
-             ([ Attacking, Drinking, Eating ], [])
+             ([ Drinking, Eating ], [])
              (dup False)
              False
              Nothing
@@ -759,7 +759,7 @@ expCmdSet = S.fromList
              (HasTarget "You give @ a high five."
                         "% gives you a high five."
                         "% gives @ a high five.")
-             (dup [ Attacking, Drinking, Eating ])
+             (dup [ Drinking, Eating ])
              (dup False)
              True
              Nothing
@@ -1130,7 +1130,7 @@ expCmdSet = S.fromList
     , ExpCmd "picknose"
              (NoTarget  "You pick your nose."
                         "% picks & nose.")
-             ([ Attacking, Drinking, Eating ], [])
+             ([ Drinking, Eating ], [])
              (True, False)
              False
              Nothing
@@ -1142,11 +1142,11 @@ expCmdSet = S.fromList
              (dup False)
              True
              Nothing
-    , ExpCmd "point" -- TODO: Here.
+    , ExpCmd "point"
              (HasTarget "You point to @."
                         "% points to you."
                         "% points to @.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [ Attacking, Drinking, Eating, Sacrificing ])
+             ([ Attacking, Drinking, Eating ], allValues)
              (dup False)
              False
              Nothing
@@ -1154,14 +1154,14 @@ expCmdSet = S.fromList
              (HasTarget "You poke @."
                         "% pokes you."
                         "% pokes @.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [ Attacking, Drinking, Eating, Sacrificing ])
+             ([ Drinking, Eating ], [ Drinking, Eating, Sacrificing ])
              (dup False)
              True
              Nothing
     , ExpCmd "ponder"
              (NoTarget  "You ponder the situation."
                         "% ponders the situation.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [])
+             ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
              Nothing
@@ -1171,7 +1171,7 @@ expCmdSet = S.fromList
                         "You strike a pose before @."
                         "% strikes a pose before you."
                         "% strikes a pose before @.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [ Attacking, Drinking, Eating, Sacrificing ])
+             ([ Drinking, Eating ], allValues)
              (dup False)
              False
              Nothing
@@ -1179,8 +1179,8 @@ expCmdSet = S.fromList
              (HasTarget "You pounce on @."
                         "% pounces on you."
                         "% pounces on @.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [ Attacking, Drinking, Eating, Sacrificing ])
-             (dup False)
+             ([ Drinking, Eating ], [ Drinking, Eating, Sacrificing ])
+             (dup True)
              True
              (Just "")
     , ExpCmd "pout"
@@ -1189,7 +1189,7 @@ expCmdSet = S.fromList
                         "You pout at @."
                         "% pouts at you."
                         "% pout at @.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [ Attacking, Drinking, Eating, Sacrificing ])
+             ([ Attacking, Drinking, Eating ], allValues)
              (dup False)
              False
              Nothing
@@ -1199,18 +1199,18 @@ expCmdSet = S.fromList
                         "You prance around @."
                         "% prances around you."
                         "% prances around @.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [ Attacking, Drinking, Eating, Sacrificing ])
-             (dup False)
+             ([ Drinking, Eating ], [ Drinking, Eating, Sacrificing ])
+             (True, False)
              True
              Nothing
     , ExpCmd "purr"
              (NoTarget  "You purr."
                         "% purrs.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [])
-             (dup False)
+             ([ Attacking, Drinking, Eating ], [])
+             (True, False)
              True
              Nothing
-    , ExpCmd "questioning"
+    , ExpCmd "questioning" -- TODO: Here.
              (Versatile "You have a questioning expression on your face."
                         "% has a questioning expression on & face."
                         "You flash a questioning expression at @."
