@@ -1304,32 +1304,32 @@ expCmdSet = S.fromList
                         "You scowl with contempt at @."
                         "% scowls with contempt at you."
                         "% scowls with contempt at @.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [ Attacking, Drinking, Eating, Sacrificing ])
-             (dup False)
+             ([ Attacking, Drinking, Eating ], allValues)
+             (True, False)
              False
              Nothing
     , ExpCmd "scratchchin"
              (NoTarget  "You scratch your chin."
                         "% scratches & chin.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [])
+             ([ Drinking, Eating ], [])
              (dup False)
              False
              Nothing
     , ExpCmd "scratchhead"
              (NoTarget  "You scratch your head."
                         "% scratches & head.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [])
+             ([ Drinking, Eating ], [])
              (dup False)
              False
              Nothing
     , ExpCmd "scream"
              (Versatile "You unleash a high-pitched scream."
-                        "% unleashes high-pitched scream."
+                        "% unleashes a high-pitched scream."
                         "You scream at @."
                         "% screams at you."
                         "% screams at @.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [ Attacking, Drinking, Eating, Sacrificing ])
-             (dup False)
+             ([ Attacking, Drinking, Eating ], allValues)
+             (dup True)
              True
              Nothing
     , ExpCmd "shake"
