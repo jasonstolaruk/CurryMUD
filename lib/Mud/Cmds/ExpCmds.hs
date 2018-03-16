@@ -892,7 +892,7 @@ expCmdSet = S.fromList
                         "% laughs at you."
                         "% laughs at @.")
              ([ Attacking, Drinking, Eating ], allValues)
-             (dup True)
+             (True, False)
              True
              Nothing
     , ExpCmd "laughheart"
@@ -1329,7 +1329,7 @@ expCmdSet = S.fromList
                         "% screams at you."
                         "% screams at @.")
              ([ Attacking, Drinking, Eating ], allValues)
-             (dup True)
+             (True, False)
              True
              Nothing
     , ExpCmd "shake"
@@ -1338,22 +1338,22 @@ expCmdSet = S.fromList
                         "You shake your head at @."
                         "% shakes & head at you."
                         "% shakes & head at @.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [ Attacking, Drinking, Eating, Sacrificing ])
-             (dup False)
+             ([ Attacking, Drinking, Eating ], allValues)
+             (True, False)
              False
              Nothing
     , ExpCmd "shiver"
              (NoTarget  "You shiver."
                         "% shivers.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [])
+             (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
              Nothing
     , ExpCmd "shriek"
              (NoTarget  "You let out a shriek."
                         "% lets out a shriek.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], [])
-             (dup False)
+             ([ Attacking, Drinking, Eating ], [])
+             (True, False)
              True
              Nothing
     , ExpCmd "shrieklaugh"
