@@ -624,7 +624,7 @@ mkHolySymbolDesc Rumialys  = "The holy symbol of Rumialys is a steel ring about 
                              \thin, straight bar running through the center, connecting two opposites edges of the \
                              \ring. There are words etched upon the ring's outer surface."
 
-mkHolySymbolVol :: GodName -> Vol -- TODO: Zeros.
+mkHolySymbolVol :: GodName -> Vol -- TODO: Zeros need to be changed to meaningful values.
 mkHolySymbolVol Aule      = 0
 mkHolySymbolVol Caila     = round (4 * 0.5  * 5 * 100 :: Double)
 mkHolySymbolVol Celoriel  = 0
@@ -636,7 +636,7 @@ mkHolySymbolVol Murgorhd  = round (3.5  * 0.5  * 7  * 100 :: Double) -- 12.25 cu
 mkHolySymbolVol Rhayk     = round (1.25 * 1.25 * 11 * 100 :: Double)
 mkHolySymbolVol Rumialys  = 250
 
-mkHolySymbolWeight :: GodName -> Weight -- TODO: Zeros.
+mkHolySymbolWeight :: GodName -> Weight -- TODO: Zeros need to be changed to meaningful values.
 mkHolySymbolWeight Aule      = 0
 mkHolySymbolWeight Caila     = 65
 mkHolySymbolWeight Celoriel  = 0

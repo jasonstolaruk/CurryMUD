@@ -143,8 +143,8 @@ plaCmds = regularCmds ++ priorityAbbrevCmds ++ expCmds
 regularCmds :: HasCallStack => [Cmd]
 regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
--- TODO: "ask".
--- TODO: "buy" and "sell".
+-- TODO: "ask" (apparently not yet referenced in any help files).
+-- TODO: "buy" and "sell" (to be used between PCs).
 -- TODO: "shout". Consider indoor vs. outdoor. Update the "communication" help topic.
 regularCmdTuples :: HasCallStack => [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
