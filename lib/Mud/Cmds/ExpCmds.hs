@@ -108,8 +108,8 @@ expCmdSet = S.fromList
              False
              Nothing
     , ExpCmd "bawl"
-             (NoTarget  "You bawl like a baby."
-                        "% bawls like a baby.")
+             (NoTarget "You bawl like a baby."
+                       "% bawls like a baby.")
              ([ Attacking, Drinking, Eating ], [])
              (dup True)
              True
@@ -165,15 +165,15 @@ expCmdSet = S.fromList
              False
              Nothing
     , ExpCmd "blush"
-             (NoTarget  "You blush."
-                        "% blushes.")
+             (NoTarget "You blush."
+                       "% blushes.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
              Nothing
     , ExpCmd "boggle"
-             (NoTarget  "You boggle at the concept."
-                        "% boggles at the concept.")
+             (NoTarget "You boggle at the concept."
+                       "% boggles at the concept.")
              ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
@@ -209,8 +209,8 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "calm"
-             (NoTarget  "You appear calm and collected."
-                        "% appears calm and collected.")
+             (NoTarget "You appear calm and collected."
+                       "% appears calm and collected.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
@@ -264,22 +264,22 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "clearthroat"
-             (NoTarget  "You clear your throat."
-                        "% clears & throat.")
+             (NoTarget "You clear your throat."
+                       "% clears & throat.")
              (allValues, []) -- TODO: Can sacrifice.
              (True, False)
              True
              Nothing
     , ExpCmd "closeeyes"
-             (NoTarget  "You close your eyes."
-                        "% closes & eyes.")
+             (NoTarget "You close your eyes."
+                       "% closes & eyes.")
              ([ Drinking, Eating, Sacrificing ], []) -- TODO: Can sacrifice.
              (dup False)
              False
              Nothing
     , ExpCmd "coldsweat"
-             (NoTarget  "You break out in a cold sweat."
-                        "% breaks out in a cold sweat.")
+             (NoTarget "You break out in a cold sweat."
+                       "% breaks out in a cold sweat.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
@@ -313,22 +313,22 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "coverears"
-             (NoTarget  "You cover your ears."
-                        "% covers & ears.")
+             (NoTarget "You cover your ears."
+                       "% covers & ears.")
              ([ Drinking, Eating ], [])
              (True, False)
              False
              Nothing
     , ExpCmd "covereyes"
-             (NoTarget  "You cover your eyes."
-                        "% covers & eyes.")
+             (NoTarget "You cover your eyes."
+                       "% covers & eyes.")
              ([ Drinking, Eating ], [])
              (True, False)
              False
              Nothing
     , ExpCmd "covermouth"
-             (NoTarget  "You cover your mouth."
-                        "% covers & mouth.")
+             (NoTarget "You cover your mouth."
+                       "% covers & mouth.")
              ([ Drinking, Eating ], [])
              (True, False)
              False
@@ -354,22 +354,22 @@ expCmdSet = S.fromList
              False
              Nothing
     , ExpCmd "crossarms"
-             (NoTarget  "You cross your arms."
-                        "% crosses & arms.")
+             (NoTarget "You cross your arms."
+                       "% crosses & arms.")
              ([ Drinking, Eating ], [])
              (True, False)
              False
              Nothing
     , ExpCmd "crossfingers"
-             (NoTarget  "You cross your fingers."
-                        "% crosses & fingers.")
+             (NoTarget "You cross your fingers."
+                       "% crosses & fingers.")
              ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
              Nothing
     , ExpCmd "cry"
-             (NoTarget  "You cry."
-                        "% cries.")
+             (NoTarget "You cry."
+                       "% cries.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              True
@@ -443,15 +443,15 @@ expCmdSet = S.fromList
              True
              (Just "")
     , ExpCmd "daydream"
-             (NoTarget  "Staring off into the distance, you indulge in a daydream."
-                        "Staring off into the distance, % indulges in a daydream.")
+             (NoTarget "Staring off into the distance, you indulge in a daydream."
+                       "Staring off into the distance, % indulges in a daydream.")
              ([ Drinking, Eating ], [])
              (True, False)
              False
              Nothing
     , ExpCmd "deepbreath"
-             (NoTarget  "You take a deep breath."
-                        "% takes a deep breath.")
+             (NoTarget "You take a deep breath."
+                       "% takes a deep breath.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
@@ -467,8 +467,8 @@ expCmdSet = S.fromList
              False
              Nothing
     , ExpCmd "dizzy"
-             (NoTarget  "Dizzy and reeling, you look as though you might pass out."
-                        "Dizzy and reeling, % looks as though ^ might pass out.")
+             (NoTarget "Dizzy and reeling, you look as though you might pass out."
+                       "Dizzy and reeling, % looks as though ^ might pass out.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
@@ -484,15 +484,15 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "drool"
-             (NoTarget  "You drool."
-                        "% drools.")
+             (NoTarget "You drool."
+                       "% drools.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
              Nothing
     , ExpCmd "droop"
-             (NoTarget  "Your eyes droop."
-                        "%'s eyes droop.")
+             (NoTarget "Your eyes droop."
+                       "%'s eyes droop.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
@@ -516,29 +516,29 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "exhausted"
-             (NoTarget  "Exhausted, your face displays a weary expression."
-                        "Exhausted, %'s face displays a weary expression.")
+             (NoTarget "Exhausted, your face displays a weary expression."
+                       "Exhausted, %'s face displays a weary expression.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
              Nothing
     , ExpCmd "facepalm"
-             (NoTarget  "You facepalm."
-                        "% facepalms.")
+             (NoTarget "You facepalm."
+                       "% facepalms.")
              ([ Drinking, Eating ], [])
              (dup False)
              False
              Nothing
     , ExpCmd "faint"
-             (NoTarget  "You faint."
-                        "% faints.")
+             (NoTarget "You faint."
+                       "% faints.")
              ([ Drinking, Eating ], [])
              (dup True)
              True
              (Just "fainted")
     , ExpCmd "fistpump"
-             (NoTarget  "You pump your fist in the air triumphantly."
-                        "% pumps & fist in the air triumphantly.")
+             (NoTarget "You pump your fist in the air triumphantly."
+                       "% pumps & fist in the air triumphantly.")
              ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
@@ -554,8 +554,8 @@ expCmdSet = S.fromList
              False
              Nothing
     , ExpCmd "flinch"
-             (NoTarget  "You flinch."
-                        "% flinches.")
+             (NoTarget "You flinch."
+                       "% flinches.")
              ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
@@ -571,8 +571,8 @@ expCmdSet = S.fromList
              True
              (Just "flopped down on the ground")
     , ExpCmd "flustered"
-             (NoTarget  "You look entirely flustered."
-                        "% looks entirely flustered.")
+             (NoTarget "You look entirely flustered."
+                       "% looks entirely flustered.")
              ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
@@ -718,8 +718,8 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "grumble"
-             (NoTarget  "You grumble to yourself."
-                        "% grumbles to *.")
+             (NoTarget "You grumble to yourself."
+                       "% grumbles to *.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
@@ -735,29 +735,29 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "gulp"
-             (NoTarget  "You gulp."
-                        "% gulps.")
+             (NoTarget "You gulp."
+                       "% gulps.")
              ([ Attacking, Drinking, Eating ], [])
              (dup False)
              True
              Nothing
     , ExpCmd "handhips"
-             (NoTarget  "You put your hands on your hips."
-                        "% puts & hands on & hips.")
+             (NoTarget "You put your hands on your hips."
+                       "% puts & hands on & hips.")
              ([ Drinking, Eating ], [])
              (True, False)
              False
              Nothing
     , ExpCmd "hesitate"
-             (NoTarget  "You hesitate."
-                        "% hesitates.")
+             (NoTarget "You hesitate."
+                       "% hesitates.")
              ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
              Nothing
     , ExpCmd "hiccup"
-             (NoTarget  "You hiccup involuntarily."
-                        "% hiccups involuntarily.")
+             (NoTarget "You hiccup involuntarily."
+                       "% hiccups involuntarily.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              True
@@ -771,8 +771,8 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "hmm"
-             (NoTarget  "You say, \"Hmm...\" and think about it."
-                        "% says, \"Hmm...\" and thinks about it.")
+             (NoTarget "You say, \"Hmm...\" and think about it."
+                       "% says, \"Hmm...\" and thinks about it.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
@@ -786,8 +786,8 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "hop"
-             (NoTarget  "You hop up and down excitedly."
-                        "% hops up and down excitedly.")
+             (NoTarget "You hop up and down excitedly."
+                       "% hops up and down excitedly.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
@@ -811,15 +811,15 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "hum"
-             (NoTarget  "You hum a merry tune."
-                        "% hums a merry tune.")
+             (NoTarget "You hum a merry tune."
+                       "% hums a merry tune.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
              Nothing
     , ExpCmd "innocent"
-             (NoTarget  "You try to look innocent."
-                        "% tries to look innocent.")
+             (NoTarget "You try to look innocent."
+                       "% tries to look innocent.")
              ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
@@ -845,15 +845,15 @@ expCmdSet = S.fromList
              True
              (Just "")
     , ExpCmd "joytears"
-             (NoTarget  "You are overcome with tears of joy."
-                        "% is overcome with tears of joy.")
+             (NoTarget "You are overcome with tears of joy."
+                       "% is overcome with tears of joy.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
              Nothing
     , ExpCmd "jump"
-             (NoTarget  "You jump up and down excitedly."
-                        "% jumps up and down excitedly.")
+             (NoTarget "You jump up and down excitedly."
+                       "% jumps up and down excitedly.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
@@ -923,8 +923,8 @@ expCmdSet = S.fromList
              True
              (Just "laying down")
     , ExpCmd "leap"
-             (NoTarget  "You leap into the air."
-                        "% leaps into the air.")
+             (NoTarget "You leap into the air."
+                       "% leaps into the air.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
@@ -938,15 +938,15 @@ expCmdSet = S.fromList
              False
              Nothing
     , ExpCmd "licklips"
-             (NoTarget  "You lick your lips."
-                        "% licks & lips.")
+             (NoTarget "You lick your lips."
+                       "% licks & lips.")
              (allValues, []) -- TODO: Can sacrifice.
              (True, False)
              False
              Nothing
     , ExpCmd "livid"
-             (NoTarget  "You are positively livid."
-                        "% is positively livid.")
+             (NoTarget "You are positively livid."
+                       "% is positively livid.")
              ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
@@ -960,8 +960,8 @@ expCmdSet = S.fromList
              False
              Nothing
     , ExpCmd "losswords"
-             (NoTarget  "You appear to be at a loss for words."
-                        "% appears to be at a loss for words.")
+             (NoTarget "You appear to be at a loss for words."
+                       "% appears to be at a loss for words.")
              ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
@@ -975,8 +975,8 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "moan"
-             (NoTarget  "You moan."
-                        "% moans.")
+             (NoTarget "You moan."
+                       "% moans.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
@@ -1032,8 +1032,8 @@ expCmdSet = S.fromList
              False
              Nothing
     , ExpCmd "noexpress"
-             (NoTarget  "Your face is entirely expressionless."
-                        "%'s face is entirely expressionless.")
+             (NoTarget "Your face is entirely expressionless."
+                       "%'s face is entirely expressionless.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
@@ -1055,8 +1055,8 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "openeyes"
-             (NoTarget  "You open your eyes."
-                        "% opens & eyes.")
+             (NoTarget "You open your eyes."
+                       "% opens & eyes.")
              ([ Attacking, Drinking, Eating, Sacrificing ], []) -- TODO: Can sacrifice.
              (dup False)
              False
@@ -1072,15 +1072,15 @@ expCmdSet = S.fromList
              False
              Nothing
     , ExpCmd "pace"
-             (NoTarget  "You pace around nervously."
-                        "% paces around nervously.")
+             (NoTarget "You pace around nervously."
+                       "% paces around nervously.")
              ([ Drinking, Eating ], [])
              (dup False)
              True
              (Just "")
     , ExpCmd "pant"
-             (NoTarget  "You pant."
-                        "% pants.")
+             (NoTarget "You pant."
+                       "% pants.")
              ([ Attacking, Drinking, Eating ], [])
              (dup True)
              True
@@ -1120,8 +1120,8 @@ expCmdSet = S.fromList
              False
              Nothing
     , ExpCmd "perplexed"
-             (NoTarget  "You are truly perplexed by the situation."
-                        "% is truly perplexed by the situation.")
+             (NoTarget "You are truly perplexed by the situation."
+                       "% is truly perplexed by the situation.")
              ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
@@ -1135,8 +1135,8 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "picknose"
-             (NoTarget  "You pick your nose."
-                        "% picks & nose.")
+             (NoTarget "You pick your nose."
+                       "% picks & nose.")
              ([ Drinking, Eating ], [])
              (True, False)
              False
@@ -1166,8 +1166,8 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "ponder"
-             (NoTarget  "You ponder the situation."
-                        "% ponders the situation.")
+             (NoTarget "You ponder the situation."
+                       "% ponders the situation.")
              ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
@@ -1211,8 +1211,8 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "purr"
-             (NoTarget  "You purr."
-                        "% purrs.")
+             (NoTarget "You purr."
+                       "% purrs.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
@@ -1238,29 +1238,29 @@ expCmdSet = S.fromList
              False
              Nothing
     , ExpCmd "raisehand"
-             (NoTarget  "You raise your hand."
-                        "% raises & hand.")
+             (NoTarget "You raise your hand."
+                       "% raises & hand.")
              ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
              Nothing
     , ExpCmd "reeling"
-             (NoTarget  "Dizzy and reeling, you look as though you might pass out."
-                        "Dizzy and reeling, % looks as though ^ might pass out.")
+             (NoTarget "Dizzy and reeling, you look as though you might pass out."
+                       "Dizzy and reeling, % looks as though ^ might pass out.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
              Nothing
     , ExpCmd "relieved"
-             (NoTarget  "You look relieved."
-                        "% looks relieved.")
+             (NoTarget "You look relieved."
+                       "% looks relieved.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
              Nothing
     , ExpCmd "rock"
-             (NoTarget  "You rock back and forth."
-                        "% rocks back and forth.")
+             (NoTarget "You rock back and forth."
+                       "% rocks back and forth.")
              (allValues, []) -- TODO: Can sacrifice.
              (True, False)
              False
@@ -1276,8 +1276,8 @@ expCmdSet = S.fromList
              False
              Nothing
     , ExpCmd "rubeyes"
-             (NoTarget  "You rub your eyes."
-                        "% rubs & eyes.")
+             (NoTarget "You rub your eyes."
+                       "% rubs & eyes.")
              ([ Drinking, Eating ], [])
              (True, False)
              False
@@ -1299,8 +1299,8 @@ expCmdSet = S.fromList
              False
              Nothing
     , ExpCmd "satisfied"
-             (NoTarget  "You look satisfied."
-                        "% looks satisfied.")
+             (NoTarget "You look satisfied."
+                       "% looks satisfied.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
@@ -1316,15 +1316,15 @@ expCmdSet = S.fromList
              False
              Nothing
     , ExpCmd "scratchchin"
-             (NoTarget  "You scratch your chin."
-                        "% scratches & chin.")
+             (NoTarget "You scratch your chin."
+                       "% scratches & chin.")
              ([ Drinking, Eating ], [])
              (dup False)
              False
              Nothing
     , ExpCmd "scratchhead"
-             (NoTarget  "You scratch your head."
-                        "% scratches & head.")
+             (NoTarget "You scratch your head."
+                       "% scratches & head.")
              ([ Drinking, Eating ], [])
              (dup False)
              False
@@ -1350,15 +1350,15 @@ expCmdSet = S.fromList
              False
              Nothing
     , ExpCmd "shiver"
-             (NoTarget  "You shiver."
-                        "% shivers.")
+             (NoTarget "You shiver."
+                       "% shivers.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
              Nothing
     , ExpCmd "shriek"
-             (NoTarget  "You let out a shriek."
-                        "% lets out a shriek.")
+             (NoTarget "You let out a shriek."
+                       "% lets out a shriek.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
@@ -1374,15 +1374,15 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "shrug"
-             (NoTarget  "You shrug your shoulders."
-                        "% shrugs & shoulders.")
+             (NoTarget "You shrug your shoulders."
+                       "% shrugs & shoulders.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
              Nothing
     , ExpCmd "shudder"
-             (NoTarget  "You shudder."
-                        "% shudders.")
+             (NoTarget "You shudder."
+                       "% shudders.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
@@ -1396,29 +1396,29 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "sigh"
-             (NoTarget  "You sigh."
-                        "% sighs.")
+             (NoTarget "You sigh."
+                       "% sighs.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
              Nothing
     , ExpCmd "sighrelief"
-             (NoTarget  "You sigh in relief."
-                        "% sighs in relief.")
+             (NoTarget "You sigh in relief."
+                       "% sighs in relief.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
              Nothing
     , ExpCmd "sighsadly"
-             (NoTarget  "You sigh sadly."
-                        "% sighs sadly.")
+             (NoTarget "You sigh sadly."
+                       "% sighs sadly.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
              Nothing
     , ExpCmd "sighwearily"
-             (NoTarget  "You sigh wearily."
-                        "% sighs wearily.")
+             (NoTarget "You sigh wearily."
+                       "% sighs wearily.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
@@ -1434,8 +1434,8 @@ expCmdSet = S.fromList
              True
              (Just "sitting down")
     , ExpCmd "sleepy"
-             (NoTarget  "You look sleepy."
-                        "% looks sleepy.")
+             (NoTarget "You look sleepy."
+                       "% looks sleepy.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
@@ -1451,8 +1451,8 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "smacklips"
-             (NoTarget  "You smack your lips."
-                        "% smacks & lips.")
+             (NoTarget "You smack your lips."
+                       "% smacks & lips.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
@@ -1498,8 +1498,8 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "sneeze"
-             (NoTarget  "You sneeze."
-                        "% sneezes.")
+             (NoTarget "You sneeze."
+                       "% sneezes.")
              (allValues, []) -- TODO: Can sacrifice.
              (True, False)
              True
@@ -1515,22 +1515,22 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "sniff"
-             (NoTarget  "You sniff the air."
-                        "% sniffs the air.")
+             (NoTarget "You sniff the air."
+                       "% sniffs the air.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
              Nothing
     , ExpCmd "sniffle"
-             (NoTarget  "You sniffle."
-                        "% sniffles.")
+             (NoTarget "You sniffle."
+                       "% sniffles.")
              (allValues, []) -- TODO: Can sacrifice.
              (True, False)
              True
              Nothing
     , ExpCmd "snore"
-             (NoTarget  "You snore loudly."
-                        "% snores loudly.")
+             (NoTarget "You snore loudly."
+                       "% snores loudly.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
@@ -1546,8 +1546,8 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "sob"
-             (NoTarget  "You sob."
-                        "% sobs.")
+             (NoTarget "You sob."
+                       "% sobs.")
              ([ Attacking, Drinking, Eating ], [])
              (dup True)
              True
@@ -1563,22 +1563,22 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "stagger"
-             (NoTarget  "You stagger around."
-                        "% staggers around.")
+             (NoTarget "You stagger around."
+                       "% staggers around.")
              ([ Attacking, Drinking, Eating ], [])
              (dup True)
              True
              Nothing
     , ExpCmd "stamp"
-             (NoTarget  "Your stamp your feet."
-                        "% stamps & feet.")
+             (NoTarget "Your stamp your feet."
+                       "% stamps & feet.")
              ([ Attacking, Drinking, Eating ], [])
              (dup False)
              True
              Nothing
     , ExpCmd "stand"
-             (NoTarget  "You stand up."
-                        "% stands up.")
+             (NoTarget "You stand up."
+                       "% stands up.")
              ([ Attacking, Drinking, Eating ], [])
              (dup False)
              True
@@ -1592,36 +1592,36 @@ expCmdSet = S.fromList
              False
              Nothing
     , ExpCmd "stiflelaugh"
-             (NoTarget  "You try hard to stifle a laugh."
-                        "% tries hard to stifle a laugh.")
+             (NoTarget "You try hard to stifle a laugh."
+                       "% tries hard to stifle a laugh.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              True
              Nothing
     , ExpCmd "stifletears"
-             (NoTarget  "You try hard to stifle your tears."
-                        "% tries hard to stifle & tears.")
+             (NoTarget "You try hard to stifle your tears."
+                       "% tries hard to stifle & tears.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
              Nothing
     , ExpCmd "stomach"
-             (NoTarget  "Your stomach growls."
-                        "%'s stomach growls.")
+             (NoTarget "Your stomach growls."
+                       "%'s stomach growls.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              True
              Nothing
     , ExpCmd "stomp"
-             (NoTarget  "Your stomp your feet."
-                        "% stomps & feet.")
+             (NoTarget "Your stomp your feet."
+                       "% stomps & feet.")
              ([ Attacking, Drinking, Eating ], [])
              (dup False)
              True
              Nothing
     , ExpCmd "stretch"
-             (NoTarget  "You stretch your muscles."
-                        "% stretches & muscles.")
+             (NoTarget "You stretch your muscles."
+                       "% stretches & muscles.")
              ([ Drinking, Eating ], [])
              (dup True)
              False
@@ -1635,36 +1635,36 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "strut"
-             (NoTarget  "Your strut your stuff."
-                        "% struts & stuff.")
+             (NoTarget "Your strut your stuff."
+                       "% struts & stuff.")
              ([ Drinking, Eating ], [])
              (True, False)
              True
              Nothing
     , ExpCmd "stumble"
-             (NoTarget  "You stumble and almost fall over."
-                        "% stumbles and almost falls over.")
+             (NoTarget "You stumble and almost fall over."
+                       "% stumbles and almost falls over.")
              ([ Attacking, Drinking, Eating ], [])
              (dup True)
              True
              Nothing
     , ExpCmd "suckthumb"
-             (NoTarget  "You suck your thumb."
-                        "% sucks & thumb.")
+             (NoTarget "You suck your thumb."
+                       "% sucks & thumb.")
              ([ Drinking, Eating ], [])
              (dup True)
              False
              Nothing
     , ExpCmd "sulk"
-             (NoTarget  "You sulk."
-                        "% sulks.")
+             (NoTarget "You sulk."
+                       "% sulks.")
              ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
              Nothing
     , ExpCmd "sweat"
-             (NoTarget  "You break out in a sweat."
-                        "% breaks out in a sweat.")
+             (NoTarget "You break out in a sweat."
+                       "% breaks out in a sweat.")
              (allValues, [])
              (dup False)
              False
@@ -1686,15 +1686,15 @@ expCmdSet = S.fromList
              False
              Nothing
     , ExpCmd "think"
-             (NoTarget  "You say, \"Hmm...\" and think about it."
-                        "% says, \"Hmm...\" and thinks about it.")
+             (NoTarget "You say, \"Hmm...\" and think about it."
+                       "% says, \"Hmm...\" and thinks about it.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
              Nothing
     , ExpCmd "throat"
-             (NoTarget  "You clear your throat."
-                        "% clears & throat.")
+             (NoTarget "You clear your throat."
+                       "% clears & throat.")
              (allValues, []) -- TODO: Can sacrifice.
              (True, False)
              True
@@ -1756,22 +1756,22 @@ expCmdSet = S.fromList
              False
              Nothing
     , ExpCmd "twiddle"
-             (NoTarget  "You twiddle your thumbs."
-                        "% twiddles & thumbs.")
+             (NoTarget "You twiddle your thumbs."
+                       "% twiddles & thumbs.")
              ([ Drinking, Eating ], [])
              (True, False)
              False
              Nothing
     , ExpCmd "twirl"
-             (NoTarget  "You twirl around."
-                        "% twirls around.")
+             (NoTarget "You twirl around."
+                       "% twirls around.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
              Nothing
     , ExpCmd "twitch"
-             (NoTarget  "You twitch nervously."
-                        "% twitches nervously.")
+             (NoTarget "You twitch nervously."
+                       "% twitches nervously.")
              (allValues, []) -- TODO: Can sacrifice.
              (dup False)
              False
@@ -1825,22 +1825,22 @@ expCmdSet = S.fromList
              True
              Nothing
     , ExpCmd "whistle"
-             (NoTarget  "You whistle."
-                        "% whistles.")
+             (NoTarget "You whistle."
+                       "% whistles.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
              Nothing
     , ExpCmd "wiggle"
-             (NoTarget  "You wiggle around."
-                        "% wiggles around.")
+             (NoTarget "You wiggle around."
+                       "% wiggles around.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              False
              Nothing
     , ExpCmd "wince"
-             (NoTarget  "You wince in pain."
-                        "% winces in pain.")
+             (NoTarget "You wince in pain."
+                       "% winces in pain.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              False
@@ -1856,8 +1856,8 @@ expCmdSet = S.fromList
              False
              Nothing
     , ExpCmd "wipeface"
-             (NoTarget  "You wipe your face."
-                        "% wipes & face.")
+             (NoTarget "You wipe your face."
+                       "% wipes & face.")
              ([ Attacking, Drinking, Eating ], [])
              (True, False)
              False
@@ -1883,8 +1883,8 @@ expCmdSet = S.fromList
              False
              Nothing
     , ExpCmd "yawn"
-             (NoTarget  "You yawn."
-                        "% yawns.")
+             (NoTarget "You yawn."
+                       "% yawns.")
              (allValues, []) -- TODO: Can sacrifice.
              (True, False)
              True
