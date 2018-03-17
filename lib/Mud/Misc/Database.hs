@@ -28,8 +28,10 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , countDbTblRecsAdminChan
                          , countDbTblRecsAdminMsg
                          , countDbTblRecsChan
+                         , countDbTblRecsPropNames
                          , countDbTblRecsQuestion
                          , countDbTblRecsTele
+                         , countDbTblRecsWords
                          , createDbTbls
                          , dbOperation
                          , deleteDbTblRec
@@ -483,11 +485,17 @@ countDbTblRecsAdminMsg = countHelper "admin_msg"
 countDbTblRecsChan :: CountDbTblRecsFun
 countDbTblRecsChan = countHelper "chan"
 
+countDbTblRecsPropNames :: CountDbTblRecsFun
+countDbTblRecsPropNames = countHelper "prop_names"
+
 countDbTblRecsQuestion :: CountDbTblRecsFun
 countDbTblRecsQuestion = countHelper "question"
 
 countDbTblRecsTele :: CountDbTblRecsFun
 countDbTblRecsTele = countHelper "tele"
+
+countDbTblRecsWords :: CountDbTblRecsFun
+countDbTblRecsWords = countHelper "words"
 
 countHelper :: DbTblName -> IO Int
 countHelper tblName = let q = Query $ "select count(*) from " <> tblName

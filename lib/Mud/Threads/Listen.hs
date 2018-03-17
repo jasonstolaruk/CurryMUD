@@ -108,12 +108,11 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         logNotice fn . T.concat $ [ "connected to ", showTxt host, " on local port ", showTxt localPort, "." ]
         (withDbExHandler "listen loop" . isHostBanned . T.toLower . T.pack $ host) >>= \case
           Just (Any False) -> runTalkAsync h host
-          _                -> do
-              liftIO . T.hPutStr h . nlnl $ bannedMsg
-              liftIO . hClose $ h
-              let msg = "Connection from " <> dblQuote host' <> " refused (host is banned)."
-              bcastAdmins msg
-              logNotice fn . uncapitalize $ msg
+          _                -> do liftIO . T.hPutStr h . nlnl $ bannedMsg
+                                 liftIO . hClose $ h
+                                 let msg = "Connection from " <> dblQuote host' <> " refused (host is banned)."
+                                 bcastAdmins msg
+                                 logNotice fn . uncapitalize $ msg
     cleanUp auxAsyncs sock = do logNotice "listen cleanUp" "closing the socket."
                                 liftIO . sClose $ sock
                                 mapM_ throwDeathWait auxAsyncs

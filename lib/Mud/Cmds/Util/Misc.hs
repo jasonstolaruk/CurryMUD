@@ -127,7 +127,7 @@ import           Control.Arrow ((***), (&&&), first, second)
 import           Control.Exception.Lifted (catch, try)
 import           Control.Lens (_1, _2, _3, at, both, each, to, view, views)
 import           Control.Lens.Operators ((?~), (.~), (&), (%~), (^.), (+~), (<>~))
-import           Control.Monad ((>=>), forM, join, mplus, when)
+import           Control.Monad ((>=>), forM, mplus, when)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Bool (bool)
 import           Data.Char (isDigit, isLetter)
@@ -421,19 +421,19 @@ hasYou = any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower)
 -----
 
 initPropNamesTbl :: HasCallStack => MudStack () -- Used by the "!propnames" debug cmd.
-initPropNamesTbl = initTblHelper "initPropNamesTbl" "prop_names" (lookupPropName "jason") insertPropNames propNamesFileFun
+initPropNamesTbl = initTblHelper "initPropNamesTbl" "prop_names" countDbTblRecsPropNames insertPropNames propNamesFileFun
 
-initTblHelper :: HasCallStack => FunName -> Text -> IO (Maybe Text) -> (Text -> IO ()) -> FilePathFun -> MudStack ()
-initTblHelper fn (dblQuote -> tblName) lookupFun insertFun fpf = liftIO (mkMudFilePath fpf) >>= \fp ->
+initTblHelper :: HasCallStack => FunName -> Text -> IO Int -> (Text -> IO ()) -> FilePathFun -> MudStack ()
+initTblHelper fn (dblQuote -> tblName) countFun insertFun fpf = liftIO (mkMudFilePath fpf) >>= \fp ->
     liftIO (T.readFile fp) |&| try >=> either (emptied . fileIOExHandler fn) proceed
   where
     logHelper   = logNotice fn
-    proceed txt = join <$> withDbExHandler fn lookupFun >>= \case
-      Nothing -> logHelper ("initializing the " <> tblName <> " table.") >> withDbExHandler_ fn (insertFun txt)
-      Just _  -> logHelper $ the tblName <> " table has already been initialized."
+    proceed txt = let f 0 = logHelper ("initializing the " <> tblName <> " table.") >> withDbExHandler_ fn (insertFun txt)
+                      f _ = logHelper $ the tblName <> " table has already been initialized."
+                  in maybeVoid f =<< withDbExHandler fn countFun -- TODO: Confirm this is working with change to "countFun".
 
 initWordsTbl :: HasCallStack => MudStack () -- Used by the "!words" debug cmd.
-initWordsTbl = initTblHelper "initWordsTbl" "words" (lookupWord "a") insertWords wordsFileFun
+initWordsTbl = initTblHelper "initWordsTbl" "words" countDbTblRecsWords insertWords wordsFileFun
 
 -----
 

@@ -223,7 +223,7 @@ loadEqTbl ((</> eqTblFile) -> absolute) = eitherDecode <$> liftIO (LB.readFile a
   Right (IM.map (M.fromList . map swap . IM.toList) -> tbl) -> tweak (eqTbl .~ tbl) >> return True
 
 sorry :: HasCallStack => FilePath -> String -> MudStack Bool
-sorry absolute (T.pack -> err) = logErrorMsg "sorry" (loadTblErrorMsg absolute err) >> return False
+sorry absolute (T.pack -> err) = logErrorMsg "sorry" (loadTblFileErrorMsg absolute err) >> return False
 
 loadTbl :: (HasCallStack, FromJSON b) => FilePath -> ASetter MudState MudState a b -> FilePath -> MudStack Bool
 loadTbl tblFile lens path = let absolute = path </> tblFile in eitherDecode <$> liftIO (LB.readFile absolute) >>= \case

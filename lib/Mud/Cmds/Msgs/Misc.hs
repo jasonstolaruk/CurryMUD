@@ -129,8 +129,8 @@ linkMissingMsg s = "You notice that your telepathic link with " <> s <> " is mis
 linkRetainedMsg :: Sing -> Text
 linkRetainedMsg s = "There is a sudden surge of energy over your telepathic link with " <> s <> "!"
 
-loadTblErrorMsg :: FilePath -> Text -> Text
-loadTblErrorMsg fp msg = T.concat [ "error parsing ", dblQuote . T.pack $ fp, ": ", msg, "." ]
+loadTblFileErrorMsg :: FilePath -> Text -> Text
+loadTblFileErrorMsg fp msg = T.concat [ "error parsing ", dblQuote . T.pack $ fp, ": ", msg, "." ]
 
 loadWorldErrorMsg :: Text
 loadWorldErrorMsg = "There was an error loading the world. Check the error log for details."
