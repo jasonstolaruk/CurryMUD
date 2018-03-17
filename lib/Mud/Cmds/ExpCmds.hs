@@ -167,7 +167,7 @@ expCmdSet = S.fromList
     , ExpCmd "blush"
              (NoTarget "You blush."
                        "% blushes.")
-             (allValues, []) -- TODO: Can sacrifice.
+             ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
              Nothing
@@ -211,7 +211,7 @@ expCmdSet = S.fromList
     , ExpCmd "calm"
              (NoTarget "You appear calm and collected."
                        "% appears calm and collected.")
-             (allValues, []) -- TODO: Can sacrifice.
+             (allValues, [])
              (dup False)
              False
              Nothing
@@ -266,21 +266,21 @@ expCmdSet = S.fromList
     , ExpCmd "clearthroat"
              (NoTarget "You clear your throat."
                        "% clears & throat.")
-             (allValues, []) -- TODO: Can sacrifice.
+             ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
              Nothing
     , ExpCmd "closeeyes"
              (NoTarget "You close your eyes."
                        "% closes & eyes.")
-             ([ Drinking, Eating, Sacrificing ], []) -- TODO: Can sacrifice.
+             ([ Drinking, Eating, Sacrificing ], [])
              (dup False)
              False
              Nothing
     , ExpCmd "coldsweat"
              (NoTarget "You break out in a cold sweat."
                        "% breaks out in a cold sweat.")
-             (allValues, []) -- TODO: Can sacrifice.
+             (allValues, [])
              (dup False)
              False
              Nothing
@@ -370,7 +370,7 @@ expCmdSet = S.fromList
     , ExpCmd "cry"
              (NoTarget "You cry."
                        "% cries.")
-             (allValues, []) -- TODO: Can sacrifice.
+             ([ Attacking, Drinking, Eating ], [])
              (dup False)
              True
              Nothing
@@ -469,7 +469,7 @@ expCmdSet = S.fromList
     , ExpCmd "dizzy"
              (NoTarget "Dizzy and reeling, you look as though you might pass out."
                        "Dizzy and reeling, % looks as though ^ might pass out.")
-             (allValues, []) -- TODO: Can sacrifice.
+             (allValues, [])
              (dup False)
              False
              Nothing
@@ -486,14 +486,14 @@ expCmdSet = S.fromList
     , ExpCmd "drool"
              (NoTarget "You drool."
                        "% drools.")
-             (allValues, []) -- TODO: Can sacrifice.
+             (allValues, [])
              (dup False)
              False
              Nothing
     , ExpCmd "droop"
              (NoTarget "Your eyes droop."
                        "%'s eyes droop.")
-             (allValues, []) -- TODO: Can sacrifice.
+             (allValues, [])
              (dup False)
              False
              Nothing
@@ -518,7 +518,7 @@ expCmdSet = S.fromList
     , ExpCmd "exhausted"
              (NoTarget "Exhausted, your face displays a weary expression."
                        "Exhausted, %'s face displays a weary expression.")
-             (allValues, []) -- TODO: Can sacrifice.
+             (allValues, [])
              (dup False)
              False
              Nothing
@@ -758,7 +758,7 @@ expCmdSet = S.fromList
     , ExpCmd "hiccup"
              (NoTarget "You hiccup involuntarily."
                        "% hiccups involuntarily.")
-             (allValues, []) -- TODO: Can sacrifice.
+             (allValues, [])
              (dup False)
              True
              Nothing
@@ -847,7 +847,7 @@ expCmdSet = S.fromList
     , ExpCmd "joytears"
              (NoTarget "You are overcome with tears of joy."
                        "% is overcome with tears of joy.")
-             (allValues, []) -- TODO: Can sacrifice.
+             ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
              Nothing
@@ -940,7 +940,7 @@ expCmdSet = S.fromList
     , ExpCmd "licklips"
              (NoTarget "You lick your lips."
                        "% licks & lips.")
-             (allValues, []) -- TODO: Can sacrifice.
+             ([ Attacking, Drinking, Eating ], [])
              (True, False)
              False
              Nothing
@@ -1034,7 +1034,7 @@ expCmdSet = S.fromList
     , ExpCmd "noexpress"
              (NoTarget "Your face is entirely expressionless."
                        "%'s face is entirely expressionless.")
-             (allValues, []) -- TODO: Can sacrifice.
+             (allValues, [])
              (dup False)
              False
              Nothing
@@ -1057,7 +1057,7 @@ expCmdSet = S.fromList
     , ExpCmd "openeyes"
              (NoTarget "You open your eyes."
                        "% opens & eyes.")
-             ([ Attacking, Drinking, Eating, Sacrificing ], []) -- TODO: Can sacrifice.
+             (allValues, [])
              (dup False)
              False
              Nothing
@@ -1247,21 +1247,21 @@ expCmdSet = S.fromList
     , ExpCmd "reeling"
              (NoTarget "Dizzy and reeling, you look as though you might pass out."
                        "Dizzy and reeling, % looks as though ^ might pass out.")
-             (allValues, []) -- TODO: Can sacrifice.
+             (allValues, [])
              (dup False)
              False
              Nothing
     , ExpCmd "relieved"
              (NoTarget "You look relieved."
                        "% looks relieved.")
-             (allValues, []) -- TODO: Can sacrifice.
-             (dup False)
+             (allValues, [])
+             ([ Attacking, Drinking, Eating ] False)
              False
              Nothing
     , ExpCmd "rock"
              (NoTarget "You rock back and forth."
                        "% rocks back and forth.")
-             (allValues, []) -- TODO: Can sacrifice.
+             (allValues, [])
              (True, False)
              False
              Nothing
@@ -1301,7 +1301,7 @@ expCmdSet = S.fromList
     , ExpCmd "satisfied"
              (NoTarget "You look satisfied."
                        "% looks satisfied.")
-             (allValues, []) -- TODO: Can sacrifice.
+             ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
              Nothing
@@ -1352,7 +1352,7 @@ expCmdSet = S.fromList
     , ExpCmd "shiver"
              (NoTarget "You shiver."
                        "% shivers.")
-             (allValues, []) -- TODO: Can sacrifice.
+             (allValues, [])
              (dup False)
              False
              Nothing
@@ -1376,14 +1376,14 @@ expCmdSet = S.fromList
     , ExpCmd "shrug"
              (NoTarget "You shrug your shoulders."
                        "% shrugs & shoulders.")
-             (allValues, []) -- TODO: Can sacrifice.
+             ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
              Nothing
     , ExpCmd "shudder"
              (NoTarget "You shudder."
                        "% shudders.")
-             (allValues, []) -- TODO: Can sacrifice.
+             (allValues, [])
              (dup False)
              False
              Nothing
@@ -1436,7 +1436,7 @@ expCmdSet = S.fromList
     , ExpCmd "sleepy"
              (NoTarget "You look sleepy."
                        "% looks sleepy.")
-             (allValues, []) -- TODO: Can sacrifice.
+             (allValues, [])
              (dup False)
              False
              Nothing
@@ -1500,7 +1500,7 @@ expCmdSet = S.fromList
     , ExpCmd "sneeze"
              (NoTarget "You sneeze."
                        "% sneezes.")
-             (allValues, []) -- TODO: Can sacrifice.
+             (allValues, [])
              (True, False)
              True
              Nothing
@@ -1524,7 +1524,7 @@ expCmdSet = S.fromList
     , ExpCmd "sniffle"
              (NoTarget "You sniffle."
                        "% sniffles.")
-             (allValues, []) -- TODO: Can sacrifice.
+             ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
              Nothing
@@ -1594,21 +1594,21 @@ expCmdSet = S.fromList
     , ExpCmd "stiflelaugh"
              (NoTarget "You try hard to stifle a laugh."
                        "% tries hard to stifle a laugh.")
-             (allValues, []) -- TODO: Can sacrifice.
+             ([ Attacking, Drinking, Eating ], [])
              (dup False)
              True
              Nothing
     , ExpCmd "stifletears"
              (NoTarget "You try hard to stifle your tears."
                        "% tries hard to stifle & tears.")
-             (allValues, []) -- TODO: Can sacrifice.
+             ([ Attacking, Drinking, Eating ], [])
              (dup False)
              False
              Nothing
     , ExpCmd "stomach"
              (NoTarget "Your stomach growls."
                        "%'s stomach growls.")
-             (allValues, []) -- TODO: Can sacrifice.
+             (allValues, [])
              (dup False)
              True
              Nothing
@@ -1695,7 +1695,7 @@ expCmdSet = S.fromList
     , ExpCmd "throat"
              (NoTarget "You clear your throat."
                        "% clears & throat.")
-             (allValues, []) -- TODO: Can sacrifice.
+             ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
              Nothing
@@ -1772,7 +1772,7 @@ expCmdSet = S.fromList
     , ExpCmd "twitch"
              (NoTarget "You twitch nervously."
                        "% twitches nervously.")
-             (allValues, []) -- TODO: Can sacrifice.
+             (allValues, [])
              (dup False)
              False
              Nothing
@@ -1885,7 +1885,7 @@ expCmdSet = S.fromList
     , ExpCmd "yawn"
              (NoTarget "You yawn."
                        "% yawns.")
-             (allValues, []) -- TODO: Can sacrifice.
+             ([ Attacking, Drinking, Eating ], [])
              (True, False)
              True
              Nothing ]
