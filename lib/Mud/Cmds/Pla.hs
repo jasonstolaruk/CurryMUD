@@ -144,7 +144,7 @@ regularCmds :: HasCallStack => [Cmd]
 regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 -- TODO: "ask" (apparently not yet referenced in any help files).
--- TODO: "buy" and "sell" (to be used between PCs).
+-- TODO: "buy" and "sell" (to be used between PCs; buying a crafted item from the crafter grants exp to the crafter).
 -- TODO: "shout". Consider indoor vs. outdoor. Update the "communication" help topic.
 regularCmdTuples :: HasCallStack => [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
