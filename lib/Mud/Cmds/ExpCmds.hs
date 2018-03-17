@@ -1254,8 +1254,8 @@ expCmdSet = S.fromList
     , ExpCmd "relieved"
              (NoTarget "You look relieved."
                        "% looks relieved.")
-             (allValues, [])
-             ([ Attacking, Drinking, Eating ] False)
+             ([ Attacking, Drinking, Eating ], [])
+             (dup False)
              False
              Nothing
     , ExpCmd "rock"
