@@ -16,6 +16,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryAsAdmin
                            , sorryAsSelf
                            , sorryAsType
+                           , sorryAttackCan'tAbbrev
                            , sorryBanAdHoc
                            , sorryBanAdmin
                            , sorryBanSelf
@@ -490,6 +491,11 @@ sorryAsSelf = can'tTarget "yourself" <> withAs
 
 sorryAsType :: Sing -> Text
 sorryAsType s = can'tTarget $ aOrAn s <> withAs
+
+-----
+
+sorryAttackCan'tAbbrev :: Text
+sorryAttackCan'tAbbrev = "The \"attack\" command may not be abbreviated."
 
 -----
 
@@ -1337,7 +1343,7 @@ sorryPutVol = the' . (<> " is too full to contain ")
 -----
 
 sorryQuitCan'tAbbrev :: Text
-sorryQuitCan'tAbbrev = "The \"quit\" command may not be abbreviated. Type \"quit\" with no arguments to quit CurryMUD."
+sorryQuitCan'tAbbrev = "The \"quit\" command may not be abbreviated. (Type \"quit\" with no arguments to quit CurryMUD.)"
 
 -----
 

@@ -151,6 +151,7 @@ regularCmdTuples =
     [ ("?",          plaDispCmdList,     True,  cmdDescDispCmdList)
     , ("about",      about,              True,  cmdDescAbout)
     , ("admin",      admin,              True,  cmdDescAdmin)
+    , ("attac",      attackCan'tAbbrev,  True,  "")
     , ("bonus",      bonus,              True,  cmdDescBonus)
     , ("bug",        bug,                True,  cmdDescBug)
     , ("d",          go "d",             True,  cmdDescGoDown)
@@ -344,32 +345,33 @@ npcRegularCmds = map (uncurry4 mkRegularCmd) npcRegularCmdTuples
 
 npcRegularCmdTuples :: HasCallStack => [(CmdFullName, ActionFun, Bool, CmdDesc)]
 npcRegularCmdTuples =
-    [ ("?",          npcDispCmdList, True,  cmdDescDispCmdList)
-    , (".",          npcAsSelf,      False, "Execute a command as your admin PC.")
-    , ("d",          go "d",         True,  cmdDescGoDown)
-    , ("e",          go "e",         True,  cmdDescGoEast)
-    , ("eat",        eat,            False, cmdDescEat)
-    , ("empty",      emptyAction,    True,  cmdDescEmpty)
-    , ("equipment",  equip,          True,  cmdDescEquip)
-    , ("expressive", expCmdList,     True,  cmdDescExpCmdList)
-    , ("extinguish", extinguish,     True,  cmdDescExtinguish)
-    , ("feeling",    feeling,        True,  cmdDescFeeling)
-    , ("light",      light,          True,  cmdDescLight)
-    , ("listen",     listen,         True,  cmdDescListen)
-    , ("lookself",   lookSelf,       True,  cmdDescLookSelf)
-    , ("n",          go "n",         True,  cmdDescGoNorth)
-    , ("ne",         go "ne",        True,  cmdDescGoNortheast)
-    , ("nw",         go "nw",        True,  cmdDescGoNorthwest)
-    , ("read",       readAction,     True,  cmdDescRead)
-    , ("refuel",     refuel,         True,  cmdDescRefuel)
-    , ("remove",     remove,         True,  cmdDescRemove)
-    , ("s",          go "s",         True,  cmdDescGoSouth)
-    , ("se",         go "se",        True,  cmdDescGoSoutheast)
-    , ("sw",         go "sw",        True,  cmdDescGoSouthwest)
-    , ("taste",      taste,          True,  cmdDescTaste)
-    , ("u",          go "u",         True,  cmdDescGoUp)
-    , ("w",          go "w",         True,  cmdDescGoWest)
-    , ("zoom",       zoom,           True,  cmdDescZoom) ]
+    [ ("?",          npcDispCmdList,    True,  cmdDescDispCmdList)
+    , (".",          npcAsSelf,         False, "Execute a command as your admin PC.")
+    , ("attac",      attackCan'tAbbrev, True,  "")
+    , ("d",          go "d",            True,  cmdDescGoDown)
+    , ("e",          go "e",            True,  cmdDescGoEast)
+    , ("eat",        eat,               False, cmdDescEat)
+    , ("empty",      emptyAction,       True,  cmdDescEmpty)
+    , ("equipment",  equip,             True,  cmdDescEquip)
+    , ("expressive", expCmdList,        True,  cmdDescExpCmdList)
+    , ("extinguish", extinguish,        True,  cmdDescExtinguish)
+    , ("feeling",    feeling,           True,  cmdDescFeeling)
+    , ("light",      light,             True,  cmdDescLight)
+    , ("listen",     listen,            True,  cmdDescListen)
+    , ("lookself",   lookSelf,          True,  cmdDescLookSelf)
+    , ("n",          go "n",            True,  cmdDescGoNorth)
+    , ("ne",         go "ne",           True,  cmdDescGoNortheast)
+    , ("nw",         go "nw",           True,  cmdDescGoNorthwest)
+    , ("read",       readAction,        True,  cmdDescRead)
+    , ("refuel",     refuel,            True,  cmdDescRefuel)
+    , ("remove",     remove,            True,  cmdDescRemove)
+    , ("s",          go "s",            True,  cmdDescGoSouth)
+    , ("se",         go "se",           True,  cmdDescGoSoutheast)
+    , ("sw",         go "sw",           True,  cmdDescGoSouthwest)
+    , ("taste",      taste,             True,  cmdDescTaste)
+    , ("u",          go "u",            True,  cmdDescGoUp)
+    , ("w",          go "w",            True,  cmdDescGoWest)
+    , ("zoom",       zoom,              True,  cmdDescZoom) ]
 
 npcPriorityAbbrevCmds :: HasCallStack => [Cmd]
 npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd) npcPriorityAbbrevCmdTuples
@@ -532,6 +534,12 @@ alertExecFindTargetSing i ms target = let (_, _, inRms) = sortArgsInvEqRm InRm .
                                       in ()!# invCoins |?| case eiss of []           -> ""
                                                                         (Right is:_) -> commas . map (`getSing` ms) $ is
                                                                         _            -> ""
+
+-----
+
+attackCan'tAbbrev :: HasCallStack => ActionFun
+attackCan'tAbbrev (NoArgs _ mq cols) = wrapSend mq cols sorryAttackCan'tAbbrev
+attackCan'tAbbrev p                  = withoutArgs attackCan'tAbbrev p
 
 -----
 
