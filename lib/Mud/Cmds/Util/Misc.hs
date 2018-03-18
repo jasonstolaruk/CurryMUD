@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# LANGUAGE FlexibleContexts, LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, RecordWildCards, TupleSections, TypeApplications, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, RecordWildCards, TupleSections, TypeApplications, ViewPatterns #-}
 
 -- This module contains helper functions used by multiple modules under "Mud.Cmds".
 
@@ -141,6 +141,8 @@ import           Data.Monoid ((<>), Any(..), Sum(..))
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
+import qualified Data.Text.Lazy as LT
+import qualified Data.Text.Lazy.IO as LT (readFile)
 import           Data.Time (diffUTCTime, getCurrentTime)
 import qualified Data.Vector.Unboxed as V (Vector, splitAt, toList)
 import           GHC.Stack (HasCallStack)
@@ -423,9 +425,9 @@ hasYou = any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower)
 initPropNamesTbl :: HasCallStack => MudStack () -- Used by the "!propnames" debug cmd.
 initPropNamesTbl = initTblHelper "initPropNamesTbl" "prop_names" countDbTblRecsPropNames insertPropNames propNamesFileFun
 
-initTblHelper :: HasCallStack => FunName -> Text -> IO Int -> (Text -> IO ()) -> FilePathFun -> MudStack ()
+initTblHelper :: HasCallStack => FunName -> Text -> IO Int -> (LT.Text -> IO ()) -> FilePathFun -> MudStack ()
 initTblHelper fn (dblQuote -> tblName) countFun insertFun fpf = liftIO (mkMudFilePath fpf) >>= \fp ->
-    liftIO (T.readFile fp) |&| try >=> either (emptied . fileIOExHandler fn) proceed
+    liftIO (LT.readFile fp) |&| try >=> either (emptied . fileIOExHandler fn) proceed
   where
     logHelper   = logNotice fn
     proceed txt = let f 0 = logHelper ("initializing the " <> tblName <> " table.") >> withDbExHandler_ fn (insertFun txt)

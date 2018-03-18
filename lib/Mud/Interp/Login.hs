@@ -199,9 +199,10 @@ checkDictHelper :: HasCallStack => FunName
                                 -> Cols
                                 -> CmdName
                                 -> MudStack Any
-checkDictHelper fn lookupFun sorryTxt mq cols cn = join <$> withDbExHandler fn (lookupFun cn) >>= \case
-  Nothing -> return . Any $ False
-  Just _  -> promptRetryName mq cols sorryTxt >> return (Any True)
+checkDictHelper fn lookupFun sorryTxt mq cols cn = do
+    logNotice fn . prd $ "looking up " <> dblQuote cn
+    join <$> withDbExHandler fn (lookupFun cn) >>= \case Nothing -> return . Any $ False
+                                                         Just _  -> promptRetryName mq cols sorryTxt >> return (Any True)
 
 checkWordsDict :: HasCallStack => MsgQueue -> Cols -> CmdName -> MudStack Any
 checkWordsDict = checkDictHelper "checkWordsDict" lookupWord sorryInterpNameDict

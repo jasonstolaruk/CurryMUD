@@ -80,7 +80,6 @@ import           Mud.TopLvlDefs.FilePaths
 import           Mud.TopLvlDefs.Misc
 import           Mud.Util.Misc
 import           Mud.Util.Quoting
-import           Mud.Util.Text
 
 import           Control.Monad (forM_, when)
 import           Control.Monad.IO.Class (liftIO)
@@ -91,6 +90,7 @@ import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
+import qualified Data.Text.Lazy as LT
 import           Data.Time (UTCTime)
 import           Database.SQLite.Simple (Connection, FromRow, Only(..), Query(..), ToRow, execute, execute_, field, fromRow, query, query_, toRow, withConnection)
 import           GHC.Generics (Generic)
@@ -528,8 +528,8 @@ purgeHelper tblName = onDbFile $ \conn -> execute conn q (Only noOfDbTblRecsToPu
 -----
 
 lookupPropName :: Text -> IO (Maybe Text)
-lookupPropName t = let q = Query "select prop_name from prop_names where prop_name = ?"
-                   in onDbFile $ \conn -> onlyTxtsHelper <$> query conn q (Only t)
+lookupPropName txt = let q = Query "select prop_name from prop_names where prop_name = ? collate nocase"
+                     in onDbFile $ \conn -> onlyTxtsHelper <$> query conn q (Only txt)
 
 onlyTxtsHelper :: [Only Text] -> Maybe Text
 onlyTxtsHelper = listToMaybe . map fromOnly
@@ -570,18 +570,20 @@ lookupTeleNames s = onDbFile $ \conn -> map fromOnly <$> query conn (Query t) (d
         \from (select from_name, to_name from tele where from_name = ? or to_name = ?)"
 
 lookupWord :: Text -> IO (Maybe Text)
-lookupWord t = onDbFile $ \conn -> onlyTxtsHelper <$> query conn (Query "select word from words where word = ?") (Only t)
+lookupWord txt = onDbFile $ \conn -> let t = "select word from words where word = ? collate nocase"
+                                     in onlyTxtsHelper <$> query conn (Query t) (Only txt)
 
 -----
 
-insertPropNames :: Text -> IO ()
+insertPropNames :: LT.Text -> IO ()
 insertPropNames = procSrcFileTxt "prop_names" "prop_name"
 
-procSrcFileTxt :: Text -> Text -> Text -> IO ()
+procSrcFileTxt :: Text -> Text -> LT.Text -> IO ()
 procSrcFileTxt tblName colName = onDbFile . flip execute_ . buildQuery
   where
-    buildQuery = Query . (T.concat [ "insert into ", tblName, " ", parensQuote colName, " values " ] <>) . buildVals
-    buildVals  = commas . map (parensQuote . dblQuote) . T.lines . T.toLower
+    buildQuery    = let txt = T.concat [ "insert into ", tblName, " ", parensQuote colName, " values " ]
+                    in Query . (txt <>) . LT.toStrict . buildVals
+    buildVals txt = LT.intercalate ", " [ "(\"" <> t <> "\")" | t <- LT.lines txt ]
 
-insertWords :: Text -> IO ()
+insertWords :: LT.Text -> IO ()
 insertWords = procSrcFileTxt "words" "word"
