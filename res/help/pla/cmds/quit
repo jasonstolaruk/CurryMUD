@@ -6,3 +6,5 @@
 \uDESCRIPTION\n
 Quit playing CurryMUD.
 Upon quitting, you will slowly dissolve into nothingness and "go to sleep." The next time you log in ("wake up"), you will reappear in the same place, in the same state as when you quit.
+
+This command may not be abbreviated.

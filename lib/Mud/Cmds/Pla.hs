@@ -2187,7 +2187,7 @@ question p = pmf "question" p
 
 -----
 
-quit :: HasCallStack => ActionFun -- TODO: Can you quit while attacking?
+quit :: HasCallStack => ActionFun
 quit (NoArgs i mq cols) = logPlaExec "quit" i >> mIf (isSpiritId i <$> getState)
     (throwWaitSpiritTimer i)
     (wrapSend mq cols sleepMsg >> writeMsg mq Quit)

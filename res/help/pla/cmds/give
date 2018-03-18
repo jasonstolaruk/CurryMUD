@@ -18,6 +18,5 @@ Give one or more items to a person.
 \qgive \p5#m\qgp \p#a\qsp felf\d to give five of your gold pieces and all of your silver pieces to the female elf.4`
 \qgive \p#a\qcoin felf\d to give all of your coins to the female elf.4`
 
-
 \uSEE ALSO\n
 abbreviation, coins, inventory, prefixes, show
