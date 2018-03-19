@@ -169,6 +169,9 @@ cmdDescSmell :: Text
 cmdDescSmell = "Smell a) the air, b) an item in your inventory, c) an item in your readied equipment, or d) a being or \
                \fixture in your current room."
 
+cmdDescStance :: Text
+cmdDescStance = "Display or change your combat stance."
+
 cmdDescStats :: Text
 cmdDescStats = "Display your stats."
 

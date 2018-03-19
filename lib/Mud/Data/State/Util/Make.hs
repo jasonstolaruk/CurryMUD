@@ -215,6 +215,7 @@ data MobTemplate = MobTemplate { mtSex              :: Sex
                                , mtHand             :: Hand
                                , mtKnownLangs       :: [Lang]
                                , mtRmId             :: Id
+                               , mtStance           :: Stance
                                , mtSize             :: Maybe MobSize
                                , mtCorpseWeight     :: Weight
                                , mtCorpseVol        :: Vol
@@ -245,6 +246,7 @@ mkMob MobTemplate { .. } = Mob { _sex              = mtSex
                                , _lastRmId         = mtRmId
                                , _mobRmDesc        = Nothing
                                , _tempDesc         = Nothing
+                               , _stance           = mtStance
                                , _mobSize          = mtSize
                                , _corpseWeight     = mtCorpseWeight
                                , _corpseVol        = mtCorpseVol

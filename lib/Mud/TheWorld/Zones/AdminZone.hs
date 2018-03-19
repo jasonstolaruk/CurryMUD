@@ -476,6 +476,7 @@ createAdminZone = do
                              RHand
                              allValues
                              iLoggedOut
+                             Neutral
                              Nothing
                              (calcCorpseWeight Human) (calcCorpseVol Human) (calcCorpseCapacity Human)
                              (calcCorpseDecompSecs Human)
@@ -501,6 +502,7 @@ createAdminZone = do
                              RHand
                              allValues
                              iLoggedOut
+                             Neutral
                              Nothing
                              (calcCorpseWeight Human) (calcCorpseVol Human) (calcCorpseCapacity Human)
                              (calcCorpseDecompSecs Human)

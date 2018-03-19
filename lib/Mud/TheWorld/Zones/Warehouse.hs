@@ -713,6 +713,7 @@ createWarehouse = do
           RHand
           [ HobbitLang ]
           iNpcRm
+          Neutral
           (Just MedMinus)
           (calcCorpseWeight Hobbit) (calcCorpseVol Hobbit) (calcCorpseCapacity Hobbit)
           (calcCorpseDecompSecs Hobbit)
@@ -737,6 +738,7 @@ createWarehouse = do
           RHand
           []
           iNpcRm
+          Offensive
           (Just MedMinus)
           skeletonCorpseWeight (calcCorpseVol Human) (calcCorpseCapacity Human)
           fiveMinsInSecs

@@ -48,6 +48,7 @@ clone destId = foldl' helper
                                            , mtHand             = m^.hand
                                            , mtKnownLangs       = m^.knownLangs
                                            , mtRmId             = m^.rmId
+                                           , mtStance           = m^.stance
                                            , mtSize             = m^.mobSize
                                            , mtCorpseWeight     = m^.corpseWeight
                                            , mtCorpseVol        = m^.corpseVol

@@ -187,6 +187,7 @@ regularCmdTuples =
     , ("se",         go "se",            True,  cmdDescGoSoutheast)
     , ("security",   security,           True,  "View or change your security Q&A.")
     , ("set",        setAction,          True,  cmdDescSet)
+    , ("stance",     stanceAction,       True,  cmdDescStance)
     , ("sw",         go "sw",            True,  cmdDescGoSouthwest)
     , ("take",       getAction,          True,  cmdDescGet)
     , ("tune",       tune,               True,  cmdDescTune)
@@ -3183,6 +3184,21 @@ smellTasteIOHelper fn i mq cols msg bs logMsg = logPla fn i logMsg >> wrapSend m
 spiritDispCmdList :: HasCallStack => ActionFun
 spiritDispCmdList p@(LowerNub' i as) = logPlaExecArgs "?" as i >> dispCmdList spiritCmds p
 spiritDispCmdList p                  = pmf "spiritDispCmdList" p
+
+-----
+
+stanceAction :: HasCallStack => ActionFun -- TODO
+stanceAction p@(NoArgs i mq cols) = getState >>= \ms -> case filter (view _3) . mkStopTuples p $ ms of
+  []                     -> wrapSend mq cols sorryStopNotDoingAnything
+  ((_, actType, _, f):_) -> stopLogHelper i (pure actType) >> f
+stanceAction p@(OneArgLower i mq cols a) = getState >>= \ms ->
+    if ((||) <$> (`T.isPrefixOf` "all") <*> (== T.singleton allChar)) a
+      then case filter (view _3) . mkStopTuples p $ ms of [] -> wrapSend mq cols sorryStopNotDoingAnything
+                                                          xs -> ((>>) <$> stopLogHelper i . select _2 <*> mapM_ (view _4)) xs
+      else case filter (views _1 (a `T.isPrefixOf`)) . mkStopTuples p $ ms of
+        []                     -> wrapSend mq cols . sorryStopActName $ a
+        ((_, actType, b, f):_) -> b ? (stopLogHelper i (pure actType) >> f) :? wrapSend mq cols (sorryStopNotDoing actType)
+stanceAction p = advise p ["stance"] adviceStanceExcessArgs
 
 -----
 

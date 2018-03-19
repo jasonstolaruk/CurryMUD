@@ -1,0 +1,16 @@
+\h STANCE \d
+
+\uUSAGE\n
+!stance \s[\dstance\s]\d
+
+\uDESCRIPTION\n
+Display or change your combat stance.
+
+This command may take the following forms:
+\qstance\d (with no arguments) to display your stance.4`
+\qstance offensive\d (or just \qstance o\d) to take an offensive stance (that is, to favor offense at the expense of defense).4`
+\qstance neutral\d (or just \qstance n\d) to take a neutral (balanced) stance.4`
+\qstance defensive\d (or just \qstance d\d) to take a defensive stance (that is, to favor defense at the expense of offense).4`
+
+\uSEE ALSO\n
+attack

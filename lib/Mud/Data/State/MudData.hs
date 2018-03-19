@@ -486,6 +486,7 @@ data Mob = Mob { _sex                    :: Sex
                , _lastRmId               :: Id
                , _mobRmDesc              :: MobRmDesc
                , _tempDesc               :: TempDesc
+               , _stance                 :: Stance
                , _mobSize                :: Maybe MobSize -- Used to calculate NPC stomach size.
                , _corpseWeight           :: Weight
                , _corpseVol              :: Vol
@@ -574,6 +575,10 @@ type NowEating = (Id, Sing)
 
 type NowDrinking = (Liq, Sing)
 
+data Stance = Offensive
+            | Neutral
+            | Defensive deriving Generic
+
 type RegenQueue = TQueue RegenCmd
 
 data RegenCmd = StopRegen
@@ -604,6 +609,7 @@ mobToJSON Mob { .. } = object [ "sex"              .= _sex
                               , "lastRmId"         .= _lastRmId
                               , "mobRmDesc"        .= _mobRmDesc
                               , "tempDesc"         .= _tempDesc
+                              , "stance"           .= _stance
                               , "mobSize"          .= _mobSize
                               , "corpseWeight"     .= _corpseWeight
                               , "corpseVol"        .= _corpseVol
@@ -635,6 +641,7 @@ jsonToMob (Object o) = Mob <$> o .: "sex"
                            <*> o .: "lastRmId"
                            <*> o .: "mobRmDesc"
                            <*> o .: "tempDesc"
+                           <*> o .: "stance"
                            <*> o .: "mobSize"
                            <*> o .: "corpseWeight"
                            <*> o .: "corpseVol"
@@ -1081,6 +1088,7 @@ instance FromJSON RmEnv          where parseJSON = genericParseJSON dropUndersco
 instance FromJSON RmLink         where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON Sex
 instance FromJSON Slot
+instance FromJSON Stance         where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON StomachCont    where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON Type
 instance FromJSON Vessel         where parseJSON = genericParseJSON dropUnderscore
@@ -1127,6 +1135,7 @@ instance ToJSON RmEnv            where toJSON    = genericToJSON    dropUndersco
 instance ToJSON RmLink           where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON Sex
 instance ToJSON Slot
+instance ToJSON Stance           where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON StomachCont      where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON Type
 instance ToJSON Vessel           where toJSON    = genericToJSON    dropUnderscore
