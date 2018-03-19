@@ -3188,16 +3188,14 @@ spiritDispCmdList p                  = pmf "spiritDispCmdList" p
 -----
 
 stanceAction :: HasCallStack => ActionFun -- TODO
-stanceAction p@(NoArgs i mq cols) = getState >>= \ms -> case filter (view _3) . mkStopTuples p $ ms of
-  []                     -> wrapSend mq cols sorryStopNotDoingAnything
-  ((_, actType, _, f):_) -> stopLogHelper i (pure actType) >> f
-stanceAction p@(OneArgLower i mq cols a) = getState >>= \ms ->
-    if ((||) <$> (`T.isPrefixOf` "all") <*> (== T.singleton allChar)) a
-      then case filter (view _3) . mkStopTuples p $ ms of [] -> wrapSend mq cols sorryStopNotDoingAnything
-                                                          xs -> ((>>) <$> stopLogHelper i . select _2 <*> mapM_ (view _4)) xs
-      else case filter (views _1 (a `T.isPrefixOf`)) . mkStopTuples p $ ms of
-        []                     -> wrapSend mq cols . sorryStopActName $ a
-        ((_, actType, b, f):_) -> b ? (stopLogHelper i (pure actType) >> f) :? wrapSend mq cols (sorryStopNotDoing actType)
+stanceAction (NoArgs i mq cols) = getStance i <$> getState >>= \sta -> do
+    logPlaExec "stance" i
+    wrapSend mq cols . prd $ "Your combat stance is " <> pp sta
+stanceAction (OneArgLower i mq cols a) = getState >>= \ms -> case filter ((a `T.isInfixOf`) . snd) mkStancePairs of -- TODO: Logging.
+  [] -> unit
+  ((sta, _):_) -> unit
+  where
+    mkStancePairs = map (id &&& pp) (allValues @Stance)
 stanceAction p = advise p ["stance"] adviceStanceExcessArgs
 
 -----
@@ -3218,8 +3216,7 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
         spiritTxt = isSpiritId i ms |?| "The disembodied spirit of "
         sexRace   = T.concat [ ", the ", sexy, " ", r ]
         (sexy, r) = mkPrettySexRace i ms
-        xpsHelper | (hps, mps, pps, fps) <- getPts i ms
-                  = spaces [ f "h" hps, f "m" mps, f "p" pps, f "f" fps ]
+        xpsHelper | (hps, mps, pps, fps) <- getPts i ms = spaces [ f "h" hps, f "m" mps, f "p" pps, f "f" fps ]
           where
             f a pair@(both %~ commaShow -> (x, y)) = T.concat [ colorWith (mkColorTxtForXps pair) x, "/", y, a, "p" ]
         (l, expr)       = getLvlExp i ms
