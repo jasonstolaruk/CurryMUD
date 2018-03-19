@@ -558,6 +558,11 @@ instance Pretty Slot where
   pp LHandS      = "left hand"
   pp BothHandsS  = "both hands"
 
+instance Pretty Stance where
+  pp Offensive = "offensive"
+  pp Neutral   = "neutral"
+  pp Defensive = "defensive"
+
 instance Pretty StomachCont where
   pp (StomachCont (Left  dli) t b) = ppStomachContHelper (showTxt dli) t b
   pp (StomachCont (Right dfi) t b) = ppStomachContHelper (showTxt dfi) t b

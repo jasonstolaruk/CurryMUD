@@ -115,6 +115,7 @@ module Mud.Data.State.Util.Get ( getActMap
                                , getSexRaceLvl
                                , getSing
                                , getSkillPts
+                               , getStance
                                , getStomach
                                , getTeleLinkTbl
                                , getTempDesc
@@ -781,6 +782,11 @@ getSing i = view sing . getEnt i
 
 getSkillPts :: HasCallStack => Id -> MudState -> SkillPts
 getSkillPts i = view skillPts . getPC i
+
+-----
+
+getStance :: HasCallStack => Id -> MudState -> Stance
+getStance i = view stance . getMob i
 
 -----
 
