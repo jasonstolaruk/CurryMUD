@@ -541,11 +541,10 @@ alertExecFindTargetSing i ms target = let (_, _, inRms) = sortArgsInvEqRm InRm .
 
 -----
 
--- TODO: Check acting?
 attack :: HasCallStack => ActionFun -- TODO
-attack (WithArgs i mq cols _) = getState >>= \ms -> if isIncognitoId i ms
+attack p@(WithArgs i mq cols _) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "attack"
-  else startAct i Attacking attackAct
+  else checkActing p ms (Left Attacking) allValues . startAct i Attacking $ attackAct
 attack p = pmf "attack" p
 
 -----
