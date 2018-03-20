@@ -15,6 +15,9 @@ cmdDescAbout = "About CurryMUD."
 cmdDescAdmin :: Text
 cmdDescAdmin = "Display a list of administrators, or send a message to an administrator."
 
+cmdDescAttack :: Text
+cmdDescAttack = "Initiate combat."
+
 cmdDescBars :: Text
 cmdDescBars = "Display one or more status bars."
 

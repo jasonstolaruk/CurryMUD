@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RecordWildCards, TupleSections, TypeApplications, ViewPatterns #-}
 
-module Mud.Threads.Act ( drinkAct
+module Mud.Threads.Act ( attackAct
+                       , drinkAct
                        , eatAct
                        , sacrificeAct
                        , startAct
@@ -35,7 +36,7 @@ import           Control.Arrow ((***))
 import           Control.Exception.Lifted (catch, finally, handle)
 import           Control.Lens (at, view, views)
 import           Control.Lens.Operators ((%~), (&), (.~), (<-~), (?~), (^.))
-import           Control.Monad (join, when)
+import           Control.Monad (forever, join, when)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.List (delete)
 import qualified Data.Map.Strict as M (elems, insert, lookup)
@@ -85,6 +86,11 @@ threadAct i actType f = handle (threadExHandler (Just i) . pp $ actType) $ a `fi
               tweak $ mobTbl.ind i.actMap.at actType .~ Nothing
 
 -- ==================================================
+
+attackAct :: HasCallStack => MudStack () -- TODO
+attackAct = forever . liftIO . delaySecs $ 1
+
+-----
 
 drinkAct :: HasCallStack => DrinkBundle -> MudStack ()
 drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drinkerId.nowDrinking .~ Nothing)

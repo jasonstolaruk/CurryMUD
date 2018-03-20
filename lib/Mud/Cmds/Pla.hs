@@ -152,6 +152,7 @@ regularCmdTuples =
     , ("about",      about,              True,  cmdDescAbout)
     , ("admin",      admin,              True,  cmdDescAdmin)
     , ("attac",      attackCan'tAbbrev,  True,  "")
+    , ("attack",     attack,             True,  cmdDescAttack)
     , ("bonus",      bonus,              True,  cmdDescBonus)
     , ("bug",        bug,                True,  cmdDescBug)
     , ("d",          go "d",             True,  cmdDescGoDown)
@@ -349,6 +350,7 @@ npcRegularCmdTuples =
     [ ("?",          npcDispCmdList,    True,  cmdDescDispCmdList)
     , (".",          npcAsSelf,         False, "Execute a command as your admin PC.")
     , ("attac",      attackCan'tAbbrev, True,  "")
+    , ("attack",     attack,            True,  cmdDescAttack)
     , ("d",          go "d",            True,  cmdDescGoDown)
     , ("e",          go "e",            True,  cmdDescGoEast)
     , ("eat",        eat,               False, cmdDescEat)
@@ -369,6 +371,7 @@ npcRegularCmdTuples =
     , ("s",          go "s",            True,  cmdDescGoSouth)
     , ("se",         go "se",           True,  cmdDescGoSoutheast)
     , ("sw",         go "sw",           True,  cmdDescGoSouthwest)
+    , ("stance",     stanceAction,      True,  cmdDescStance)
     , ("taste",      taste,             True,  cmdDescTaste)
     , ("u",          go "u",            True,  cmdDescGoUp)
     , ("w",          go "w",            True,  cmdDescGoWest)
@@ -535,6 +538,12 @@ alertExecFindTargetSing i ms target = let (_, _, inRms) = sortArgsInvEqRm InRm .
                                       in ()!# invCoins |?| case eiss of []           -> ""
                                                                         (Right is:_) -> commas . map (`getSing` ms) $ is
                                                                         _            -> ""
+
+-----
+
+attack :: HasCallStack => ActionFun -- TODO
+attack (WithArgs i _ _ _) = startAct i Attacking attackAct
+attack p = pmf "attack" p
 
 -----
 
@@ -796,11 +805,13 @@ showDate mq cols = liftIO getCurryTime >>= \CurryTime { .. } ->
 -----
 
 description :: HasCallStack => ActionFun
-description (NoArgs i mq cols) = getEntDesc i <$> getState >>= \desc -> do
-    wrapSend1Nl    mq cols "Your description is:"
-    wrapSend       mq cols desc
-    promptChangeIt mq cols
-    setInterp i . Just $ interpConfirmDescChange
+description p@(NoArgs i mq cols) = getState >>= \ms ->
+    checkActing p ms (Right "change your character description") (pure Attacking) $ do
+        wrapSend1Nl    mq cols "Your description is:"
+        wrapSend       mq cols . getEntDesc i $ ms
+        promptChangeIt mq cols
+        setInterp i . Just $ interpConfirmDescChange
+
 description p = withoutArgs description p
 
 interpConfirmDescChange :: HasCallStack => Interp
@@ -2087,7 +2098,7 @@ putAction p = pmf "putAction" p
 -----
 
 password :: HasCallStack => ActionFun
-password (NoArgs i mq _) = do
+password p@(NoArgs i mq _) = getState >>= \ms -> checkActing p ms (Right "change your password") (pure Attacking) $ do
     sendPrompt mq $ telnetHideInput <> "Current password:"
     setInterp i . Just $ interpCurrPW
 password p = withoutArgs password p
@@ -3187,7 +3198,7 @@ spiritDispCmdList p                  = pmf "spiritDispCmdList" p
 
 -----
 
-stanceAction :: HasCallStack => ActionFun
+stanceAction :: HasCallStack => ActionFun -- TODO: Consider informing others when one changes their combat stance during combat.
 stanceAction (NoArgs i mq cols) = getStance i <$> getState >>= \sta -> do
     logPlaExec "stance" i
     wrapSend mq cols . prd $ "Your combat stance is " <> pp sta

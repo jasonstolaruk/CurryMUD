@@ -4,6 +4,7 @@
 !attack name \s...\d
 
 \uDESCRIPTION\n
+Initiate combat.
 
 This command may not be abbreviated.
 

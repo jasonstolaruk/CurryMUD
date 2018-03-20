@@ -623,7 +623,7 @@ adminDestroy   (LowerNub i mq cols as) = getState >>= \ms ->
     in mapM_ helper as
 adminDestroy p = pmf "adminDestroy" p
 
-adminDestroyHelper :: Id -> MsgQueue -> Cols -> Id -> MudStack ()
+adminDestroyHelper :: HasCallStack => Id -> MsgQueue -> Cols -> Id -> MudStack ()
 adminDestroyHelper i mq cols targetId = getState >>= \ms -> let t = getType targetId ms in if t `elem` sorryTypes
   then ws . sorryDestroyType $ t
   else let msg = T.concat [ "destroying ", pp t, ": ", descSingId targetId ms, "." ]
@@ -1443,17 +1443,17 @@ adminSearch   (WithArgs i mq cols (T.unwords -> a)) = getState >>= \ms -> do
     ys <- liftIO . descMatchingRmNames $ ms
     multiWrapSend mq cols . middle (++) mMempty xs $ ys
   where
-    descMatchingSings :: MudState -> IO [Text]
+    descMatchingSings :: HasCallStack => MudState -> IO [Text]
     descMatchingSings ms =
       let idSings = views entTbl (map (_2 %~ view sing) . IM.toList) ms
       in ("IDs with matching entity names:" :) . noneOnNull . map (descMatch ms True) <$> getMatches idSings
 
-    descMatchingRmNames :: MudState -> IO [Text]
+    descMatchingRmNames :: HasCallStack => MudState -> IO [Text]
     descMatchingRmNames ms =
       let idNames = views rmTbl (map (_2 %~ view rmName) . IM.toList) ms
       in ("Room IDs with matching room names:" :) . noneOnNull . map (descMatch ms False) <$> getMatches idNames
 
-    getMatches :: [(Id, Text)] -> IO [(Id, (Text, Text, Text))]
+    getMatches :: HasCallStack => [(Id, Text)] -> IO [(Id, (Text, Text, Text))]
     getMatches = fmap (filter (views (_2._2) (()!#))) . mapM (\(i', s) -> (i', ) <$> a `applyRegex` s)
 
     descMatch ms b (i', (x, y, z)) = T.concat [ padId . showTxt $ i', " ", b |?| spcR . parensQuote . pp . getType i' $ ms
