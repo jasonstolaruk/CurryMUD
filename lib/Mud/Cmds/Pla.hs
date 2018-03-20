@@ -541,8 +541,11 @@ alertExecFindTargetSing i ms target = let (_, _, inRms) = sortArgsInvEqRm InRm .
 
 -----
 
+-- TODO: Check acting?
 attack :: HasCallStack => ActionFun -- TODO
-attack (WithArgs i _ _ _) = startAct i Attacking attackAct
+attack (WithArgs i mq cols _) = getState >>= \ms -> if isIncognitoId i ms
+  then wrapSend mq cols . sorryIncog $ "attack"
+  else startAct i Attacking attackAct
 attack p = pmf "attack" p
 
 -----
@@ -2806,10 +2809,12 @@ firstMobSay i pt | pt^.ind i.to isHintedMobSay = (pt, [])
 -----
 
 security :: HasCallStack => ActionFun
-security (NoArgs i mq cols) = getSing i <$> getState >>= \s ->
-    withDbExHandler "security" (lookupSec s) >>= \case Just []   -> securityHelper i mq cols
-                                                       Just recs -> securityChange . last $ recs
-                                                       Nothing   -> dbError mq cols
+security p@(NoArgs i mq cols) = getState >>= \ms ->
+    let s    = getSing i ms
+        next = withDbExHandler "security" (lookupSec s) >>= \case Just []   -> securityHelper i mq cols
+                                                                  Just recs -> securityChange . last $ recs
+                                                                  Nothing   -> dbError mq cols
+    in checkActing p ms (Right "view or change your security Q&A") (pure Attacking) next
   where
     securityChange SecRec { dbQ, dbA }
       | ts <- [ "You have set your security Q&A as follows:", "Question: " <> dbQ, "Answer: " <> dbA ]

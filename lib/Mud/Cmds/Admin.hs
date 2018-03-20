@@ -1609,6 +1609,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
           "knownlangs"       -> setMobKnownLangsHelper t
           "mobrmdesc"        -> setMobRmDescHelper     t
           "tempdesc"         -> setMobTempDescHelper   t
+          -- TODO: Set mob stance. Update help.
           "mobsize"          -> setMobSizeHelper       t
           "corpseweight"     -> setMobCorpseHelper     t "corpseWeight"   "corpse weight"   corpseWeight   corpseWeight
           "corpsevol"        -> setMobCorpseHelper     t "corpseVol"      "corpse volume"   corpseVol      corpseVol
