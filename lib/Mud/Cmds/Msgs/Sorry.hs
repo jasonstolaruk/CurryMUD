@@ -323,6 +323,8 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorrySmellRmCoins
                            , sorrySmellRmNoHooks
                            , sorrySmellTasteSlot
+                           , sorryStanceAlready
+                           , sorryStanceName
                            , sorryStopActName
                            , sorryStopNotDoing
                            , sorryStopNotDoingAnything
@@ -1608,6 +1610,23 @@ sorrySmellRmNoHooks s = "You must pick up the " <> s <> " before you can smell i
 
 sorrySmellTasteSlot :: Sing -> Text
 sorrySmellTasteSlot s = "You'll have to unready the " <> s <> " first."
+
+-----
+
+sorryStanceAlready :: Text -> Text
+sorryStanceAlready t = "You're already taking " <> aOrAn t <> " combat stance."
+
+sorryStanceName :: Text -> Text
+sorryStanceName t = T.concat [ dblQuote t
+                             , " is not a valid combat stance. Please type "
+                             , colorWith quoteColor "stance"
+                             , " followed by one of the following: "
+                             , colorWith quoteColor "offensive"
+                             , ", "
+                             , colorWith quoteColor "neutral"
+                             , ", or "
+                             , colorWith quoteColor "defensive"
+                             , "." ]
 
 -----
 

@@ -625,12 +625,12 @@ adminDestroy p = pmf "adminDestroy" p
 
 adminDestroyHelper :: Id -> MsgQueue -> Cols -> Id -> MudStack ()
 adminDestroyHelper i mq cols targetId = getState >>= \ms -> let t = getType targetId ms in if t `elem` sorryTypes
-  then f . sorryDestroyType $ t
+  then ws . sorryDestroyType $ t
   else let msg = T.concat [ "destroying ", pp t, ": ", descSingId targetId ms, "." ]
-       in logPla "adminDestroyHelper" i msg >> f (capitalize msg) >> destroy (pure targetId)
+       in logPla "adminDestroyHelper" i msg >> ws (capitalize msg) >> destroy (pure targetId)
   where
     sorryTypes = [ NpcType, PlaType, RmType ]
-    f          = wrapSend mq cols
+    ws         = wrapSend mq cols
 
 -----
 
@@ -811,6 +811,7 @@ examineMob i ms =
        , "Last room: "          <> m^.lastRmId .to rmHelper
        , "Room description: "   <> m^.mobRmDesc.to (fromMaybe none)
        , "Temp description: "   <> m^.tempDesc .to (fromMaybe none)
+       , "Stance: "             <> m^.stance   .to pp
        , "Size: "               <> m^.mobSize         .to ppMaybe
        , "Corpse weight: "      <> m^.corpseWeight    .to commaShow
        , "Corpse volume: "      <> m^.corpseVol       .to commaShow

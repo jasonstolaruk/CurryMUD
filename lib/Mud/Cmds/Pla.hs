@@ -3187,15 +3187,20 @@ spiritDispCmdList p                  = pmf "spiritDispCmdList" p
 
 -----
 
-stanceAction :: HasCallStack => ActionFun -- TODO
+stanceAction :: HasCallStack => ActionFun
 stanceAction (NoArgs i mq cols) = getStance i <$> getState >>= \sta -> do
     logPlaExec "stance" i
     wrapSend mq cols . prd $ "Your combat stance is " <> pp sta
-stanceAction (OneArgLower i mq cols a) = getState >>= \ms -> case filter ((a `T.isInfixOf`) . snd) mkStancePairs of -- TODO: Logging.
-  [] -> unit
-  ((sta, _):_) -> unit
+stanceAction (OneArgLower i mq cols a) = findFullNameForAbbrev a mkStancePairs |&| maybe notFound found
   where
-    mkStancePairs = map (id &&& pp) (allValues @Stance)
+    mkStancePairs                 = map (id &&& pp) (allValues @Stance)
+    ws                            = wrapSend mq cols
+    notFound                      = ws . sorryStanceName $ a
+    found (sta@(pp -> staTxt), _) = getStance i <$> getState >>= \curSta -> if
+      | curSta == sta -> ws . sorryStanceAlready $ staTxt
+      | otherwise     -> do logPla "stanceAction" i . prd $ "setting stance to " <> staTxt
+                            tweak $ mobTbl.ind i.stance .~ sta
+                            ws $ "You take " <> aOrAn staTxt <> " combat stance."
 stanceAction p = advise p ["stance"] adviceStanceExcessArgs
 
 -----

@@ -577,7 +577,7 @@ type NowDrinking = (Liq, Sing)
 
 data Stance = Offensive
             | Neutral
-            | Defensive deriving (Bounded, Enum, Generic)
+            | Defensive deriving (Bounded, Enum, Eq, Generic)
 
 type RegenQueue = TQueue RegenCmd
 
