@@ -11,7 +11,7 @@ Always remain calm and polite. Don't allow troublemakers to push your buttons.
 
 You must strive to maintain player privacy as much as possible.
 
-The following commands are available for you to use with the express purpose of 1) monitoring player activity to ensure that players are playing by the rules, or 2) tracking down bugs. Do not abuse these commands by attempting to use them for any other purpose while the server is accepting public connections.
+The following commands are available for you to use with the express purpose of 1) assisting players, 2) monitoring player activity to ensure that players are playing by the rules, and 3) tracking down bugs. Do not abuse these commands by attempting to use them for any other purpose while the server is accepting public connections.
 #dchannel
 #dexamine
 #dincognito
@@ -33,11 +33,11 @@ Only under unforeseen, extraordinary circumstances should the following commands
 
 When incognito, you should only ever exit incognito mode while in the Admin Zone.
 
-A player who is breaking the rules should be given a warning before other steps are taken. Explicitly warn them that if they break the rules again, they will be booted. Then, if the behavior continues, stick to you word and boot them using "#dboot".
+A player who is breaking the rules should be given a warning before other steps are taken. Explicitly warn them that if they break the rules again, they will be booted. Then, if the behavior continues, stick to your word and boot them using "#dboot".
 If the player logs back in, warn them that next time, they will be banned. If the offending behavior continues still, ban the player's PC using "#dbanpc", or simply change their password using "#dpassword".
 If it's apparent that the same player has logged in as another character, and they STILL haven't learned their lesson, ban their host using "#dbanhost" (the "#dhost" command can be used to determine a player's host).
 
-Should you find that a player is in a situation from which they should be immediately removed (for example, they are harassing another player whom they have cornered), teleport yourself to the empty room (\q#dtelerm empty\d), then summon the offending player using "#dsummon". You can have a talk with them there, in private.
+Should you find that a player is in a situation from which they should be immediately removed (for example, they are harassing another player whom they have cornered), teleport yourself to the Empty Room (\q#dtelerm empty\d), then summon the offending player using "#dsummon". You can have a talk with them there, in private.
 
 Use the "#dannounce" command purposefully and sparingly. This command should be used to announce important information relevant to all players, such as a pending shutdown. (Don't use it, for example, to announce that you just logged in.)
 

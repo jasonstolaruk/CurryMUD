@@ -2830,8 +2830,9 @@ securityHelper i mq cols = do multiWrapSend mq cols $ securityWarn ++ mMempty ++
 securityWarn :: [Text]
 securityWarn = [ "IMPORTANT: Resetting your password will require the assistance of a CurryMUD administrator. The \
                  \administrator will prompt you to answer your chosen security question, and will manually verify your \
-                 \answer. Which is to say, administrators have access to security Q&A: do NOT provide, in your answer, \
-                 \any personal information you do not want an administrator to know!"
+                 \answer. Which is to say, administrators have access to security Q&A. Furthermore, the telnet protocol \
+                 \is inherently insecure (see \"help rules\" for more information). Therefore, do NOT provide, in your \
+                 \answer, any sensitive personal information!"
                , "If you choose to provide your email address (option #4 below), a new password can simply be emailed \
                  \to you." ]
 

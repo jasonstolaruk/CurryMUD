@@ -432,7 +432,7 @@ initTblHelper fn (dblQuote -> tblName) countFun insertFun fpf = liftIO (mkMudFil
     logHelper   = logNotice fn
     proceed txt = let f 0 = logHelper ("initializing the " <> tblName <> " table.") >> withDbExHandler_ fn (insertFun txt)
                       f _ = logHelper $ the tblName <> " table has already been initialized."
-                  in maybeVoid f =<< withDbExHandler fn countFun -- TODO: Confirm this is working with change to "countFun".
+                  in maybeVoid f =<< withDbExHandler fn countFun
 
 initWordsTbl :: HasCallStack => MudStack () -- Used by the "!words" debug cmd.
 initWordsTbl = initTblHelper "initWordsTbl" "words" countDbTblRecsWords insertWords wordsFileFun

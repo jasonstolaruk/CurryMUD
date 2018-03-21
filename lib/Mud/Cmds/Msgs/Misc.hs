@@ -227,7 +227,8 @@ rulesMsg =
     lSpcs <> "The abuse of bugs constitutes cheating and is not allowed. If you find a bug, you must promptly report it via the \"bug\" command, or inform an administrator directly via the \"admin\" command.\n\
     \\n\
     \\\uPRIVACY\\d\n" <>
-    lSpcs <> "Please be aware that player activity is automatically logged by the system. Furthermore, administrators have the ability to actively monitor player activity with the express purpose of 1) ensuring that players are following the rules, and 2) tracking down bugs. Administrators promise to maintain player privacy as much as possible."
+    lSpcs <> "Please be aware that player activity is automatically logged by the system. Furthermore, administrators have the ability to actively monitor player activity with the express purpose of 1) assisting players, 2) ensuring that players are following the rules, and 3) tracking down bugs. Administrators promise to maintain player privacy as much as possible.\n" <>
+    lSpcs <> "As is the case with most MUDs, data is transferred between your computer and the MUD server via the telnet protocol. Telnet is inherently insecure: relatively speaking, it is quite easy for a third party to spy on telnet network traffic. Therefore you must agree to never divulge personal or sensitive information to anyone while playing CurryMUD."
 
 sleepMsg :: Text
 sleepMsg = "You go to sleep..."
