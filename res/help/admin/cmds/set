@@ -119,6 +119,12 @@ Examples:4`
 \qtempDesc=null\d (to set to Nothing)4`
 \l#q\qtempDesc="His windswept hair is truly a mess."\l#q\d (to set to Just "His windswept hair is truly a mess.")4`
 
+Key name: stance4`
+Property of: Mob4`
+Value type: Stance - Offensive | Neutral | Defensive4`
+Example:4`
+\qstance="Offensive"\d4`
+
 Key name: mobSize4`
 Property of: Mob4`
 Value type: Maybe MobSize - SmlMinus | SmlPlus | MedMinus | MedPlus | LrgMinus | LrgPlus4`

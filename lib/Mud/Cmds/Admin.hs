@@ -1557,6 +1557,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                       , "knownlangs"
                       , "mobrmdesc"
                       , "tempdesc"
+                      , "stance"
                       , "mobsize"
                       , "corpseweight"
                       , "corpsevol"
@@ -1609,7 +1610,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
           "knownlangs"       -> setMobKnownLangsHelper t
           "mobrmdesc"        -> setMobRmDescHelper     t
           "tempdesc"         -> setMobTempDescHelper   t
-          -- TODO: Set mob stance. Update help.
+          "stance"           -> setMobStanceHelper     t
           "mobsize"          -> setMobSizeHelper       t
           "corpseweight"     -> setMobCorpseHelper     t "corpseWeight"   "corpse weight"   corpseWeight   corpseWeight
           "corpsevol"        -> setMobCorpseHelper     t "corpseVol"      "corpse volume"   corpseVol      corpseVol
@@ -1865,12 +1866,26 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                              & _4 <>+ (isDiff |?| toSelf)
               _      -> sorryOp "tempDesc"
         -----
+        setMobStanceHelper t
+          | not . hasMob $ t = sorryType
+          | otherwise        = case eitherDecode value' of
+            Left  _ -> appendMsg . sorryAdminSetValue "stance" $ value
+            Right x -> case op of
+              Assign -> let toSelf   = T.concat [ "Set stance to ", pp x, mkDiffTxt isDiff, "." ]
+                            prev     = getStance targetId ms
+                            isDiff   = x /= prev
+                            toTarget = prd $ "Your stance has changed to " <> pp x
+                        in a & _1.mobTbl.ind targetId.stance .~ x
+                             & _2 <>+ toSelf
+                             & _3 <>+ (isDiff |?| toTarget)
+                             & _4 <>+ (isDiff |?| toSelf)
+              _      -> sorryOp "stance"
+        -----
         setMobSizeHelper t
           | not . hasMob $ t = sorryType
           | otherwise        = case eitherDecode value' of
             Left  _ -> appendMsg . sorryAdminSetValue "mobSize" $ value
             Right x -> case op of
-
               Assign -> let toSelf   = T.concat [ "Set mobSize to ", ppMaybe x, mkDiffTxt isDiff, "." ]
                             prev     = getMobSize targetId ms
                             isDiff   = x /= prev
