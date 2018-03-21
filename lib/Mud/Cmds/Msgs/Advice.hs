@@ -312,9 +312,9 @@ adviceASecurityNoArgs :: Text
 adviceASecurityNoArgs = "Please specify the PC names of one or more players whose security Q&A you would like to see."
 
 adviceASetInvalid :: Text
-adviceASetInvalid | a <- "Please specify the key you want to change, followed immediately by "
-                  , b <- ", followed immediately by the new value you want to assign, as in "
-                  = T.concat [ a, "\"=\"", b, adviceASetEx, "." ]
+adviceASetInvalid = prd $ "Please specify the key you want to change, followed immediately by an operator (\"=\", \
+                          \\"+=\", or \"-=\"), followed immediately by a value, as in " <>
+                          adviceASetEx
 
 adviceASetEx :: Text
 adviceASetEx = colorWith quoteColor $ prefixAdminCmd "set" <> " 100 curhp=50"

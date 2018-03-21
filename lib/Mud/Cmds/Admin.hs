@@ -1521,13 +1521,13 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
   | "="  `T.isInfixOf` arg -> breakHelper Assign
   | otherwise              -> sorry
   where
-    breakHelper op = case T.breakOn (pp op) arg of ("", _) -> sorry
-                                                   (_, "") -> sorry
-                                                   pair    | l <- T.length . pp $ op
-                                                           -> helper op . second (T.drop l) $ pair
+    breakHelper op@(pp -> opTxt) = case T.breakOn opTxt arg of
+      pair | pair & both %~ T.null & uncurry (||) -> sorry
+           | snd pair == opTxt                    -> sorry
+           | l <- T.length opTxt                  -> helper op . second (T.drop l) $ pair
     sorry = let msg = sorryParseArg arg
                 f   = any (adviceASetInvalid `T.isInfixOf`) toSelfMsgs ?  (++ pure msg)
-                                                                       :? (++ [ msg <> adviceASetInvalid ])
+                                                                       :? (++ [ msg |<>| adviceASetInvalid ])
             in a & _2 %~ f
     helper op (T.toLower -> key, value) = findFullNameForAbbrev key keyNames |&| maybe notFound found
       where
