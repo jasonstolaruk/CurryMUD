@@ -557,7 +557,9 @@ attack p@(LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                     (eiss, ecs) = uncurry (resolveRmInvCoins i ms inRms) invCoins
                     a                    = foldl' helperEitherInv   (ms, [], []) eiss
                     (ms', msgs, logMsgs) = foldl' helperEitherCoins a            ecs
-                in (ms', (dropBlanks $ sorryInInv : sorryInEq : msgs, logMsgs))
+                in if ()!# invCoins
+                  then (ms', (dropBlanks $ sorryInInv : sorryInEq : msgs, logMsgs))
+                  else (ms, (pure sorryAttackNothingHere, []))
     helperEitherInv   a (Left  msg ) = a & _2 <>+ msg
     helperEitherInv   a (Right _   ) = a -- TODO
     helperEitherCoins a (Left  msgs) = a & _2 <>~ msgs
