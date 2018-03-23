@@ -257,6 +257,7 @@ mkMob MobTemplate { .. } = Mob { _sex              = mtSex
                                , _digesterAsync    = Nothing
                                , _feelingMap       = M.empty
                                , _actMap           = M.empty
+                               , _nowAttacking     = Nothing
                                , _nowEating        = Nothing
                                , _nowDrinking      = Nothing
                                , _regenQueue       = Nothing

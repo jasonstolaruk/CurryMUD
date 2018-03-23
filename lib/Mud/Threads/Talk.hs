@@ -124,6 +124,7 @@ adHoc mq host = do
                        , _digesterAsync    = Nothing
                        , _feelingMap       = M.empty
                        , _actMap           = M.empty
+                       , _nowAttacking     = Nothing
                        , _nowEating        = Nothing
                        , _nowDrinking      = Nothing
                        , _regenQueue       = Nothing

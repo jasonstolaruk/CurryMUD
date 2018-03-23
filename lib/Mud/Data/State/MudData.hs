@@ -497,6 +497,7 @@ data Mob = Mob { _sex                    :: Sex
                , _digesterAsync          :: Maybe StomachAsync
                , _feelingMap             :: FeelingMap
                , _actMap                 :: ActMap
+               , _nowAttacking           :: Maybe NowAttacking
                , _nowEating              :: Maybe NowEating
                , _nowDrinking            :: Maybe NowDrinking
                , _regenQueue             :: Maybe RegenQueue
@@ -570,6 +571,8 @@ data ActType = Attacking
              | Sacrificing deriving (Bounded, Enum, Eq, Generic, Ord, Show)
 
 type ActAsync = Async ()
+
+type NowAttacking = Inv
 
 type NowEating = (Id, Sing)
 
@@ -652,6 +655,7 @@ jsonToMob (Object o) = Mob <$> o .: "sex"
                            <*> pure Nothing
                            <*> pure M.empty
                            <*> pure M.empty
+                           <*> pure Nothing
                            <*> pure Nothing
                            <*> pure Nothing
                            <*> pure Nothing
