@@ -206,7 +206,7 @@ rulesMsg =
     lSpcs <> "You are not allowed to role-play a character who is insane, sadistic, or sociopathic.\n\
     \\n\
     \\\uSEXUAL ORIENTATION/IDENTITY\\d\n" <>
-    lSpcs <> "Players are free to role-play characters who are homosexual, bisexual, pansexual, gender nonconforming, etc. Intolerant attitudes are unacceptable.\n\
+    lSpcs <> "Players are free to role-play characters who are gender nonconforming, homosexual, bisexual, pansexual, asexual, etc. Intolerant/exclusive behavior and attitudes - among both players themselves and their characters - are absolutely unacceptable.\n\
     \\n\
     \\\uHARASSMENT\\d\n" <>
     lSpcs <> "Harassment and bullying is not tolerated. The role-play of rape is absolutely illegal.\n\

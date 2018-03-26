@@ -542,9 +542,28 @@ alertExecFindTargetSing i ms target = let (_, _, inRms) = sortArgsInvEqRm InRm .
 -----
 
 attack :: HasCallStack => ActionFun -- TODO
-attack p@(WithArgs i mq cols _) = getState >>= \ms -> if isIncognitoId i ms
+attack p@(LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "attack"
-  else checkActing p ms (Left Attacking) allValues . startAct i Attacking $ attackAct
+  else let next = helper |&| modifyState >=> \(msgs, logMsgs) -> do
+                      logMsgs |#| logPla "attack" i . slashes
+                      multiWrapSend mq cols msgs
+                      startAct i Attacking attackAct
+       in checkActing p ms (Left Attacking) [ Drinking, Eating, Sacrificing ] next
+  where
+    helper ms = let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
+                    sorryInInv  = inInvs |!| sorryAttackInInv
+                    sorryInEq   = inEqs  |!| sorryAttackInEq
+                    invCoins    = first (i `delete`) . getMobRmVisibleInvCoins i $ ms
+                    (eiss, ecs) = uncurry (resolveRmInvCoins i ms inRms) invCoins
+                    a                    = foldl' helperEitherInv   (ms, [], []) eiss
+                    (ms', msgs, logMsgs) = foldl' helperEitherCoins a            ecs
+                in if ()!# invCoins
+                  then (ms', (dropBlanks $ sorryInInv : sorryInEq : msgs, logMsgs))
+                  else (ms, (pure sorryAttackNothingHere, []))
+    helperEitherInv   a (Left  msg ) = a & _2 <>+ msg
+    helperEitherInv   a (Right _   ) = a -- TODO
+    helperEitherCoins a (Left  msgs) = a & _2 <>~ msgs
+    helperEitherCoins a (Right _   ) = a & _2 <>+ sorryAttackCoins
 attack p = pmf "attack" p
 
 -----

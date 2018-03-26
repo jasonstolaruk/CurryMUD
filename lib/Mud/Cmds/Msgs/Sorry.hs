@@ -17,6 +17,10 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryAsSelf
                            , sorryAsType
                            , sorryAttackCan'tAbbrev
+                           , sorryAttackCoins
+                           , sorryAttackInEq
+                           , sorryAttackInInv
+                           , sorryAttackNothingHere
                            , sorryBanAdHoc
                            , sorryBanAdmin
                            , sorryBanSelf
@@ -117,7 +121,6 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryGetEnc
                            , sorryGetInEq
                            , sorryGetInInv
-                           , sorryGetNothingHere
                            , sorryGetType
                            , sorryGetWeight
                            , sorryGiveEnc
@@ -498,6 +501,18 @@ sorryAsType s = can'tTarget $ aOrAn s <> withAs
 
 sorryAttackCan'tAbbrev :: Text
 sorryAttackCan'tAbbrev = "The \"attack\" command may not be abbreviated."
+
+sorryAttackCoins :: Text
+sorryAttackCoins = can't "attack a coin."
+
+sorryAttackInEq :: Text
+sorryAttackInEq = can't "attack an item in your readied equipment."
+
+sorryAttackInInv :: Text
+sorryAttackInInv = can't "attack an item in your inventory."
+
+sorryAttackNothingHere :: Text
+sorryAttackNothingHere = "You don't see anything to attack here."
 
 -----
 
@@ -892,9 +907,6 @@ sorryGetInEq = butCan't "get an item in your readied equipment. If you want to m
 sorryGetInInv :: Text
 sorryGetInInv = can't "get an item that's already in your inventory. If you're intent on picking it up, try dropping \
                       \it first!"
-
-sorryGetNothingHere :: Text
-sorryGetNothingHere = "You don't see anything to pick up here."
 
 sorryGetType :: Text -> Text
 sorryGetType t = prd $ can't "pick up " <> t
