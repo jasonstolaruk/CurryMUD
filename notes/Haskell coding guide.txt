@@ -388,7 +388,7 @@ foldl f acc (x:xs) = foldl f (f acc x) xs
 foldl (^) 1 [2,3,4]
 (((1 ^ 2) ^ 3) ^ 4)
 
-The first stage of folding is the traversal of (the recursing over) the spine. All folds traverse the spine in the same direction: from outermost (the head) to innermost; this is necessitated by the way lists are defined. Notably, "foldr" may not traverse the entire spine, but "foldl" always will.
+The first stage of folding is the traversal (the recursing over) of the spine. All folds traverse the spine in the same direction: from outermost (the head) to innermost; this is necessitated by the way lists are defined. Notably, "foldr" may not traverse the entire spine, but "foldl" always will.
 
 The association of the folding function informs the direction that the folding proceeds following the traversal of the spine.
 
