@@ -20,8 +20,6 @@ import           GHC.Stack (HasCallStack)
 import           Network.Wai.Handler.Warp (run)
 import           Servant.Server (serve)
 
--- TODO: https://ibnuda.gitlab.io/636452721192300168_authorizationinservant.html
-
 startRestService :: HasCallStack => ServerSettings -> IORef MudState -> IO ()
 startRestService s ior = do
     void . forkIO . run restServicePort . serve api . server $ ior
