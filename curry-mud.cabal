@@ -187,8 +187,6 @@ library
                        , transformers-base
                        , unix
                        , vector
-                       , wai
-                       , warp
                        , yaml
   hs-source-dirs:      lib
 
