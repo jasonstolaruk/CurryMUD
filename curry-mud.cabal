@@ -91,10 +91,6 @@ library
                        Mud.Misc.NameResolution
                        Mud.Misc.Persist
                        Mud.Misc.Readymade
-                       Mud.Service.Logging
-                       Mud.Service.Main
-                       Mud.Service.Server
-                       Mud.Service.Types
                        Mud.TheWorld.FoodIds
                        Mud.TheWorld.Foods
                        Mud.TheWorld.Kits
@@ -181,8 +177,6 @@ library
                        , random
                        , regex-pcre
                        , resourcet
-                       , servant
-                       , servant-server
                        , split
                        , sqlite-simple
                        , stm

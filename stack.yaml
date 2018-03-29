@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-11.0
+resolver: nightly-2018-03-28
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -39,7 +39,9 @@ packages:
 - '.'
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
-extra-deps: []
+extra-deps:
+- sqlite-simple-0.4.15.0
+- direct-sqlite-2.3.23
 
 # Override default flag values for local packages and extra-deps
 flags: {}

@@ -9,8 +9,5 @@ ekg: true
 # Enable logging?
 log: true
 
-# Start the REST service?
-rest: true
-
 # Enable the back door? (Effective only when "debug" is also true.)
 zBackDoor: true

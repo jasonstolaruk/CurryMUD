@@ -115,14 +115,6 @@ resourcet
 Copyright Michael Snoyman.
 https://github.com/snoyberg/conduit
 
-servant
-Copyright Zalora South East Asia Pte Ltd, Servant Contributors.
-https://github.com/haskell-servant/servant
-
-servant-server
-Copyright Zalora South East Asia Pte Ltd, Servant Contributors.
-https://github.com/haskell-servant/servant
-
 split
 Copyright Brent Yorgey, Louis Wasserman.
 http://hub.darcs.net/byorgey/split

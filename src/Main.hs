@@ -25,7 +25,7 @@ import           Control.Monad.Reader (runReaderT)
 import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
-import           Data.Yaml (decodeFile)
+import           Data.Yaml (decodeFileEither, prettyPrintParseException)
 import           GHC.Stack (HasCallStack)
 import           System.Directory (createDirectoryIfMissing, doesDirectoryExist, setCurrentDirectory)
 import           System.Environment (getEnv, getProgName)
@@ -54,6 +54,7 @@ welcome = (,) <$> getEnv "USER" <*> what'sMyName >>= \(userName, progName) ->
       (return "CurryMUD")
 
 loadServerSettings :: HasCallStack => IO ServerSettings
-loadServerSettings = maybeRet helper =<< decodeFile =<< mkMudFilePath serverSettingsFun
+loadServerSettings = eitherRet helper =<< decodeFileEither =<< mkMudFilePath serverSettingsFun
   where
-    helper = T.putStrLn "Error reading the server settings file." >> return (ServerSettings False False False False False)
+    helper e = do T.putStrLn $ nl "Error reading the server settings file." <> T.pack (prettyPrintParseException e)
+                  return (ServerSettings False False False False)

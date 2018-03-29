@@ -12,8 +12,6 @@ import           Mud.Data.State.Util.Output
 import           Mud.Misc.Database
 import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logNotice)
 import           Mud.Misc.Logging hiding (logExMsg, logIOEx, logNotice)
-import           Mud.Service.Logging
-import           Mud.Service.Main
 import           Mud.TheWorld.TheWorld
 import           Mud.Threads.Biodegrader
 import           Mud.Threads.CorpseDecomposer
@@ -40,11 +38,9 @@ import           Control.Concurrent.STM (atomically)
 import           Control.Concurrent.STM.TMVar (takeTMVar)
 import           Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import           Control.Exception.Lifted (catch, finally, handle)
-import           Control.Lens (view, views)
 import           Control.Lens.Operators ((&), (%~))
-import           Control.Monad (forever, void, when)
+import           Control.Monad (forever, void)
 import           Control.Monad.IO.Class (liftIO)
-import           Control.Monad.Reader (ask)
 import           Data.Int (Int64)
 import qualified Data.IntMap.Strict as IM (map)
 import           Data.Monoid ((<>), Any(..), getSum)
@@ -71,8 +67,7 @@ threadListen :: HasCallStack => MudStack ()
 threadListen = a `finally` b
   where
     a = logNotice "threadListen" "server started." >> listen
-    b = sequence_ [ getUptime >>= saveUptime, liftIO . closeRestServiceLog =<< getState, closeLogs
-                  , liftIO . T.putStrLn . nl $ "Goodbye!" ]
+    b = sequence_ [ saveUptime =<< getUptime, closeLogs, liftIO . T.putStrLn . nl $ "Goodbye!" ]
 
 listen :: HasCallStack => MudStack ()
 listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed halt -- Keep this exception handler here.
@@ -99,11 +94,8 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
                     massRestartNpcLightTimers
                     sortAllInvs
                     logInterfaces
-                    startRest
     logInterfaces = liftIO mkInterfaceList >>= \ifList ->
         logNotice "listen listInterfaces" . prd $ "server network interfaces: " <> ifList
-    startRest = ask >>= \md@(view serverSettings -> s) ->
-        when (settingRest s) . views mudStateIORef (liftIO . startRestService s) $ md
     loop sock = let fn = "listen loop" in liftIO (accept sock) >>= \(h, host@(T.pack -> host'), localPort) -> do
         logNotice fn . T.concat $ [ "connected to ", showTxt host, " on local port ", showTxt localPort, "." ]
         (withDbExHandler "listen loop" . isHostBanned . T.toLower . T.pack $ host) >>= \case
