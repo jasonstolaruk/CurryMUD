@@ -114,8 +114,8 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
 listenExHandler :: HasCallStack => SomeException -> MudStack ()
 listenExHandler e = let fn = "listenExHandler" in case fromException e of
   Just UserInterrupt          -> logNotice fn "exiting on user interrupt."
-  _ | isCancellingException e -> logNotice fn "thread killed."
-    | otherwise               -> logExMsg  fn "exception caught on listen thread" e >> liftIO printPanicMsg
+  _ | isCancellingEx e -> logNotice fn "thread killed."
+    | otherwise        -> logExMsg  fn "exception caught on listen thread" e >> liftIO printPanicMsg
 
 
 sortAllInvs :: HasCallStack => MudStack ()

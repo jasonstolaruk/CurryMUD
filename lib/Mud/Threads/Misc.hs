@@ -6,7 +6,7 @@ module Mud.Threads.Misc ( PlsDie(..)
                         , die
                         , dieSilently
                         , fileIOExHandler
-                        , isCancellingException
+                        , isCancellingEx
                         , maybeThrowDeath
                         , maybeThrowDeathWait
                         , onNewThread
@@ -95,8 +95,8 @@ dieSilently = const unit
 
 -----
 
-isCancellingException :: HasCallStack => SomeException -> Bool
-isCancellingException = (||) <$> isThreadKilled <*> isAsyncCancelled
+isCancellingEx :: HasCallStack => SomeException -> Bool
+isCancellingEx = (||) <$> isThreadKilled <*> isAsyncCancelled
 
 isThreadKilled :: HasCallStack => SomeException -> Bool
 isThreadKilled e = fromException e == Just ThreadKilled
@@ -122,8 +122,8 @@ onNewThread f = liftIO . void . forkIO . runReaderT f =<< ask
 -----
 
 plaThreadExHandler :: HasCallStack => Id -> Text -> SomeException -> MudStack ()
-plaThreadExHandler i threadName e | isCancellingException e = closePlaLog i
-                                  | otherwise               = threadExHandler (Just i) threadName e
+plaThreadExHandler i threadName e | isCancellingEx e = closePlaLog i
+                                  | otherwise        = threadExHandler (Just i) threadName e
 
 -----
 
@@ -164,8 +164,8 @@ threadExHandler mi threadName e = f >>= \threadName' -> do
 
 threadStarterExHandler :: HasCallStack => Id -> FunName -> Maybe Text -> SomeException -> MudStack ()
 threadStarterExHandler i fn maybeName e
-  | isCancellingException e = logPla fn i $ fn <> onFalse (()# name) spcR name <> " has been killed prematurely."
-  | otherwise               = descSingId i <$> getState >>= \t ->
+  | isCancellingEx e = logPla fn i $ fn <> onFalse (()# name) spcR name <> " has been killed prematurely."
+  | otherwise        = descSingId i <$> getState >>= \t ->
       let msg = T.concat [ "exception caught", onFalse (()# name) (" in " <>) name, " for ", t ]
       in logExMsg fn msg e
   where
