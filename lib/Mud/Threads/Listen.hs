@@ -113,9 +113,10 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
 
 listenExHandler :: HasCallStack => SomeException -> MudStack ()
 listenExHandler e = let fn = "listenExHandler" in case fromException e of
-  Just UserInterrupt -> logNotice fn "exiting on user interrupt."
-  Just ThreadKilled  -> logNotice fn "thread killed."
-  _                  -> logExMsg  fn "exception caught on listen thread" e >> liftIO printPanicMsg
+  Just UserInterrupt          -> logNotice fn "exiting on user interrupt."
+  _ | isCancellingException e -> logNotice fn "thread killed."
+    | otherwise               -> logExMsg  fn "exception caught on listen thread" e >> liftIO printPanicMsg
+
 
 sortAllInvs :: HasCallStack => MudStack ()
 sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> tweak (\ms -> ms & invTbl %~ IM.map (sortInv ms))
