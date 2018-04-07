@@ -542,28 +542,45 @@ alertExecFindTargetSing i ms target = let (_, _, inRms) = sortArgsInvEqRm InRm .
 -----
 
 attack :: HasCallStack => ActionFun -- TODO
+-- TODO: When no arguments, show who/what you are attacking?
 attack p@(LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "attack"
-  else let next = helper |&| modifyState >=> \(msgs, logMsgs) -> do
-                      logMsgs |#| logPla "attack" i . slashes
+  else let next = helper |&| modifyState >=> \(msgs, logMsgs, b) -> do
+                      logMsgs |#| logPla "attack" i . ("engaging in combat with: " <>) . slashes
                       multiWrapSend mq cols msgs
-                      startAct i Attacking attackAct
-       in checkActing p ms (Left Attacking) [ Drinking, Eating, Sacrificing ] next
+                      when b . startAct i Attacking $ attackAct
+       in checkActing p ms (Left Attacking) (pure Sacrificing) next
   where
     helper ms = let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
                     sorryInInv  = inInvs |!| sorryAttackInInv
                     sorryInEq   = inEqs  |!| sorryAttackInEq
                     invCoins    = first (i `delete`) . getMobRmVisibleInvCoins i $ ms
                     (eiss, ecs) = uncurry (resolveRmInvCoins i ms inRms) invCoins
-                    a                    = foldl' helperEitherInv   (ms, [], []) eiss
-                    (ms', msgs, logMsgs) = foldl' helperEitherCoins a            ecs
+                    (invMsgs, targetIds) = foldl' (helperEitherInv is) ([], []) eiss
+                    coinsMsgs            = foldl' helperEitherCoins [] ecs
+                    is                   = fromMaybeEmp . getNowAttacking i $ ms
+                    ms'                  = ms & mobTbl.ind i.nowAttacking ?~ (is ++ targetIds)
+                    logMsgs              = map (`descSingId` ms) targetIds
+                    b                    = null is && (not . null $ targetIds)
                 in if ()!# invCoins
-                  then (ms', (dropBlanks $ sorryInInv : sorryInEq : msgs, logMsgs))
-                  else (ms, (pure sorryAttackNothingHere, []))
-    helperEitherInv   a (Left  msg ) = a & _2 <>+ msg
-    helperEitherInv   a (Right _   ) = a -- TODO
-    helperEitherCoins a (Left  msgs) = a & _2 <>~ msgs
-    helperEitherCoins a (Right _   ) = a & _2 <>+ sorryAttackCoins
+                  then (ms', (dropBlanks $ sorryInInv : sorryInEq : (coinsMsgs ++ invMsgs), logMsgs, b    ))
+                  else (ms,  (pure sorryAttackNothingHere,                                  [],      False))
+      where
+        helperEitherInv _  a (Left  msg      ) = a & _1 <>+ msg
+        helperEitherInv is a (Right targetIds) =
+            let f a'@(_, targetIds') targetId = if
+                  | targetId `elem` (is ++ targetIds') -> a' & _1 <>+ sorryAttackAlready d
+                  | isNpcPla i ms                      -> a' & _1 <>+ msg
+                                                             & _2 <>+ targetId
+                  | otherwise                          -> a' & _1 <>+ sorryAttackType targetSing
+                  where
+                    d          = serialize . mkStdDesig targetId ms $ Don'tCap
+                    msg        = prd $ "You engage in combat with " <> d
+                    targetSing = getSing targetId ms
+            in foldl' f a targetIds
+    helperEitherCoins msgs (Left  msgs') = msgs ++ msgs'
+    helperEitherCoins msgs (Right _    ) | sorryAttackCoins `elem` msgs = msgs
+                                         | otherwise                    = msgs ++ pure sorryAttackCoins
 attack p = pmf "attack" p
 
 -----
@@ -1595,7 +1612,7 @@ intro p@(LowerNub i mq cols as) = getStateTime >>= \(ms, ct) ->
         in if ()!# invCoins
           then (ms & pcTbl .~ pt, (sorryInInv ++ sorryInEq ++ cbs', logMsgs', intro'dIds))
           else (ms,               (mkNTB sorryIntroNoOneHere,       [],       []        ))
-    mkNTB                                              = mkNTBcast i . nlnl
+    mkNTB                                          = mkNTBcast i . nlnl
     helperIntroEitherInv _  _  a (Left msg       ) = ()# msg ? a :? (a & _2 <>~ mkNTB msg)
     helperIntroEitherInv ct ms a (Right targetIds) = foldl' tryIntro a targetIds
       where

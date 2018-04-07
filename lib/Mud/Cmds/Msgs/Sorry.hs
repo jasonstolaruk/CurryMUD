@@ -16,11 +16,13 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryAsAdmin
                            , sorryAsSelf
                            , sorryAsType
+                           , sorryAttackAlready
                            , sorryAttackCan'tAbbrev
                            , sorryAttackCoins
                            , sorryAttackInEq
                            , sorryAttackInInv
                            , sorryAttackNothingHere
+                           , sorryAttackType
                            , sorryBanAdHoc
                            , sorryBanAdmin
                            , sorryBanSelf
@@ -502,6 +504,9 @@ sorryAsType s = can'tTarget $ aOrAn s <> withAs
 sorryAttackCan'tAbbrev :: Text
 sorryAttackCan'tAbbrev = "The \"attack\" command may not be abbreviated."
 
+sorryAttackAlready :: Text -> Text
+sorryAttackAlready n = prd $ "You're already attacking " <> n
+
 sorryAttackCoins :: Text
 sorryAttackCoins = can't "attack a coin."
 
@@ -513,6 +518,9 @@ sorryAttackInInv = can't "attack an item in your inventory."
 
 sorryAttackNothingHere :: Text
 sorryAttackNothingHere = "You don't see anything to attack here."
+
+sorryAttackType :: Sing -> Text
+sorryAttackType s = prd $ can't "attack " <> theOnLower s
 
 -----
 

@@ -81,6 +81,7 @@ module Mud.Data.State.Util.Get ( getActMap
                                , getMsgQueue
                                , getMsgQueueColumns
                                , getMyGroup
+                               , getNowAttacking
                                , getNowDrinking
                                , getNowEating
                                , getNpc
@@ -611,6 +612,11 @@ getMsgQueueColumns i = getMsgQueue i &&& getColumns i
 
 getMyGroup :: HasCallStack => Id -> MudState -> Inv
 getMyGroup i = view myGroup . getParty i
+
+-----
+
+getNowAttacking :: HasCallStack => Id -> MudState -> Maybe NowAttacking
+getNowAttacking i = view nowAttacking . getMob i
 
 -----
 
