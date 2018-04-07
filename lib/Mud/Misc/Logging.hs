@@ -34,10 +34,10 @@ import           Mud.Util.Operators
 import           Mud.Util.Quoting
 import           Mud.Util.Text
 
-import           Control.Concurrent.Async (async, race_, wait)
+import           Control.Concurrent.Async (AsyncCancelled(..), async, race_, wait)
 import           Control.Concurrent.STM (atomically)
 import           Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
-import           Control.Exception (ArithException(..), AsyncException(..), IOException, SomeException, fromException)
+import           Control.Exception (ArithException(..), IOException, SomeException, fromException)
 import           Control.Exception.Lifted (catch, handle, throwIO)
 import           Control.Lens (both, view, views)
 import           Control.Lens.Operators ((.~), (&), (%~))
@@ -114,7 +114,7 @@ spawnLogger fn p (T.unpack -> ln) f q logExLock =
             loop =<< initLog
 
 loggingThreadExHandler :: HasCallStack => Lock -> Text -> SomeException -> IO ()
-loggingThreadExHandler logExLock n e = guard (fromException e /= Just ThreadKilled) >> mkTimestamp >>= \ts ->
+loggingThreadExHandler logExLock n e = guard (fromException e /= Just AsyncCancelled) >> mkTimestamp >>= \ts ->
     let txt = "Mud.Logging loggingThreadExHandler: exception caught on logging thread"
         msg = T.concat [ ts, spaced txt, parensQuote $ "inside " <> dblQuote n, ". ", dblQuote . showTxt $ e ]
     in do liftIO . printErrorMsg $ txt

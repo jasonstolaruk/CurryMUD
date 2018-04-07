@@ -15,7 +15,7 @@ import           Mud.Util.Operators
 import           Mud.Util.Quoting
 
 import           Control.Concurrent.Async (cancel, wait)
-import           Control.Exception (AsyncException(..), SomeException, fromException)
+import           Control.Exception (SomeException)
 import           Control.Exception.Lifted (catch, handle)
 import           Control.Lens.Operators ((.~), (%~))
 import           Control.Monad (mapM_)
@@ -50,10 +50,9 @@ threadFeelingTimer i tag dur = sequence_ [ setThreadType . FeelingTimer $ i, loo
     loop secs | secs >= dur = sequence_ [ logHelper "is expiring.", tweak $ mobTbl.ind i.feelingMap %~ (tag `M.delete`) ]
               | otherwise   = sequence_ [ liftIO . delaySecs $ 1, loop . succ $ secs ]
     exHandler :: SomeException -> MudStack ()
-    exHandler e = case fromException e of
-      Just ThreadKilled -> logHelper "has been killed."
-      _                 -> do t <- descSingId i <$> getState
-                              logExMsg fn (T.concat [ "exception caught on ", name, " thread for ", t ]) e
+    exHandler e | isCancellingEx e = logHelper "has been killed."
+                | otherwise        = do t <- descSingId i <$> getState
+                                        logExMsg fn (T.concat [ "exception caught on ", name, " thread for ", t ]) e
     logHelper msg = logPla fn i $ name |<>| msg
     fn            = "threadFeelingTimer"
     name          = "feeling timer " <> dblQuote tag

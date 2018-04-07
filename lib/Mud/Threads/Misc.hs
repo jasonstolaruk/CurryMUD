@@ -6,6 +6,7 @@ module Mud.Threads.Misc ( PlsDie(..)
                         , die
                         , dieSilently
                         , fileIOExHandler
+                        , isCancellingEx
                         , maybeThrowDeath
                         , maybeThrowDeathWait
                         , onNewThread
@@ -34,7 +35,7 @@ import           Mud.Util.Quoting
 import           Mud.Util.Text
 
 import           Control.Concurrent (forkIO, myThreadId)
-import           Control.Concurrent.Async (Async, async, asyncThreadId, concurrently, race_, wait)
+import           Control.Concurrent.Async (AsyncCancelled(..), Async, async, asyncThreadId, concurrently, race_, wait)
 import           Control.Exception (AsyncException(..), Exception, IOException, SomeException, fromException, toException)
 import           Control.Exception.Lifted (throwIO, throwTo)
 import           Control.Lens (at, views)
@@ -99,6 +100,18 @@ dieSilently = const unit
 
 -----
 
+isCancellingEx :: HasCallStack => SomeException -> Bool
+isCancellingEx = (||) <$> isThreadKilled <*> isAsyncCancelled
+
+isThreadKilled :: HasCallStack => SomeException -> Bool
+isThreadKilled e = fromException e == Just ThreadKilled
+
+isAsyncCancelled :: HasCallStack => SomeException -> Bool
+isAsyncCancelled e = fromException e == Just AsyncCancelled
+
+-----
+
+
 fileIOExHandler :: HasCallStack => Text -> IOException -> MudStack ()
 fileIOExHandler fn e = do logIOEx fn e
                           let rethrow = throwToListenThread . toException $ e
@@ -114,8 +127,8 @@ onNewThread f = liftIO . void . forkIO . runReaderT f =<< ask
 -----
 
 plaThreadExHandler :: HasCallStack => Id -> Text -> SomeException -> MudStack ()
-plaThreadExHandler i threadName e | Just ThreadKilled <- fromException e = closePlaLog i
-                                  | otherwise                            = threadExHandler (Just i) threadName e
+plaThreadExHandler i threadName e | isCancellingEx e = closePlaLog i
+                                  | otherwise        = threadExHandler (Just i) threadName e
 
 -----
 
@@ -155,11 +168,11 @@ threadExHandler mi threadName e = f >>= \threadName' -> do
 -----
 
 threadStarterExHandler :: HasCallStack => Id -> FunName -> Maybe Text -> SomeException -> MudStack ()
-threadStarterExHandler i fn maybeName e = case fromException e of
-  Just ThreadKilled -> logPla fn i $ fn <> onFalse (()# name) spcR name <> " has been killed prematurely."
-  _                 -> do t <- descSingId i <$> getState
-                          let msg = T.concat [ "exception caught", onFalse (()# name) (" in " <>) name, " for ", t ]
-                          logExMsg fn msg e
+threadStarterExHandler i fn maybeName e
+  | isCancellingEx e = logPla fn i $ fn <> onFalse (()# name) spcR name <> " has been killed prematurely."
+  | otherwise        = descSingId i <$> getState >>= \t ->
+      let msg = T.concat [ "exception caught", onFalse (()# name) (" in " <>) name, " for ", t ]
+      in logExMsg fn msg e
   where
     name = maybeEmp dblQuote maybeName
 
