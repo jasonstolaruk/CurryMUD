@@ -542,7 +542,7 @@ alertExecFindTargetSing i ms target = let (_, _, inRms) = sortArgsInvEqRm InRm .
 -----
 
 attack :: HasCallStack => ActionFun -- TODO
--- TODO: When no arguments, show who/what you are attacking?
+-- TODO: When no arguments, show who/what you are attacking.
 attack p@(LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "attack"
   else let next = helper |&| modifyState >=> \(msgs, logMsgs, b) -> do
@@ -557,11 +557,11 @@ attack p@(LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                     invCoins    = first (i `delete`) . getMobRmVisibleInvCoins i $ ms
                     (eiss, ecs) = uncurry (resolveRmInvCoins i ms inRms) invCoins
                     (invMsgs, targetIds) = foldl' (helperEitherInv is) ([], []) eiss
-                    coinsMsgs            = foldl' helperEitherCoins [] ecs
+                    coinsMsgs            = foldl' helperEitherCoins    []       ecs
                     is                   = fromMaybeEmp . getNowAttacking i $ ms
                     ms'                  = ms & mobTbl.ind i.nowAttacking ?~ (is ++ targetIds)
                     logMsgs              = map (`descSingId` ms) targetIds
-                    b                    = null is && (not . null $ targetIds)
+                    b                    = null is && not (null targetIds)
                 in if ()!# invCoins
                   then (ms', (dropBlanks $ sorryInInv : sorryInEq : (coinsMsgs ++ invMsgs), logMsgs, b    ))
                   else (ms,  (pure sorryAttackNothingHere,                                  [],      False))
