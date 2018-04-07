@@ -18,6 +18,7 @@ module Mud.Threads.Misc ( PlsDie(..)
                         , threadStarterExHandler
                         , throwDeath
                         , throwDeathWait
+                        , throwHorf
                         , throwToListenThread ) where
 
 import           Mud.Cmds.Msgs.Misc
@@ -35,7 +36,7 @@ import           Mud.Util.Text
 import           Control.Concurrent (forkIO, myThreadId)
 import           Control.Concurrent.Async (Async, async, asyncThreadId, concurrently, race_, wait)
 import           Control.Exception (AsyncException(..), Exception, IOException, SomeException, fromException, toException)
-import           Control.Exception.Lifted (throwTo)
+import           Control.Exception.Lifted (throwIO, throwTo)
 import           Control.Lens (at, views)
 import           Control.Lens.Operators ((?~))
 import           Control.Monad (unless, void)
@@ -68,6 +69,10 @@ logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Threads.Misc"
 
 -- ==================================================
+
+data Horf = Horf deriving (Show, Typeable)
+
+instance Exception Horf
 
 data PlsDie = PlsDie deriving (Show, Typeable)
 
@@ -157,6 +162,11 @@ threadStarterExHandler i fn maybeName e = case fromException e of
                           logExMsg fn msg e
   where
     name = maybeEmp dblQuote maybeName
+
+-----
+
+throwHorf :: HasCallStack => MudStack ()
+throwHorf = liftIO . throwIO $ Horf
 
 -----
 
