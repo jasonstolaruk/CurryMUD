@@ -1,10 +1,11 @@
 \h ATTACK \d
 
 \uUSAGE\n
-!attack name \s...\d
+!attack \s[\dname \s...]\d
 
 \uDESCRIPTION\n
-Initiate combat.
+Initiate combat with one or more beings.
+When no arguments are provided, you'll get a list of the beings with whom you are engaged in combat.
 
 This command may not be abbreviated.
 

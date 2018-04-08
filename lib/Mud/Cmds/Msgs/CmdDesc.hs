@@ -16,7 +16,8 @@ cmdDescAdmin :: Text
 cmdDescAdmin = "Display a list of administrators, or send a message to an administrator."
 
 cmdDescAttack :: Text
-cmdDescAttack = "Initiate combat."
+cmdDescAttack = "Display a list of the beings with whom you are engaged in combat, or initiate combat with one or more \
+                \beings."
 
 cmdDescBars :: Text
 cmdDescBars = "Display one or more status bars."
