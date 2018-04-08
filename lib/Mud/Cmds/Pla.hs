@@ -542,7 +542,7 @@ alertExecFindTargetSing i ms target = let (_, _, inRms) = sortArgsInvEqRm InRm .
 -----
 
 attack :: HasCallStack => ActionFun -- TODO
--- TODO: When no arguments, show who/what you are attacking.
+attack   (NoArgs   _ _  _      ) = unit -- TODO: When no arguments, show who/what you are attacking.
 attack p@(LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "attack"
   else let next = helper |&| modifyState >=> \(msgs, logMsgs, b) -> do
@@ -570,7 +570,7 @@ attack p@(LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
         helperEitherInv is a (Right targetIds) =
             let f a'@(_, targetIds') targetId = if
                   | targetId `elem` (is ++ targetIds') -> a' & _1 <>+ sorryAttackAlready d
-                  | isNpcPla i ms                      -> a' & _1 <>+ msg
+                  | isNpcPla targetId ms               -> a' & _1 <>+ msg
                                                              & _2 <>+ targetId
                   | otherwise                          -> a' & _1 <>+ sorryAttackType targetSing
                   where

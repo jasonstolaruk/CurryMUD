@@ -677,8 +677,10 @@ createWarehouse = do
 
   -----
 
+  let skeletonIds  = [ iSkeleton1..iSkeleton1 + 4 ]
+
   putRm iNpcRm
-      [ iPidge, iSkeleton ]
+      (iPidge : skeletonIds)
       mempty
       (mkRm (RmTemplate "NPC room"
           "This room holds NPCs."
@@ -721,28 +723,29 @@ createWarehouse = do
 
   let skeletonCorpseWeight = round $ fromIntegral (calcCorpseWeight Human) * (0.15 :: Double)
 
-  putNpc iSkeleton
-      (Ent iSkeleton
-          (Just "skeleton")
-          "undead skeleton" ""
-          "This mindless bipedal skeleton has been animated and tasked with doing its master's bidding."
-          (Just "The dry, fleshless bones of the skeleton are scentless.")
-          zeroBits)
-      []
-      mempty
-      M.empty
-      (mkMob (MobTemplate NoSex
-          50 50 50 50 50
-          10 10 10 10
-          10 0
-          RHand
+  forM_ skeletonIds $ \i ->
+      putNpc i
+          (Ent i
+              (Just "skeleton")
+              "undead skeleton" ""
+              "This mindless bipedal skeleton has been animated and tasked with doing its master's bidding."
+              (Just "The dry, fleshless bones of the skeleton are scentless.")
+              zeroBits)
           []
-          iNpcRm
-          Offensive
-          (Just MedMinus)
-          skeletonCorpseWeight (calcCorpseVol Human) (calcCorpseCapacity Human)
-          fiveMinsInSecs
-          dfltParty))
+          mempty
+          M.empty
+          (mkMob (MobTemplate NoSex
+              50 50 50 50 50
+              10 10 10 10
+              10 0
+              RHand
+              []
+              iNpcRm
+              Offensive
+              (Just MedMinus)
+              skeletonCorpseWeight (calcCorpseVol Human) (calcCorpseCapacity Human)
+              fiveMinsInSecs
+              dfltParty))
 
   -----
 
