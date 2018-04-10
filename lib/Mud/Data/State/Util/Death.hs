@@ -79,7 +79,7 @@ handleDeath :: HasCallStack => Id -> MudStack ()
 handleDeath i = isNpc i <$> getState >>= \npc -> do
     logPla "handleDeath" i "handling death."
     stopActs i
-    dropLitLights |&| modifyState >=> \(bs, logMsgs) -> do logPla "handleEgress egressHelper" i . slashes $ logMsgs
+    dropLitLights |&| modifyState >=> \(bs, logMsgs) -> do logPla "handleDeath" i . prd . slashes $ logMsgs
                                                            bcastNl bs
     tweaks [ leaveParty i
            , mobTbl.ind i.mobRmDesc .~ Nothing

@@ -546,8 +546,8 @@ attack   (NoArgs   _ _  _      ) = unit -- TODO: When no arguments, show who/wha
 attack p@(LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "attack"
   else let next = helper |&| modifyState >=> \(msgs, logMsgs, b) -> do
-                      logMsgs |#| logPla "attack" i . ("engaging in combat with: " <>) . slashes
-                      multiWrapSend mq cols msgs
+                      logMsgs |#| logPla "attack" i . prd . ("engaging in combat with: " <>) . slashes
+                      multiWrapSend mq cols . map (parseDesig Nothing i ms) $ msgs
                       when b . startAct i Attacking $ attackAct
        in checkActing p ms (Left Attacking) (pure Sacrificing) next
   where
@@ -561,18 +561,17 @@ attack p@(LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                     is                   = fromMaybeEmp . getNowAttacking i $ ms
                     ms'                  = ms & mobTbl.ind i.nowAttacking ?~ (is ++ targetIds)
                     logMsgs              = map (`descSingId` ms) targetIds
-                    b                    = null is && not (null targetIds)
+                    b                    = ((&&) <$> null . fst <*> not . null . snd) (is, targetIds)
                 in if ()!# invCoins
                   then (ms', (dropBlanks $ sorryInInv : sorryInEq : (coinsMsgs ++ invMsgs), logMsgs, b    ))
                   else (ms,  (pure sorryAttackNothingHere,                                  [],      False))
       where
         helperEitherInv _  a (Left  msg      ) = a & _1 <>+ msg
         helperEitherInv is a (Right targetIds) =
-            let f a'@(_, targetIds') targetId = if
-                  | targetId `elem` (is ++ targetIds') -> a' & _1 <>+ sorryAttackAlready d
-                  | isNpcPla targetId ms               -> a' & _1 <>+ msg
-                                                             & _2 <>+ targetId
-                  | otherwise                          -> a' & _1 <>+ sorryAttackType targetSing
+            let f a' targetId = if | targetId `elem` is   -> a' & _1 <>+ sorryAttackAlready d
+                                   | isNpcPla targetId ms -> a' & _1 <>+ msg
+                                                                & _2 <>+ targetId
+                                   | otherwise            -> a' & _1 <>+ sorryAttackType targetSing
                   where
                     d          = serialize . mkStdDesig targetId ms $ Don'tCap
                     msg        = prd $ "You engage in combat with " <> d
@@ -1597,7 +1596,7 @@ intro p@(LowerNub i mq cols as) = getStateTime >>= \(ms, ct) ->
     checkActing p ms (Right "introduce yourself") [ Attacking, Drinking, Sacrificing ] $ if isIncognitoId i ms
       then wrapSend mq cols . sorryIncog $ "intro"
       else helper ct |&| modifyState >=> \(map fromClassifiedBcast . sort -> bs, logMsgs, intro'dIds) -> do
-          logMsgs |#| logPla "intro" i . slashes
+          logMsgs |#| logPla "intro" i . prd . slashes
           bcast bs
           mapM_ (awardExp 50 (getSing i ms <> " introduced")) intro'dIds
   where
@@ -1821,15 +1820,15 @@ link (NoArgs i mq cols) = do
                           Nothing  -> x
                           Just val -> val ? x :? (x <> " (tuned out)")
                 in linkSing |&| (isAwake linkId ms ? f _1 :? f _2)
-        in do logPla "link" i . slashes . dropBlanks $ [ twoWays       |!| "Two-way: "         <> commas twoWays
-                                                       , oneWaysFromMe |!| "One-way from me: " <> commas oneWaysFromMe
-                                                       , oneWaysToMe   |!| "One-way to me: "   <> commas oneWaysToMe ]
+        in do logPla "link" i . prd . slashes . dropBlanks $ [ twoWays       |!| "Two-way: "         <> commas twoWays
+                                                             , oneWaysFromMe |!| "One-way from me: " <> commas oneWaysFromMe
+                                                             , oneWaysToMe   |!| "One-way to me: "   <> commas oneWaysToMe ]
               multiWrapSend mq cols msgs
 link p@(LowerNub i mq cols as) = getState >>= \ms -> if
   | isIncognitoId i ms -> wrapSend mq cols . sorryIncog $ "link"
   | isSpiritId    i ms -> wrapSend mq cols   sorryLinkSpirit
   | otherwise          -> let f                   = helper |&| modifyState >=> g
-                              g (bs, logMsgs, fs) = logMsgs |#| (logPla "link g" i . slashes) >> bcast bs >> sequence_ fs
+                              g (bs, logMsgs, fs) = logMsgs |#| logPla "link g" i . prd . slashes >> bcast bs >> sequence_ fs
                           in checkActing p ms (Right "establish a link") (pure Sacrificing) f
   where
     helper ms = let (inInvs, inEqs, inRms)  = sortArgsInvEqRm InRm as
@@ -3513,7 +3512,7 @@ unlink p@(LowerNub i mq cols as) = getState >>= \ms ->
                                in a & _1 .~  ms''
                                     & _2 <>~ (nlnl srcMsg, pure i) : targetBs
                                     & _3 <>+ targetSing
-            in helper |&| modifyState >=> \(bs, logMsgs) -> do logMsgs |#| logPla "unlink" i . slashes
+            in helper |&| modifyState >=> \(bs, logMsgs) -> do logMsgs |#| logPla "unlink" i . prd . slashes
                                                                bcast . onFalse (()# guessWhat) ((guessWhat, pure i) :) $ bs
 unlink p = pmf "unlink" p
 
