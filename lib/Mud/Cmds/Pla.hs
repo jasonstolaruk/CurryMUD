@@ -1596,7 +1596,7 @@ intro p@(LowerNub i mq cols as) = getStateTime >>= \(ms, ct) ->
     checkActing p ms (Right "introduce yourself") [ Attacking, Drinking, Sacrificing ] $ if isIncognitoId i ms
       then wrapSend mq cols . sorryIncog $ "intro"
       else helper ct |&| modifyState >=> \(map fromClassifiedBcast . sort -> bs, logMsgs, intro'dIds) -> do
-          logMsgs |#| logPla "intro" i . prd . slashes
+          logMsgs |#| logPla "intro" i . slashes
           bcast bs
           mapM_ (awardExp 50 (getSing i ms <> " introduced")) intro'dIds
   where
@@ -1620,7 +1620,7 @@ intro p@(LowerNub i mq cols as) = getStateTime >>= \(ms, ct) ->
                          targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
                          targetName  = parseDesig Nothing i ms targetDesig
                          toSelf      = nlnl . prd $ "You introduce yourself to " <> targetName
-                         logMsg      = prd $ "introduced to " <> targetSing
+                         logMsg      = prd $ "Introduced to " <> targetSing
                          srcDesig    = mkStdDesig i ms DoCap
                          srcDesig'   = srcDesig { desigDoExpandSing = False }
                          himHerself  = mkReflexPro . getSex i $ ms
@@ -1828,7 +1828,7 @@ link p@(LowerNub i mq cols as) = getState >>= \ms -> if
   | isIncognitoId i ms -> wrapSend mq cols . sorryIncog $ "link"
   | isSpiritId    i ms -> wrapSend mq cols   sorryLinkSpirit
   | otherwise          -> let f                   = helper |&| modifyState >=> g
-                              g (bs, logMsgs, fs) = logMsgs |#| logPla "link g" i . prd . slashes >> bcast bs >> sequence_ fs
+                              g (bs, logMsgs, fs) = logMsgs |#| logPla "link g" i . slashes >> bcast bs >> sequence_ fs
                           in checkActing p ms (Right "establish a link") (pure Sacrificing) f
   where
     helper ms = let (inInvs, inEqs, inRms)  = sortArgsInvEqRm InRm as
@@ -1854,7 +1854,7 @@ link p@(LowerNub i mq cols as) = getState >>= \ms -> if
                                               , targetSing, "'s mind.", twoWayMsg ]
                 twoWayMsg = isTwoWay |?| " This completes the psionic circuit."
                 isTwoWay  = targetSing `elem` srcLinks
-                logMsg    = T.concat [ "established a ", oneTwoWay, " link with ", targetSing, "." ]
+                logMsg    = T.concat [ "Established a ", oneTwoWay, " link with ", targetSing, "." ]
                 oneTwoWay | isTwoWay  = "two-way"
                           | otherwise = "one-way"
                 targetMsg | x <- "You sense an ephemeral blip in your psionic energy field as "
@@ -3313,7 +3313,7 @@ mkStopTuples p@ActionParams { myId } ms = map (\(a, b, c) -> (pp a, a, uncurry b
 
 -----
 
-taste :: HasCallStack => ActionFun
+taste :: HasCallStack => ActionFun -- TODO: Admins are seeing "There isn't anything to taste." (in both empty rooms and rooms with items) while players are instead seeing "Sorry, but you can't taste an item in your current room. Please pick up the item first." (even in empty rooms).
 taste p@AdviseNoArgs              = advise p ["taste"] adviceTasteNoArgs
 taste p@(OneArgLower i mq cols a) = getState >>= \ms ->
     let (invCoins, eqMap) = (getInvCoins `fanUncurry` getEqMap) (i, ms)

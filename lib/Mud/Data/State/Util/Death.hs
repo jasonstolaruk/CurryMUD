@@ -79,8 +79,7 @@ handleDeath :: HasCallStack => Id -> MudStack ()
 handleDeath i = isNpc i <$> getState >>= \npc -> do
     logPla "handleDeath" i "handling death."
     stopActs i
-    dropLitLights |&| modifyState >=> \(bs, logMsgs) -> do logPla "handleDeath" i . prd . slashes $ logMsgs
-                                                           bcastNl bs
+    dropLitLights |&| modifyState >=> \(bs, logMsgs) -> sequence_ [ logPla "handleDeath" i . slashes $ logMsgs, bcastNl bs ]
     tweaks [ leaveParty i
            , mobTbl.ind i.mobRmDesc .~ Nothing
            , mobTbl.ind i.tempDesc  .~ Nothing
@@ -99,7 +98,7 @@ handleDeath i = isNpc i <$> getState >>= \npc -> do
                            f         = ((&&) <$> ((== LightType) . uncurry getType) <*> uncurry getLightIsLit) . (, ms)
                            g i' pair | s <- getSing i' ms
                                      = pair & _1 %~ ((prd $ "You drop your lit " <> s,           pure i         ) :)
-                                            & _1 %~ ((prd $ serialize d <> " drops a lit " <> s, desigOtherIds d) :)
+                                            & _1 %~ ((prd $ serialize d <> " drops a lit " <> s, desigOtherIds d) :) -- TODO: "Someone drops a lit torch." -> Should show mob name.
                                             & _2 %~ ((prd $ "Dropped a lit " <> s) :)
                            d         = mkStdDesig i ms DoCap
                            ri        = getRmId i ms

@@ -1491,7 +1491,7 @@ adminSet   (WithArgs i mq cols (target:rest)) =
                         PlaType -> retainedMsg targetId ms
                         NpcType -> bcast . mkBcast targetId
                         t       -> pmf "adminSet ioHelper f" t
-                in do logMsgs |#| logPla "adminSet helper ioHelper" i . prd . g . slashes
+                in do logMsgs |#| logPla "adminSet helper ioHelper" i . g . slashes
                       unless (isIncognitoId i ms || targetId == i) . mapM_ f . dropBlanks $ toTargetMsgs
                       sequence_ fs
               where
