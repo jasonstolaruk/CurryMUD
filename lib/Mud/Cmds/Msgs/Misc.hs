@@ -212,8 +212,8 @@ rulesMsg =
     lSpcs <> "Harassment and bullying are not tolerated. The role-play of rape is absolutely illegal.\n\
     \\n\
     \\\uPLAYER-VS-PLAYER\\d\n" <>
-    lSpcs <> "In Character (IC) conflict between Player Characters (PCs) may occur. Administrators will generally not step in to resolve such conflict.\n" <>
-    lSpcs <> "PC-on-PC combat is not the focus of CurryMUD and must not be a common occurrence. You may not attack another PC indiscriminately. Your PC may attack another PC if and only if there is a viable IC reason to justify the attack, such as, \"he stole my stuff,\" or, \"she intentionally betrayed me.\" \"My character hates vulpenoids\" is not in and of itself an acceptable justification for the attack of a vulpenoid PC.\n\
+    lSpcs <> "Varying degrees of In Character (IC) conflict between Player Characters (PCs) may occur in the course of normal role-play. Administrators will generally not step in to resolve such conflict unless it's clear that one of the official rules has been broken.\n" <>
+    lSpcs <> "PC-on-PC combat is not the focus of CurryMUD and must not be a common occurrence. You may not attack another PC indiscriminately (this would constitute harassment). Indeed, your PC may attack another PC if and only if there is a viable IC reason to justify the attack, such as, \"he stole my stuff,\" or, \"she intentionally betrayed me.\" \"My character hates vulpenoids\" is not in and of itself an acceptable justification for the attack of a vulpenoid PC.\n\
     \\n\
     \\\uPERMADEATH\\d\n" <>
     lSpcs <> "When a Player Character (PC) dies, he/she is truly dead; a deceased character cannot return to the virtual world in any way, shape, or form. This is known as \"permadeath.\" By playing CurryMUD, you consent to the fact that when your character dies, he/she is unrecoverable.\n\
@@ -251,10 +251,10 @@ teleDescMsg = "You are instantly transported in a blinding flash of white light.
               \overwhelmed with vertigo accompanied by a confusing sensation of nostalgia."
 
 teleDestMsg :: Text -> Text
-teleDestMsg t = "There is a soft audible pop as " <> t <> " appears in a jarring flash of white light."
+teleDestMsg t = "There is a soft, audible pop as " <> t <> " appears in a jarring flash of white light."
 
 teleOriginMsg :: Text -> Text
-teleOriginMsg t = "There is a soft audible pop as " <> t <> " vanishes in a jarring flash of white light."
+teleOriginMsg t = "There is a soft, audible pop as " <> t <> " vanishes in a jarring flash of white light."
 
 theBeyondMsg :: Text
 theBeyondMsg = "Your spirit passes into the beyond. A hand reaches out to guide you, and pulls you in..."
