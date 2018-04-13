@@ -541,7 +541,7 @@ alertExecFindTargetSing i ms target = let (_, _, inRms) = sortArgsInvEqRm InRm .
 
 -----
 
-attack :: HasCallStack => ActionFun -- TODO
+attack :: HasCallStack => ActionFun
 attack (NoArgs i mq cols) = getState >>= \ms ->
     let ts = case getNowAttacking i ms of Nothing -> notAttackingMsg
                                           Just [] -> notAttackingMsg
@@ -570,8 +570,8 @@ attack p@(LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                     logMsgs              = map (`descSingId` ms) targetIds
                     b                    = ((&&) <$> null . fst <*> not . null . snd) (is, targetIds)
                 in if ()!# invCoins
-                  then (ms', (dropBlanks $ sorryInInv : sorryInEq : (coinsMsgs ++ invMsgs), logMsgs, b    ))
-                  else (ms,  (pure sorryAttackNothingHere,                                  [],      False))
+                  then (ms', (dropBlanks $ sorryInInv : sorryInEq : coinsMsgs ++ invMsgs, logMsgs, b    ))
+                  else (ms,  (pure sorryAttackNothingHere,                                [],      False))
       where
         helperEitherInv _  a (Left  msg      ) = a & _1 <>+ msg
         helperEitherInv is a (Right targetIds) =
