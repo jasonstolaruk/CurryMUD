@@ -5,7 +5,7 @@
 
 \uDESCRIPTION\n
 Set the zoom level of the Mudlet mapper.
-1 is the closest possible zoom level. The greater the zoom level, the more the map will zoom out.
+A zoom level of 1 represents the greatest possible degree of magnification. The greater the zoom level, the more the map will zoom out.
 When no arguments are provided, the zoom will be set to the default level of @o.
 
 \uEXAMPLES\n

@@ -542,7 +542,14 @@ alertExecFindTargetSing i ms target = let (_, _, inRms) = sortArgsInvEqRm InRm .
 -----
 
 attack :: HasCallStack => ActionFun -- TODO
-attack   (NoArgs   _ _  _      ) = unit -- TODO: When no arguments, show who/what you are attacking.
+attack (NoArgs i mq cols) = getState >>= \ms ->
+    let ts = case getNowAttacking i ms of Nothing -> notAttackingMsg
+                                          Just [] -> notAttackingMsg
+                                          Just is | names <- [ serialize . mkStdDesig i' ms $ Don'tCap | i' <- is ]
+                                                  -> [ "You are attacking:", parseDesig Nothing i ms . commas $ names ]
+    in multiWrapSend mq cols ts
+  where
+    notAttackingMsg = pure "You aren't attacking anything."
 attack p@(LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "attack"
   else let next = helper |&| modifyState >=> \(msgs, logMsgs, b) -> do
@@ -578,8 +585,8 @@ attack p@(LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                     targetSing = getSing targetId ms
             in foldl' f a targetIds
     helperEitherCoins msgs (Left  msgs') = msgs ++ msgs'
-    helperEitherCoins msgs (Right _    ) | sorryAttackCoins `elem` msgs = msgs
-                                         | otherwise                    = msgs ++ pure sorryAttackCoins
+    helperEitherCoins msgs (Right _    ) = (msgs |&|) $ if | sorryAttackCoins `elem` msgs -> id
+                                                           | otherwise                    -> (++ pure sorryAttackCoins)
 attack p = pmf "attack" p
 
 -----

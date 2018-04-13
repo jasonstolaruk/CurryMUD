@@ -209,11 +209,11 @@ rulesMsg =
     lSpcs <> "Players are free to role-play characters who are gender nonconforming, homosexual, bisexual, pansexual, asexual, etc. Intolerant/exclusive behavior and attitudes - among both players themselves and their characters - are absolutely unacceptable.\n\
     \\n\
     \\\uHARASSMENT\\d\n" <>
-    lSpcs <> "Harassment and bullying is not tolerated. The role-play of rape is absolutely illegal.\n\
+    lSpcs <> "Harassment and bullying are not tolerated. The role-play of rape is absolutely illegal.\n\
     \\n\
     \\\uPLAYER-VS-PLAYER\\d\n" <>
     lSpcs <> "In Character (IC) conflict between Player Characters (PCs) may occur. Administrators will generally not step in to resolve such conflict.\n" <>
-    lSpcs <> "PC-on-PC combat is not the focus of CurryMUD and should not be a common occurrence. You may not attack other PCs indiscriminately. Your PC may attack another PC if and only if there is a viable IC reason to justify the attack, such as, \"he stole my stuff,\" or, \"she betrayed me.\" \"My PC hates vulpenoids and he was a vulpenoid\" is not in and of itself an acceptable justification for the murder of a PC.\n\
+    lSpcs <> "PC-on-PC combat is not the focus of CurryMUD and must not be a common occurrence. You may not attack another PC indiscriminately. Your PC may attack another PC if and only if there is a viable IC reason to justify the attack, such as, \"he stole my stuff,\" or, \"she intentionally betrayed me.\" \"My character hates vulpenoids\" is not in and of itself an acceptable justification for the attack of a vulpenoid PC.\n\
     \\n\
     \\\uPERMADEATH\\d\n" <>
     lSpcs <> "When a Player Character (PC) dies, he/she is truly dead; a deceased character cannot return to the virtual world in any way, shape, or form. This is known as \"permadeath.\" By playing CurryMUD, you consent to the fact that when your character dies, he/she is unrecoverable.\n\
@@ -228,7 +228,7 @@ rulesMsg =
     \\n\
     \\\uPRIVACY\\d\n" <>
     lSpcs <> "Please be aware that player activity is automatically logged by the system. Furthermore, administrators have the ability to actively monitor player activity with the express purpose of 1) assisting players, 2) ensuring that players are following the rules, and 3) tracking down bugs. Administrators promise to maintain player privacy as much as possible.\n" <>
-    lSpcs <> "As is the case with most MUDs, data is transferred between your computer and the MUD server via the telnet protocol. Telnet is inherently insecure: relatively speaking, it is quite easy for a third party to spy on telnet network traffic. Therefore you must agree to never divulge personal or sensitive information to anyone while playing CurryMUD."
+    lSpcs <> "As is the case with most MUDs, data is transferred between your computer and the MUD server via the telnet protocol. Telnet is inherently insecure: relatively speaking, it is quite easy for a third party to spy on telnet network traffic. Therefore it is your responsibility to never divulge personal or sensitive information to anyone while playing CurryMUD."
 
 sleepMsg :: Text
 sleepMsg = "You go to sleep..."
