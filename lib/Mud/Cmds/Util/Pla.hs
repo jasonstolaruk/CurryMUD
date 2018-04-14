@@ -2004,7 +2004,8 @@ spiritHelper i a b = getState >>= \ms -> ms |&| bool a b (isSpiritId i ms)
 -----
 
 stopAttacking :: HasCallStack => ActionParams -> MudState -> MudStack ()
-stopAttacking _ _ = undefined -- TODO
+stopAttacking (WithArgs i _ _ _) _ = stopAct i Attacking
+stopAttacking p _ = pmf "stopAttacking" p
 
 stopDrinking :: HasCallStack => ActionParams -> MudState -> MudStack ()
 stopDrinking (WithArgs i mq cols _) ms = case getNowDrinking i ms of

@@ -555,7 +555,7 @@ attack p@(LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   else let next = helper |&| modifyState >=> \(msgs, logMsgs, b) -> do
                       logMsgs |#| logPla "attack" i . prd . ("engaging in combat with: " <>) . slashes
                       multiWrapSend mq cols . map (parseDesig Nothing i ms) $ msgs
-                      when b . startAct i Attacking $ attackAct
+                      when b . startAct i Attacking . attackAct $ i
        in checkActing p ms (Left Attacking) (pure Sacrificing) next
   where
     helper ms = let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
@@ -3297,13 +3297,12 @@ stop :: HasCallStack => ActionFun
 stop p@(NoArgs i mq cols) = getState >>= \ms -> case filter (view _3) . mkStopTuples p $ ms of
   []                     -> wrapSend mq cols sorryStopNotDoingAnything
   ((_, actType, _, f):_) -> stopLogHelper i (pure actType) >> f
-stop p@(OneArgLower i mq cols a) = getState >>= \ms ->
-    if ((||) <$> (`T.isPrefixOf` "all") <*> (== T.singleton allChar)) a
-      then case filter (view _3) . mkStopTuples p $ ms of [] -> wrapSend mq cols sorryStopNotDoingAnything
-                                                          xs -> ((>>) <$> stopLogHelper i . select _2 <*> mapM_ (view _4)) xs
-      else case filter (views _1 (a `T.isPrefixOf`)) . mkStopTuples p $ ms of
-        []                     -> wrapSend mq cols . sorryStopActName $ a
-        ((_, actType, b, f):_) -> b ? (stopLogHelper i (pure actType) >> f) :? wrapSend mq cols (sorryStopNotDoing actType)
+stop p@(OneArgLower i mq cols a) = getState >>= \ms -> if ((||) <$> (`T.isPrefixOf` "all") <*> (== T.singleton allChar)) a
+  then case filter (view _3) . mkStopTuples p $ ms of [] -> wrapSend mq cols sorryStopNotDoingAnything
+                                                      xs -> ((>>) <$> stopLogHelper i . select _2 <*> mapM_ (view _4)) xs
+  else case filter (views _1 (a `T.isPrefixOf`)) . mkStopTuples p $ ms of
+    []                     -> wrapSend mq cols . sorryStopActName $ a
+    ((_, actType, b, f):_) -> b ? (stopLogHelper i (pure actType) >> f) :? wrapSend mq cols (sorryStopNotDoing actType)
 stop p = advise p ["stop"] adviceStopExcessArgs
 
 stopLogHelper :: HasCallStack => Id -> [ActType] -> MudStack ()

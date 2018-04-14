@@ -87,8 +87,8 @@ threadAct i actType f = handle (threadExHandler (Just i) . pp $ actType) $ a `fi
 
 -- ==================================================
 
-attackAct :: HasCallStack => MudStack () -- TODO
-attackAct = forever . liftIO . delaySecs $ 1
+attackAct :: HasCallStack => Id -> MudStack () -- TODO
+attackAct i = (forever . liftIO . delaySecs $ 1) `catch` die (Just i) (pp Attacking)
 
 -----
 
