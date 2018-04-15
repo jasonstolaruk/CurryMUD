@@ -88,7 +88,10 @@ threadAct i actType f = handle (threadExHandler (Just i) . pp $ actType) $ a `fi
 -- ==================================================
 
 attackAct :: HasCallStack => Id -> MudStack () -- TODO
-attackAct i = (forever . liftIO . delaySecs $ 1) `catch` die (Just i) (pp Attacking)
+attackAct i = f `finally` tweak (mobTbl.ind i.nowAttacking .~ Nothing)
+  where
+    f = attack `catch` die (Just i) (pp Sacrificing)
+    attack = forever . liftIO . delaySecs $ 1
 
 -----
 
