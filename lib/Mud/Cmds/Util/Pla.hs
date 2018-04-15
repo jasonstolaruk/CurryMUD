@@ -2004,17 +2004,21 @@ spiritHelper i a b = getState >>= \ms -> ms |&| bool a b (isSpiritId i ms)
 -----
 
 stopAttacking :: HasCallStack => ActionParams -> MudState -> MudStack ()
-stopAttacking (WithArgs i _ _ _) _ = stopAct i Attacking
+stopAttacking (WithArgs i mq cols _) ms =
+  let toSelf = "You stop attacking."
+      d      = mkStdDesig i ms DoCap
+      msg    = serialize d <> " stops attacking."
+  in sequence_ [ stopAct i Attacking, wrapSend mq cols toSelf, bcast . pure $ (msg, desigOtherIds d) ]
 stopAttacking p _ = pmf "stopAttacking" p
 
 stopDrinking :: HasCallStack => ActionParams -> MudState -> MudStack ()
-stopDrinking (WithArgs i mq cols _) ms = case getNowDrinking i ms of
-  Just (l, s) -> let toSelf      = T.concat [ "You stop drinking ", renderLiqNoun l the, " from the ", s, "." ]
-                     d           = mkStdDesig i ms DoCap
-                     msg         = T.concat [ serialize d, " stops drinking from ", mkSerVerbObj . aOrAn $ s, "." ]
-                     bcastHelper = bcastIfNotIncogNl i . pure $ (msg, desigOtherIds d)
-                 in stopAct i Drinking >> wrapSend mq cols toSelf >> bcastHelper
-  Nothing     -> unit
+stopDrinking (WithArgs i mq cols _) ms = maybeVoid helper . getNowDrinking i $ ms
+  where
+    helper (l, s) = let toSelf      = T.concat [ "You stop drinking ", renderLiqNoun l the, " from the ", s, "." ]
+                        d           = mkStdDesig i ms DoCap
+                        msg         = T.concat [ serialize d, " stops drinking from ", mkSerVerbObj . aOrAn $ s, "." ]
+                        bcastHelper = bcastIfNotIncogNl i . pure $ (msg, desigOtherIds d)
+                    in stopAct i Drinking >> wrapSend mq cols toSelf >> bcastHelper
 stopDrinking p _ = pmf "stopDrinking" p
 
 stopEating :: HasCallStack => ActionParams -> MudState -> MudStack ()
