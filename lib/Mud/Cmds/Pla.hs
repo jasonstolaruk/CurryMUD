@@ -147,6 +147,7 @@ regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 -- TODO: "buy" and "sell" (to be used between PCs; buying a crafted item from the crafter grants exp to the crafter).
 -- TODO: "shout". Consider indoor vs. outdoor. Update the "communication" help topic.
 -- TODO: Certain actions should be impossible while engaged in combat if you don't have a free hand (when dual wielding, for example).
+-- TODO: Could the abbreviation of an item whose name begins with "sp" clash with the "sp" for coins?
 regularCmdTuples :: HasCallStack => [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
     [ ("?",          plaDispCmdList,     True,  cmdDescDispCmdList)

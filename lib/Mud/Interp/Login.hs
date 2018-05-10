@@ -392,7 +392,7 @@ interpRace ncb@(NewCharBundle _ s _) (T.toLower -> cn) (NoArgs i mq cols) = case
                                send mq . nl . T.unlines . parseWrapXform settings cols . mkPickPtsIntroTxt $ s
                                promptPickPts i mq
                                setInterp i . Just . interpPickPts $ ncb
-    readRaceHelp raceName = let f = (</> T.unpack raceName) <$> mkMudFilePath raceDirFun
+    readRaceHelp raceName = let f = (</> T.unpack raceName) <$> mkMudFilePath raceDirFun -- TODO: "parseTokens"
                             in liftIO (T.readFile =<< f) |&| try >=> eitherRet handler
       where
         handler e = do fileIOExHandler "interpRace readRaceHelp" e
@@ -510,7 +510,7 @@ readymadeTxt | f <- colorWith abbrevColor = [ "You may choose from one of the fo
                                             , "7) " <> f "N"  <> "ymph mage"
                                             , "8) " <> f "V"  <> "ulpenoid warrior" ]
 
-interpReadymadePC :: HasCallStack => NewCharBundle -> Interp
+interpReadymadePC :: HasCallStack => NewCharBundle -> Interp -- TODO: Race help.
 interpReadymadePC _   "" (NoArgs _ mq cols) = promptRetryReadymadePC mq cols
 interpReadymadePC ncb cn (NoArgs i mq cols) = case cn of
   "1" -> readymadeDwarf     i >> next
