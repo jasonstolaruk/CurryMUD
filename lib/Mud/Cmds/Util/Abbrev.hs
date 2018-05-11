@@ -1,10 +1,10 @@
-{-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# LANGUAGE OverloadedStrings, TupleSections, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
 module Mud.Cmds.Util.Abbrev (styleAbbrevs) where
 
 import           Mud.Data.Misc
 import           Mud.Misc.ANSI
+import           Mud.TopLvlDefs.Misc
 import           Mud.Util.List (nubSort)
 import qualified Mud.Util.Misc as U (pmf)
 import           Mud.Util.Misc hiding (pmf)
@@ -24,11 +24,11 @@ pmf = U.pmf "Mud.Cmds.Util.Abbrev"
 
 type FullWord = Text
 
+-- TODO: Not all abbreviation calculations have to take coins into account.
 styleAbbrevs :: HasCallStack => DoOrDon'tQuote -> [FullWord] -> [Text]
-styleAbbrevs quote fws = let abbrevs   = mkAbbrevs fws
-                             helper fw = onTrue (quote == DoQuote) bracketQuote . maybe fw f . lookup fw $ abbrevs
-                             f         = uncurry (<>) . first (quoteWith' (abbrevColor, dfltColor'))
-                         in map helper fws
+styleAbbrevs quote fws = let f fw = onTrue (quote == DoQuote) bracketQuote . maybe fw g . lookup fw . mkAbbrevs $ fws
+                             g    = uncurry (<>) . first (quoteWith' (abbrevColor, dfltColor'))
+                         in map f fws
 
 type Abbrev         = Text
 type Rest           = Text
@@ -38,11 +38,13 @@ mkAbbrevs :: HasCallStack => [FullWord] -> [(FullWord, (Abbrev, Rest))]
 mkAbbrevs = helper "" . nubSort
   where
     helper :: HasCallStack => PrevWordInList -> [FullWord] -> [(FullWord, (Abbrev, Rest))]
-    helper _    []     = []
-    helper ""   (x:xs) = (id &&& first T.singleton . headTail) x : helper x xs
-    helper prev (x:xs) = let abbrev = calcAbbrev x prev
-                         in (: helper x xs) . (x, ) $ case abbrev `T.stripPrefix` x of Nothing   -> (x,      ""  )
-                                                                                       Just rest -> (abbrev, rest)
+    helper _      []     = []
+    helper ""     (x:xs) = (id &&& first T.singleton . headTail) x : helper x xs
+    helper prev a@(x:xs) | abbrev `elem` coinNames = helper abbrev a
+                         | pair <- case abbrev `T.stripPrefix` x of Nothing   -> (x,      ""  )
+                                                                    Just rest -> (abbrev, rest) = (x, pair) : helper x xs
+      where
+        abbrev = calcAbbrev x prev
 
 calcAbbrev :: HasCallStack => Text -> Text -> Text
 calcAbbrev (T.uncons -> Just (x, _ )) ""                                  = T.singleton x

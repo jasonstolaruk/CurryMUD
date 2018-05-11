@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
 
 -- This module contains straightforward getter methods that do little or no calculation.

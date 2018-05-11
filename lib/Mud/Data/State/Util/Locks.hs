@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-# LANGUAGE RankNTypes #-}
 
 module Mud.Data.State.Util.Locks ( getLock

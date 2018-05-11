@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
 module Mud.Util.Wrapping ( adjustIndent

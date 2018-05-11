@@ -1517,13 +1517,13 @@ mkHelpData :: HasCallStack => [Lang] -> Bool -> Bool -> IO [Help]
 mkHelpData ls is ia = do
     let f dir = [ (dir', dropIrrelevantFiles . sort $ cont) | dir' <- mkMudFilePath dir
                                                             , cont <- getDirectoryContents dir' ]
-    [  (plaHelpCmdsDir,     plaHelpCmdNames    )
-     , (plaHelpTopicsDir,   plaHelpTopicNames  )
-     , (adminHelpCmdsDir,   adminHelpCmdNames  )
-     , (adminHelpTopicsDir, adminHelpTopicNames) ] <- mapM f [ plaHelpCmdsDirFun
-                                                             , plaHelpTopicsDirFun
-                                                             , adminHelpCmdsDirFun
-                                                             , adminHelpTopicsDirFun ]
+    [   (plaHelpCmdsDir,     plaHelpCmdNames    )
+      , (plaHelpTopicsDir,   plaHelpTopicNames  )
+      , (adminHelpCmdsDir,   adminHelpCmdNames  )
+      , (adminHelpTopicsDir, adminHelpTopicNames) ] <- mapM f [ plaHelpCmdsDirFun
+                                                              , plaHelpTopicsDirFun
+                                                              , adminHelpCmdsDirFun
+                                                              , adminHelpTopicsDirFun ]
     let phcs = [ Help { helpName     = T.pack x
                       , helpFilePath = plaHelpCmdsDir </> x
                       , isCmdHelp    = True
