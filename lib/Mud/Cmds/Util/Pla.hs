@@ -1204,8 +1204,9 @@ mkEntsInInvDesc i cols ms =
 
 mkStyledName_count_bothList :: HasCallStack => Id -> MudState -> Inv -> [(Text, Int, BothGramNos)]
 mkStyledName_count_bothList i ms is =
-    let styleds                       = styleAbbrevs DoQuote [ getEffName        i ms targetId | targetId <- is ]
-        boths@(mkCountList -> counts) =                      [ getEffBothGramNos i ms targetId | targetId <- is ]
+    let f                             = styleAbbrevs DoCoins DoQuote
+        styleds                       = f [ getEffName        i ms targetId | targetId <- is ]
+        boths@(mkCountList -> counts) =   [ getEffBothGramNos i ms targetId | targetId <- is ]
     in nub . zip3 styleds counts $ boths
 
 mkCoinsSummary :: HasCallStack => Cols -> Coins -> Text
@@ -1234,7 +1235,7 @@ mkEqDesc i cols ms descId descSing descType = let descs = bool mkDescsOther mkDe
     mkDescsSelf =
         let (is, slotNames, es) = unzip3 [ (ei, pp slot, getEnt ei ms) | (slot, ei) <- M.toList . getEqMap i $ ms ]
             (sings, ens)        = unzip  [ view sing &&& mkEntName $ e | e          <- es                         ]
-        in map helper . zip4 is slotNames sings . styleAbbrevs DoQuote $ ens
+        in map helper . zip4 is slotNames sings . styleAbbrevs DoCoins DoQuote $ ens
       where
         helper (ei, T.breakOn (spcL "finger") -> (slotName, _), s, styled) =
             T.concat [ parensPad 15 slotName, s, mkAux ei, " ", styled ]
@@ -1436,15 +1437,16 @@ mkRmInvCoinsDesc i cols ms ri =
 
 mkRmInvCoinsDescTuples :: HasCallStack => Id -> MudState -> Inv -> [((Bool, Bool), (Text, BothGramNos, Text, Int))]
 mkRmInvCoinsDescTuples i ms targetIds =
-  let isPlaAdmins =                      [ mkIsPlaAdmin           targetId | targetId <- targetIds ]
-      styleds     = styleAbbrevs DoQuote [ getEffName        i ms targetId | targetId <- targetIds ]
-      boths       =                      [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
-      rmDescs     =                      [ mkMobRmDesc targetId ms         | targetId <- targetIds ]
+  let isPlaAdmins =   [ mkIsPlaAdmin           targetId | targetId <- targetIds ]
+      styleds     = f [ getEffName        i ms targetId | targetId <- targetIds ]
+      boths       =   [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
+      rmDescs     =   [ mkMobRmDesc targetId ms         | targetId <- targetIds ]
       groups      = group . zip4 isPlaAdmins styleds boths $ rmDescs
   in [ (ipa, (s, b, d, c)) | ((ipa, s, b, d), c) <- [ (head &&& length) g | g <- groups ] ]
   where
     mkIsPlaAdmin targetId | isPla targetId ms = (True, isAdminId targetId ms)
                           | otherwise         = dup False
+    f = styleAbbrevs DoCoins DoQuote
 
 isKnownPCSing :: HasCallStack => Sing -> Bool
 isKnownPCSing s = case T.words s of [ "male",   _ ] -> False

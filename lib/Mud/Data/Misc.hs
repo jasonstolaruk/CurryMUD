@@ -18,6 +18,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Day
                      , Desig(..)
                      , DoOrDon'tCap(..)
+                     , DoOrDon'tCoins(..)
                      , DoOrDon'tQuote(..)
                      , DrinkBundle(..)
                      , EatBundle(..)
@@ -837,6 +838,10 @@ data Desig = StdDesig    { desigEntName      :: Text
            | CorpseDesig Id deriving (Eq, Show)
 
 data DoOrDon'tCap = DoCap | Don'tCap deriving (Eq, Read, Show)
+
+-----
+
+data DoOrDon'tCoins = DoCoins | Don'tCoins deriving Eq
 
 -----
 

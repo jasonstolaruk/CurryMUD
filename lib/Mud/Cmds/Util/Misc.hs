@@ -267,7 +267,7 @@ styleCmdAbbrevs = map f . mkCmdTriplesForStyling
 mkCmdTriplesForStyling :: HasCallStack => [Cmd] -> [(CmdName, Maybe CmdPriorityAbbrevTxt, Text)]
 mkCmdTriplesForStyling cmds = let cmdNames       = [ cmdName           cmd | cmd <- cmds ]
                                   cmdPAs         = [ cmdPriorityAbbrev cmd | cmd <- cmds ]
-                                  styledCmdNames = styleAbbrevs Don'tQuote cmdNames
+                                  styledCmdNames = styleAbbrevs Don'tCoins Don'tQuote cmdNames
                               in zip3 cmdNames cmdPAs styledCmdNames
 
 -----
@@ -365,7 +365,7 @@ getChanStyleds i c ms = let (linkeds, nonLinkedIds) = getChanLinkeds_nonLinkedId
     mapM (updateRndmName i) nonLinkedIds >>= \rndmNames ->
         let nonLinkeds' = zip nonLinkedIds rndmNames
             combo       = sortBy (compare `on` snd) $ linkeds ++ nonLinkeds'
-            styleds     = styleAbbrevs Don'tQuote . map snd $ combo
+            styleds     = styleAbbrevs Don'tCoins Don'tQuote . map snd $ combo
             helper (x, y) styled | x `elem` nonLinkedIds = a & _3 %~ underline
                                  | otherwise             = a
               where
@@ -390,7 +390,7 @@ getQuestionStyleds i ms = let (plaIds,    adminIds) = getTunedQuestionIds i ms
                                   linkeds = f linkedIds
                                   admins  = f adminIds
                                   combo   = sortBy (compare `on` snd) $ rndms ++ nubSort (linkeds ++ admins)
-                                  styleds = styleAbbrevs Don'tQuote . map snd $ combo
+                                  styleds = styleAbbrevs Don'tCoins Don'tQuote . map snd $ combo
                                   helper (x, y) styled | x `elem` otherIds = a & _3 %~ underline
                                                        | otherwise         = a
                                     where
@@ -747,7 +747,7 @@ mkWhoCharList i ms =
         tunedIns'         = mkSingSexRaceLvls tunedIns
         mkSingSexRaceLvls = sortBy (compare `on` view _1) . map helper
         helper plaId      = let (s, r, l) = mkPrettySexRaceLvl plaId ms in (getSing plaId ms, s, r, l)
-        styleds           = styleAbbrevs Don'tQuote . select _1 $ tunedIns'
+        styleds           = styleAbbrevs Don'tCoins Don'tQuote . select _1 $ tunedIns'
         -----
         tunedOuts' = mkSingSexRaceLvls (tunedOuts ++ oneWays)
         -----

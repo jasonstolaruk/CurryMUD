@@ -212,7 +212,7 @@ adminAdmin (NoArgs i mq cols) = getState >>= \ms ->
                                                                     , let isTuned = isTunedAdmin ap ]
         ([self],   others   )  = partition (views _1 (== i)) triples
         (tunedIns, tunedOuts)  = partition (view _3)         others
-        styleds                = styleAbbrevs Don'tQuote . select _2 $ tunedIns
+        styleds                = styleAbbrevs Don'tCoins Don'tQuote . select _2 $ tunedIns
         others'                = zipWith (\triple styled -> triple & _2 .~ styled) tunedIns styleds ++ tunedOuts
         mkDesc (_, n, isTuned) = padName n <> tunedInOut isTuned
         descs                  = mkDesc self : map mkDesc others'
@@ -223,7 +223,7 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
         [_]      -> wrapSend mq cols . sorryChanNoOneListening $ "admin"
         tunedIds ->
           let tunedSings         = map (`getSing` ms) tunedIds
-              getStyled targetId = let styleds = styleAbbrevs Don'tQuote $ getSing targetId ms `delete` tunedSings
+              getStyled targetId = let styleds = styleAbbrevs Don'tCoins Don'tQuote $ getSing targetId ms `delete` tunedSings
                                    in head . filter ((== s) . dropANSI) $ styleds
               s                  = getSing i ms
               format (txt, is)   = if i `elem` is
@@ -1258,7 +1258,7 @@ adminMsg   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= (|#| m
                       adminSings             = map snd . filter f . mkAdminIdSingList $ ms
                       f (_, "Root")          = getIdForRoot ms `isAwake` ms
                       f _                    = True
-                      me                     = head . filter g . styleAbbrevs Don'tQuote $ adminSings
+                      me                     = head . filter g . styleAbbrevs Don'tCoins Don'tQuote $ adminSings
                       g                      = (== s) . dropANSI
                       toTarget'              = quoteWith "__" me |<>| toTarget
                   in do
@@ -2230,7 +2230,7 @@ adminTelePC ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols
 adminTeleRm :: HasCallStack => ActionFun
 adminTeleRm (NoArgs i mq cols) = logPlaExecArgs (prefixAdminCmd "telerm") [] i >> (multiWrapSend mq cols =<< mkTxt)
   where
-    mkTxt  = views rmTeleNameTbl ((header :) . styleAbbrevs Don'tQuote . sort . IM.elems) <$> getState
+    mkTxt  = views rmTeleNameTbl ((header :) . styleAbbrevs Don'tCoins Don'tQuote . sort . IM.elems) <$> getState
     header = "You may teleport to the following rooms:"
 adminTeleRm p@(OneArgLower i mq cols target) = modifyStateSeq $ \ms ->
     let SingleTarget { .. }        = mkSingleTarget mq cols target "The name of the room to which you want to teleport"
@@ -2303,7 +2303,7 @@ mkCharListTxt :: HasCallStack => LoggedInOrOut -> MudState -> [Text]
 mkCharListTxt inOrOut ms =
     let is               = views plaTbl (IM.keys . IM.filterWithKey f) ms
         (is', ss)        = unzip [ (i, s) | i <- is, let s = getSing i ms, then sortWith by s ]
-        ias              = zip is' . styleAbbrevs Don'tQuote $ ss
+        ias              = zip is' . styleAbbrevs Don'tCoins Don'tQuote $ ss
         mkCharTxt (i, a) = let (s, r, l) = mkPrettySexRaceLvl i ms
                                name      = mkAnnotatedName i a
                            in T.concat [ padName name, padId . showTxt $ i, padSex s, padRace r, l ]

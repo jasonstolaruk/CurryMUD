@@ -498,7 +498,7 @@ adminList (NoArgs i mq cols) = sequence_ [ logPlaExecArgs "admin" [] i, multiWra
                                  | otherwise   = otherwise
                     combineds = [ padName abbrev <> suffix
                                 | (_, suffix) <- singSuffixes'
-                                | abbrev      <- styleAbbrevs Don'tQuote . map fst $ singSuffixes' ]
+                                | abbrev      <- styleAbbrevs Don'tCoins Don'tQuote . map fst $ singSuffixes' ]
                 in ()!# combineds ? return combineds :? unadulterated sorryNoAdmins
 adminList p = pmf "adminList" p
 
@@ -690,7 +690,7 @@ chan (NoArgs i mq cols) = getState >>= \ms ->
           where
             mkChanTxts = [ padChanName n <> tunedInOut t | n <- names | t <- tunings ]
     in do logPlaExecArgs "chan" [] i
-          multiWrapSend mq cols . helper (styleAbbrevs Don'tQuote chanNames) $ chanTunings
+          multiWrapSend mq cols . helper (styleAbbrevs Don'tCoins Don'tQuote chanNames) $ chanTunings
 chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryChanName $ a
         found match =
@@ -701,7 +701,7 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
             in mapM (updateRndmName i . view _1) nonLinkeds >>= \rndmNames ->
                 let combo       = linkeds ++ zipWith (\rndmName -> _2 .~ rndmName) rndmNames nonLinkeds
                     (ins, outs) = partition (view _3) . sortBy (compare `on` view _2) $ combo
-                    styleds     = styleAbbrevs Don'tQuote . select _2 $ ins
+                    styleds     = styleAbbrevs Don'tCoins Don'tQuote . select _2 $ ins
                     ins'        = zipWith (\styled -> _2 .~ styled) styleds ins
                     g (_, n, isTuned') = let n' = isRndmName n ? underline n :? n in padName n' <> tunedInOut isTuned'
                     combo'             = ins' ++ outs
@@ -1224,7 +1224,7 @@ expCmdList p                       = pmf "expCmdList" p
 mkExpCmdListTxt :: HasCallStack => Id -> MudState -> [Text]
 mkExpCmdListTxt i ms =
     let cmdNames       = [ cmdName cmd | cmd <- mkPlaCmds i ms ]
-        styledCmdNames = styleAbbrevs Don'tQuote cmdNames
+        styledCmdNames = styleAbbrevs Don'tCoins Don'tQuote cmdNames
     in concatMap mkExpCmdTxt [ (styled, head matches) | (cn, styled) <- zip cmdNames styledCmdNames
                                                       , let matches = findMatches cn
                                                       , length matches == 1 ]
@@ -1489,7 +1489,7 @@ help (NoArgs i mq cols) = liftIO (T.readFile =<< mkMudFilePath rootHeplFileFun) 
         logPla "help helper" i "reading the root help file."
         let (is, ia, ls) = mkHelpTriple i ms
         hs <- sortBy (compare `on` helpName) <$> liftIO (mkHelpData ls is ia)
-        let zipped                 = zip (styleAbbrevs Don'tQuote [ helpName h | h <- hs ]) hs
+        let zipped                 = zip (styleAbbrevs Don'tCoins Don'tQuote [ helpName h | h <- hs ]) hs
             (cmdNames, topicNames) = partition (isCmdHelp . snd) zipped & both %~ formatHelpNames . mkHelpNames
             helpTxt                = T.concat [ nl rootHelpTxt
                                               , nl "COMMANDS:"
@@ -1818,7 +1818,7 @@ link (NoArgs i mq cols) = do
             oneWayFromMeMsgs = [ "One-way links from your mind:", mkSingsList False oneWaysFromMe ]
             oneWayToMeMsgs   = [ "One-way links to your mind:",   mkSingsList False oneWaysToMe   ]
             mkSingsList doStyle ss = let (awakes, asleeps) = sortAwakesAsleeps ss
-                                     in commas $ onTrue doStyle (styleAbbrevs Don'tQuote) awakes ++ asleeps
+                                     in commas $ onTrue doStyle (styleAbbrevs Don'tCoins Don'tQuote) awakes ++ asleeps
             sortAwakesAsleeps      = foldr sorter mempties
             sorter linkSing acc    =
                 let linkId   = head . filter ((== linkSing) . (`getSing` ms)) $ ms^.pcTbl.to IM.keys
@@ -2207,7 +2207,7 @@ question (NoArgs' i mq) = getState >>= \ms ->
                (tunedIns, tunedOuts) =
                  let xs = rndms ++ nubSort (linkeds ++ admins)
                  in partition (views _1 (`isTunedQuestionId` ms)) . sortBy (compare `on` view _2) $ xs
-               styleds = styleAbbrevs Don'tQuote . select _2 $ tunedIns
+               styleds = styleAbbrevs Don'tCoins Don'tQuote . select _2 $ tunedIns
                combo   = map f $ zipWith (\styled -> _2 .~ styled) styleds tunedIns ++ tunedOuts
                  where
                   f (i', n, ia) | ia           = (i', n <> asterisk)
@@ -2960,7 +2960,7 @@ interpSecurityCreateA _ _  p                       = pmf "interpSecurityCreateA"
 
 setAction :: HasCallStack => ActionFun
 setAction (NoArgs i mq cols) = getState >>= \ms ->
-    let (styleAbbrevs Don'tQuote -> names, values) = unzip . mkSettingPairs i $ ms
+    let (styleAbbrevs Don'tCoins Don'tQuote -> names, values) = unzip . mkSettingPairs i $ ms
     in logPlaExecArgs "set" [] i >> multiWrapSend mq cols [ padSettingName (n <> ": ") <> v | n <- names | v <- values ]
 setAction (Lower i mq cols as) = helper |&| modifyState >=> \(msgs, logMsgs) ->
     logMsgs |#| logPlaOut "set" i >> multiWrapSend mq cols msgs
@@ -3412,7 +3412,7 @@ tele   (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                                                                , toTarget & _1 %~ f (mkStyled targetId) )
                        formatBs _        bs               = pmf "tele found formatBs" bs
                        mkStyled targetId = let (target'sAwakes, _) = getDblLinkedSings targetId ms
-                                               styleds             = styleAbbrevs Don'tQuote target'sAwakes
+                                               styleds             = styleAbbrevs Don'tCoins Don'tQuote target'sAwakes
                                            in head . filter ((== s) . dropANSI) $ styleds
                    in either sendFun helper . checkMutuallyTuned i ms $ targetSing
                (awakes, asleeps) = getDblLinkedSings i ms
@@ -3449,7 +3449,7 @@ tune :: HasCallStack => ActionFun
 tune (NoArgs i mq cols) = getState >>= \ms ->
     let linkPairs   = map (dupFirst (`getIdForPCSing` ms)) . getLinked i $ ms
         linkSings   = sort . map snd . filter (isDblLinked ms . (i, ) . fst) $ linkPairs
-        styleds     = styleAbbrevs Don'tQuote linkSings
+        styleds     = styleAbbrevs Don'tCoins Don'tQuote linkSings
         linkTunings = map (linkTbl M.!) linkSings
         linkTbl     = getTeleLinkTbl i ms
         (chanNames, chanTunings)   = mkChanNamesTunings i ms
@@ -3459,7 +3459,7 @@ tune (NoArgs i mq cols) = getState >>= \ms ->
     in do logPlaExecArgs "tune" [] i
           let msgs = [ helper "Two-way telepathic links:" styleds linkTunings
                      , mMempty
-                     , helper "Telepathic channels:" (styleAbbrevs Don'tQuote chanNames) chanTunings ]
+                     , helper "Telepathic channels:" (styleAbbrevs Don'tCoins Don'tQuote chanNames) chanTunings ]
           multiWrapSend mq cols . concat $ msgs
 tune (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) -> logMsgs |#| logPlaOut "tune" i >> bcastNl bs
   where
