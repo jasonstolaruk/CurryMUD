@@ -1,4 +1,4 @@
-{-# LANGUAGE DuplicateRecordFields, OverloadedStrings, ParallelListComp, RebindableSyntax, RecordWildCards, TypeApplications, ViewPatterns #-}
+{-# LANGUAGE DuplicateRecordFields, NamedFieldPuns, DisambiguateRecordFields, OverloadedStrings, ParallelListComp, RebindableSyntax, RecordWildCards, TypeApplications, ViewPatterns, OverloadedRecordDot #-}
 
 module Mud.Data.Misc ( AOrThe(..)
                      , Amount
@@ -73,7 +73,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , setObjFlag
                      , setPlaFlag
                      , setRmFlag ) where
-
+import           GHC.Records
 import           Mud.Data.State.ActionParams.ActionParams
 import           Mud.Data.State.MsgQueue
 import           Mud.Data.State.MudData
@@ -130,16 +130,16 @@ class BanRecord a where
   recReason    :: a -> Text
 
 instance BanRecord BanHostRec where
-  recTimestamp = dbTimestamp
-  recTarget    = dbHost
-  recIsBanned  = dbIsBanned
-  recReason    = dbReason
+  recTimestamp = (.dbTimestamp)
+  recTarget    = (.dbHost)
+  recIsBanned  = (.dbIsBanned)
+  recReason    = (.dbReason)
 
 instance BanRecord BanPCRec where
-  recTimestamp = dbTimestamp
-  recTarget    = dbName
-  recIsBanned  = dbIsBanned
-  recReason    = dbReason
+  recTimestamp = (.dbTimestamp)
+  recTarget    = (.dbName)
+  recIsBanned  = (.dbIsBanned)
+  recReason    = (.dbReason)
 
 -----
 

@@ -16,13 +16,16 @@ cabal-version:         >=1.10
 
 executable             curry
   default-language:    Haskell2010
-  ghc-options:         -Wall -Werror -threaded -rtsopts "-with-rtsopts=-N -T"
+  ghc-options:         -Wall -threaded -rtsopts "-with-rtsopts=-N -T"
   -- ghc-options:         -Wall -Werror -threaded -rtsopts "-with-rtsopts=-N -T" -O2 -optc-O3
   main-is:             Main.hs
-  build-depends:         base >=4.10 && <5.0
+  build-depends:         base >=4.10
                        , curry-mud
                        , directory
                        , ekg
+                       , network
+                       , hostname
+                       , ekg-json >= 0.1.0.8
                        , mtl
                        , text
                        , yaml
@@ -30,7 +33,7 @@ executable             curry
 
 library
   default-language:    Haskell2010
-  ghc-options:         -Wall -Werror
+  ghc-options:         -Wall
   -- ghc-options:         -Wall -Werror -O2 -optc-O3
   exposed-modules:     Mud.Cmds.Admin
                        Mud.Cmds.Debug
@@ -150,7 +153,7 @@ library
                        Mud.Util.Token
                        Mud.Util.Wrapping
   other-modules:       Paths_curry_mud
-  build-depends:         base >=4.10 && <5.0
+  build-depends:         base >=4.10
                        , MissingH
                        , aeson
                        , ansi-terminal
@@ -172,6 +175,7 @@ library
                        , mtl
                        , mwc-random
                        , network
+                       , hostname
                        , network-info
                        , process
                        , random
@@ -192,7 +196,7 @@ library
 
 test-suite             test
   default-language:    Haskell2010
-  ghc-options:         -Wall -Werror
+  ghc-options:         -Wall
   type:                exitcode-stdio-1.0
   hs-source-dirs:      tests
   main-is:             test.hs
@@ -208,10 +212,12 @@ test-suite             test
                        MudTests.Util.Telnet
                        MudTests.Util.Text
                        MudTests.Util.Wrapping
-  build-depends:         base >=4.10 && <5.0
+  build-depends:         base >=4.10
                        , QuickCheck
                        , containers
                        , curry-mud
+                       , network
+                       , hostname
                        , lens
                        , mtl
                        , quickcheck-instances
@@ -225,3 +231,4 @@ test-suite             test
 source-repository      head
   type:                git
   location:            https://github.com/jasonstolaruk/CurryMUD
+  

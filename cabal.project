@@ -1,0 +1,6 @@
+source-repository-package
+  type: git
+  location: https://github.com/pillowtrucker/ekg-json.git
+  branch: master
+packages: curry-mud.cabal
+allow-newer: all

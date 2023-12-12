@@ -48,10 +48,22 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hPutStr, putStrLn)
 import           GHC.Stack (HasCallStack)
-import           Network (PortID(..), accept, listenOn, sClose)
+import Network.Socket
+    ( defaultHints,
+      getAddrInfo,
+      addrAddress,
+      accept,
+      close,
+      socket,
+      hostAddressToTuple,
+      socketToHandle,
+      AddrInfo(addrSocketType, addrFamily, addrProtocol, addrFlags),
+      AddrInfoFlag(AI_NUMERICSERV, AI_NUMERICHOST),
+      SocketType(Stream) )
+import qualified Network.Socket as NS
 import           System.IO (hClose)
 import           System.Time.Utils (renderSecs)
-
+import System.IO (IOMode(..))
 logExMsg :: Text -> Text -> SomeException -> MudStack ()
 logExMsg = L.logExMsg "Mud.Threads.Listen"
 
@@ -66,15 +78,20 @@ logNotice = L.logNotice "Mud.Threads.Listen"
 threadListen :: HasCallStack => MudStack ()
 threadListen = a `finally` b
   where
-    a = logNotice "threadListen" "server started." >> listen
+    a = logNotice "threadListen" "server started." >> Mud.Threads.Listen.listen
     b = sequence_ [ saveUptime =<< getUptime, closeLogs, liftIO . T.putStrLn . nl $ "Goodbye!" ]
 
 listen :: HasCallStack => MudStack ()
 listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed halt -- Keep this exception handler here.
   where
     proceed = do initialize
+                 let hints = defaultHints { addrFlags = [AI_NUMERICHOST, AI_NUMERICSERV], addrSocketType = Stream }
+                 addr:_ <- liftIO $ getAddrInfo (Just hints) (Just "127.0.0.1") (Just $ show port)
+                 sock' <- liftIO $ socket (addrFamily addr) (addrSocketType addr) (addrProtocol addr)
+                 wat <- liftIO $ NS.bind sock' $ addrAddress addr 
                  logNotice "listen proceed" . prd $ "listening for incoming connections on port " <> showTxt port
-                 sock      <- liftIO . listenOn . PortNumber . fromIntegral $ port
+                 _      <- liftIO $ NS.listen sock' 1024
+                 let sock = sock'
                  auxAsyncs <- mapM runAsync $ mkDbTblPurgerFuns ++ [ threadCurryTime
                                                                    , threadThreadTblPurger
                                                                    , threadTrashDumpPurger
@@ -96,17 +113,21 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
                     logInterfaces
     logInterfaces = liftIO mkInterfaceList >>= \ifList ->
         logNotice "listen listInterfaces" . prd $ "server network interfaces: " <> ifList
-    loop sock = let fn = "listen loop" in liftIO (accept sock) >>= \(h, host@(T.pack -> host'), localPort) -> do
+    loop sock = let fn = "listen loop" in liftIO (accept sock) >>= \(s@( (flip socketToHandle) ReadWriteMode -> h), (NS.SockAddrInet localPort host@(T.pack . (\(a,b,c,d) -> show a ++ show b ++ show c ++ show d) . hostAddressToTuple -> host'))) -> do
         logNotice fn . T.concat $ [ "connected to ", showTxt host, " on local port ", showTxt localPort, "." ]
-        (withDbExHandler "listen loop" . isHostBanned . T.toLower . T.pack $ host) >>= \case
-          Just (Any False) -> runTalkAsync h host
-          _                -> do liftIO . T.hPutStr h . nlnl $ bannedMsg
-                                 liftIO . hClose $ h
-                                 let msg = "Connection from " <> dblQuote host' <> " refused (host is banned)."
-                                 bcastAdmins msg
-                                 logNotice fn . uncapitalize $ msg
+        (withDbExHandler "listen loop" . isHostBanned . T.toLower $ host') >>= \case
+          Just (Any False) -> do
+            h'' <- liftIO h
+            runTalkAsync h'' (T.unpack host')
+          _                -> do
+            h'' <- liftIO h
+            liftIO . T.hPutStr h'' . nlnl $ bannedMsg
+            liftIO . hClose $ h''
+            let msg = "Connection from " <> dblQuote host' <> " refused (host is banned)."
+            bcastAdmins msg
+            logNotice fn . uncapitalize $ msg
     cleanUp auxAsyncs sock = do logNotice "listen cleanUp" "closing the socket."
-                                liftIO . sClose $ sock
+                                liftIO . close $ sock
                                 mapM_ throwDeathWait auxAsyncs
                                 liftIO . atomically . void . takeTMVar =<< getLock persistLock
     halt = liftIO . T.putStrLn $ loadWorldErrorMsg
