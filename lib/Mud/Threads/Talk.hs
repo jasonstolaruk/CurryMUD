@@ -40,7 +40,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 import           Data.Time (getCurrentTime)
 import           GHC.Stack (HasCallStack)
-import           Network (HostName)
+import           Network.Socket (HostName)
 import           System.FilePath ((</>))
 import           System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1)
 import           System.Random (randomIO, randomRIO)

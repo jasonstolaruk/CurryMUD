@@ -66,7 +66,7 @@ module Mud.TopLvlDefs.Misc ( acl
 import           Mud.TopLvlDefs.Chars
 import           Paths_curry_mud
 
-import           Data.Monoid ((<>))
+import           Data.Monoid ()
 import           Data.Text (Text)
 import           Data.Version (showVersion)
 import           Mud.TopLvlDefs.Seconds

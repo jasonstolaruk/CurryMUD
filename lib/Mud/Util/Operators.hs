@@ -16,7 +16,7 @@ import Control.Lens.Setter (ASetter)
 import Control.Monad (unless)
 import Data.Bool (bool)
 import Data.Function ((&))
-import Data.Monoid ((<>))
+import Data.Monoid ()
 import Data.Text (Text)
 
 infixl 0 ?

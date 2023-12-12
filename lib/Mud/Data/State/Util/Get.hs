@@ -190,7 +190,7 @@ import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
 import           Data.Time (UTCTime)
 import           GHC.Stack (HasCallStack)
-import           Network (HostName)
+import           Network.Socket (HostName)
 import           Prelude hiding (exp)
 
 blowUp :: BlowUp a

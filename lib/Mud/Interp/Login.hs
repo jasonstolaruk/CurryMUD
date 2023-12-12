@@ -65,7 +65,7 @@ import           Data.Monoid ((<>), Any(..))
 import           Data.Text (Text)
 import           Data.Time (UTCTime, getCurrentTime)
 import           GHC.Stack (HasCallStack)
-import           Network (HostName)
+import           Network.Socket (HostName)
 import qualified Data.IntMap.Strict as IM (foldr, keys, toList)
 import qualified Data.Set as S (Set, empty, fromList, insert, member, union)
 import qualified Data.Text as T
