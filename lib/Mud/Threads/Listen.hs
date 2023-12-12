@@ -51,6 +51,7 @@ import           GHC.Stack (HasCallStack)
 import Network.Socket
     ( defaultHints,
       getAddrInfo,
+      addrAddress,
       accept,
       close,
       socket,
@@ -85,8 +86,9 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
   where
     proceed = do initialize
                  let hints = defaultHints { addrFlags = [AI_NUMERICHOST, AI_NUMERICSERV], addrSocketType = Stream }
-                 addr:_ <- liftIO $ getAddrInfo (Just hints) (Just "0.0.0.0") (Just $ show port)
+                 addr:_ <- liftIO $ getAddrInfo (Just hints) (Just "127.0.0.1") (Just $ show port)
                  sock' <- liftIO $ socket (addrFamily addr) (addrSocketType addr) (addrProtocol addr)
+                 wat <- liftIO $ NS.bind sock' $ addrAddress addr 
                  logNotice "listen proceed" . prd $ "listening for incoming connections on port " <> showTxt port
                  _      <- liftIO $ NS.listen sock' 1024
                  let sock = sock'
